@@ -2,6 +2,8 @@ package com.TestFlashCard.FlashCard.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+
+import java.util.Date;
 import java.util.List;
 
 @Data
@@ -14,6 +16,9 @@ public class Option {
 
     @Column(name = "optionDetail", nullable = false)
     private String optionDetail;
+    
+    @Column(name = "createdAt", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    private Date createdAt;
 
     @OneToMany(mappedBy = "option", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OptionClass> optionClasses;
