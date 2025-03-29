@@ -1,1 +1,4 @@
-# Quy tắc tạo Branch và mô hình tổ chức Branch
+# Quy tắc tạo Branch và chức năng từng Branch
+- Chức năng:
+|Branch|Chức năng                |Ví dụ tên Branch |
+|------|-------------------------|-----------------|
