@@ -29,6 +29,9 @@ public class Card {
 
     @Column(name = "nearestDateLearn")
     private Date nearestDateLearn;
+    
+    @Column(name = "createdAt", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    private Date createdAt;
 
     @OneToMany(mappedBy = "card", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FlashCardCards> flashCardCards;

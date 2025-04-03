@@ -2,6 +2,8 @@ package com.TestFlashCard.FlashCard.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+
+import java.util.Date;
 import java.util.List;
 
 @Data
@@ -27,6 +29,9 @@ public class FlashCard {
 
     @OneToMany(mappedBy = "flashCard", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FlashCardCards> flashCardCards;
+
+    @Column(name = "createdAt", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    private Date createdAt;
 }
 
 enum FlashCardStatus {
