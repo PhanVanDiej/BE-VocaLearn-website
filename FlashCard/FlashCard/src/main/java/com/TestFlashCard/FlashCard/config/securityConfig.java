@@ -39,6 +39,7 @@ public class securityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/user/login").permitAll() // Cho phép truy cập /login mà không cần xác thực
                         .requestMatchers("/api/user/register").permitAll()
+                        .requestMatchers("/api/user").permitAll()
                         .anyRequest().authenticated() // Các request khác cần xác thực
                 )
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
