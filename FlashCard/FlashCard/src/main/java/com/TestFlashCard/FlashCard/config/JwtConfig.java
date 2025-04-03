@@ -6,8 +6,11 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "jwt")
 public class JwtConfig {
+
     private String secret;
-    private int expiration;
+
+    private Long accessTokenExpiration;
+    private Long renewalTokenExpiration;
 
     // Getters and setters
     public String getSecret() {
@@ -18,11 +21,19 @@ public class JwtConfig {
         this.secret = secret;
     }
 
-    public int getExpiration() {
-        return expiration;
+    public Long getAccessTokenExpiration() {
+        return accessTokenExpiration;
     }
 
-    public void setExpiration(int expiration) {
-        this.expiration = expiration;
+    public void setAccessTokenExpiration(Long expiration) {
+        this.accessTokenExpiration = expiration;
+    }
+
+    public void setRenewalTokenExpiration(Long expiration) {
+        this.renewalTokenExpiration = expiration;
+    }
+
+    public Long getRenewalTokenExpiration() {
+        return renewalTokenExpiration;
     }
 }

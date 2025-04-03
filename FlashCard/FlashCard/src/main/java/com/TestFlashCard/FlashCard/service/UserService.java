@@ -71,8 +71,6 @@ public class UserService {
     }
 
     public boolean checkPassword(String rawPassword, String encodedPassword) {
-        System.out.println("Raw Password: " + rawPassword); // Phải là "123"
-        System.out.println("Encoded Password: " + encodedPassword); // Phải có dạng BCrypt
         return passwordEncoder.matches(rawPassword, encodedPassword);
     }
 }
