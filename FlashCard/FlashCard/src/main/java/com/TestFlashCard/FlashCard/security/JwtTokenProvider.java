@@ -19,9 +19,9 @@ public class JwtTokenProvider {
     @Autowired
     private JwtConfig jwtConfig;
 
-    public String generateToken(User user) {
+    public String generateAccessToken(User user) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + jwtConfig.getExpiration());
+        Date expiryDate = new Date(now.getTime() + jwtConfig.getAccessTokenExpiration());
 
         // Chuyển đổi secret thành SecretKey
         SecretKey key = Keys.hmacShaKeyFor(jwtConfig.getSecret().getBytes(StandardCharsets.UTF_8));
@@ -30,6 +30,19 @@ public class JwtTokenProvider {
                 .setSubject(user.getId().toString())
                 .claim("role", user.getRole().name())
                 .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public String generateRenewalToken(Long Id){
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + jwtConfig.getRenewalTokenExpiration());
+
+        // Chuyển đổi secret thành SecretKey
+        SecretKey key = Keys.hmacShaKeyFor(jwtConfig.getSecret().getBytes(StandardCharsets.UTF_8));
+        return Jwts.builder()
+                .setSubject(Id.toString())
                 .setExpiration(expiryDate)
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();

@@ -1,20 +1,20 @@
-package com.TestFlashCard.FlashCard.DTO;
+package com.TestFlashCard.FlashCard.response;
 
+import lombok.AllArgsConstructor;
+
+@AllArgsConstructor
 public class LoginResponse {
-    private String token;
+    private String accessToken;
+    private String renewalToken;
     private Long userId;
     private String accountName;
     private String role;
 
-    public LoginResponse(String token, Long id, String accountName, String role){
-        this.token=token;
-        this.userId=id;
-        this.accountName=accountName;
-        this.role=role;
+    public void setAccessToken(String token){
+        this.accessToken=token;
     }
-
-    public void setToken(String token){
-        this.token=token;
+    public void setRenewalToken(String token){
+        this.renewalToken=token;
     }
     public void setId(Long id){
         this.userId=id;
@@ -26,8 +26,11 @@ public class LoginResponse {
         this.role=role;
     }
 
-    public String getToken(){
-        return this.token;
+    public String getAccessToken(){
+        return this.accessToken;
+    }
+    public String getRenewalToken(){
+        return this.renewalToken;
     }
     public Long getUserId(){
         return this.userId;
