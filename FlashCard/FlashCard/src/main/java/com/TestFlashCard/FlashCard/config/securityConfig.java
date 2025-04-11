@@ -34,6 +34,7 @@ public class securityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+<<<<<<< Updated upstream
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
@@ -43,6 +44,21 @@ public class securityConfig {
                 )
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
+=======
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(authorize -> authorize
+                    .requestMatchers("/api/user/login").permitAll()
+                    .requestMatchers("/api/user").permitAll()
+                    .requestMatchers("/api/user/register").permitAll()
+                    .requestMatchers("/api/user/create").permitAll()
+                    .requestMatchers("/api/user/update").hasRole("ADMIN")
+                    .anyRequest().authenticated()
+            )
+            .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
+    
+    return http.build();
+>>>>>>> Stashed changes
     }
 
     @Bean

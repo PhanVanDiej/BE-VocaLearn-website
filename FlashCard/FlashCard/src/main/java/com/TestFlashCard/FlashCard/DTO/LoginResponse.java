@@ -1,8 +1,14 @@
 package com.TestFlashCard.FlashCard.DTO;
 
 public class LoginResponse {
+<<<<<<< Updated upstream:FlashCard/FlashCard/src/main/java/com/TestFlashCard/FlashCard/DTO/LoginResponse.java
     private String token;
     private Long userId;
+=======
+    private String accessToken;
+    private String renewalToken;
+    private int userId;
+>>>>>>> Stashed changes:FlashCard/FlashCard/src/main/java/com/TestFlashCard/FlashCard/response/LoginResponse.java
     private String accountName;
     private String role;
 
@@ -16,7 +22,7 @@ public class LoginResponse {
     public void setToken(String token){
         this.token=token;
     }
-    public void setId(Long id){
+    public void setId(int id){
         this.userId=id;
     }
     public void setAccountName(String name){
@@ -29,7 +35,7 @@ public class LoginResponse {
     public String getToken(){
         return this.token;
     }
-    public Long getUserId(){
+    public int getUserId(){
         return this.userId;
     }
     public String getAccountName(){

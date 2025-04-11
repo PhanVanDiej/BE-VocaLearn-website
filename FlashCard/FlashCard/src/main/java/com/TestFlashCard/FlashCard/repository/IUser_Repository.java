@@ -6,7 +6,7 @@ import org.springframework.stereotype.Repository;
 import com.TestFlashCard.FlashCard.entity.User;
 
 @Repository
-public interface IUser_Repository extends JpaRepository<User,Long>{
+public interface IUser_Repository extends JpaRepository<User,Integer>{
     
     //Optional<User> findById (Long id);
     public User findByAccountName (String accountName);
