@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.TestFlashCard.FlashCard.Enum.Role;
 import com.TestFlashCard.FlashCard.config.JwtConfig;
 import com.TestFlashCard.FlashCard.entity.User;
+import com.TestFlashCard.FlashCard.request.GetUserByFilterRequest;
 import com.TestFlashCard.FlashCard.request.UserCreateRequest;
 import com.TestFlashCard.FlashCard.request.UserLoginRequest;
 import com.TestFlashCard.FlashCard.request.UserUpdateRequest;
@@ -25,6 +26,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -155,5 +157,26 @@ public class UserController {
                user.setFullName(request.getFullName());
 
           return userService.updateUser(request.getId());
+     }
+
+     @PostMapping("/getUserByFilter")
+     public ResponseEntity<?> getUserByFilter(@RequestBody @Valid GetUserByFilterRequest request) {
+          if (request.getId() != null) {
+               User user = userService.getUserById(request.getId());
+               if (user == null)
+                    return new ResponseEntity<>("Cannot find user with id: " + request.getId(), HttpStatus.NOT_FOUND);
+               return new ResponseEntity<User>(user, HttpStatus.OK);
+          }
+          if (request.getAccountName() != null) {
+               User user = userService.getUserByAccountName(request.getAccountName());
+               if (user == null)
+                    return new ResponseEntity<>("Cannot find user with account name: " + request.getAccountName(),
+                              HttpStatus.NOT_FOUND);
+               return new ResponseEntity<User>(user, HttpStatus.OK);
+          }
+          ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+          problemDetail.setTitle("Invalid request");
+          problemDetail.setProperty("message", "At least one field (id or accountName) must be provided");
+          return ResponseEntity.badRequest().body(problemDetail);
      }
 }

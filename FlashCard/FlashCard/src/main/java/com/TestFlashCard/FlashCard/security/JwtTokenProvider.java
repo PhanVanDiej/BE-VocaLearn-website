@@ -53,7 +53,6 @@ public class JwtTokenProvider {
     }
 
     public TokenValidationResult validateToken(String token) {
-            System.out.println("hahhaaa");
         try {
             SecretKey key = Keys.hmacShaKeyFor(jwtConfig.getSecret().getBytes(StandardCharsets.UTF_8));
             Jwts.parserBuilder()

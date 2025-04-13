@@ -55,9 +55,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                         TokenError.NULL.getMessage()));
                 return;
             }
-            System.out.println("xac nhan token : ");
             TokenValidationResult tokenValidationResult = tokenProvider.validateToken(token);
-            System.out.println("xac nhan token : " + tokenValidationResult.getMessage());
             if (!tokenValidationResult.isValid()) {
                 // Trả về lỗi tương ứng với errorCode
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
