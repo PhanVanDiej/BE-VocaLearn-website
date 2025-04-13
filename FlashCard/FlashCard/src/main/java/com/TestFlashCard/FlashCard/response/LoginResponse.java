@@ -6,7 +6,7 @@ import lombok.AllArgsConstructor;
 public class LoginResponse {
     private String accessToken;
     private String renewalToken;
-    private Long userId;
+    private int userId;
     private String accountName;
     private String role;
 
@@ -16,7 +16,7 @@ public class LoginResponse {
     public void setRenewalToken(String token){
         this.renewalToken=token;
     }
-    public void setId(Long id){
+    public void setId(int id){
         this.userId=id;
     }
     public void setAccountName(String name){
@@ -32,7 +32,7 @@ public class LoginResponse {
     public String getRenewalToken(){
         return this.renewalToken;
     }
-    public Long getUserId(){
+    public int getUserId(){
         return this.userId;
     }
     public String getAccountName(){

@@ -3,36 +3,39 @@ package com.TestFlashCard.FlashCard.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.util.Date;
-import java.util.List;
+
+import org.hibernate.annotations.CreationTimestamp;
 @Data
 @Entity
 @Table(name = "card")
 public class Card {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private int id;
 
-    @Column(name = "terminology", nullable = false)
+    @Column(name = "terminology", nullable = false, length = 255)
     private String terminology;
 
     @Column(name = "definition")
     private String definition;
 
-    @Column(name = "image")
+    @Column(name = "image", length = 255)
     private String image;
 
-    @Column(name = "audio")
+    @Column(name = "audio", length = 255)
     private String audio;
 
     @Column(name = "level", columnDefinition = "INT DEFAULT 1")
-    private int level;
+    private Integer level = 1;
 
-    @Column(name = "nearestDateLearn")
-    private Date nearestDateLearn;
-    
-    @Column(name = "createdAt", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
-    private Date createdAt;
+    @Column(name = "example")
+    private String example;
 
-    @OneToMany(mappedBy = "card", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<FlashCardCards> flashCardCards;
+    @CreationTimestamp
+    @Column(name = "createAt", updatable = false)
+    private Date createAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "flashCardID", nullable = false)
+    private FlashCard flashCard;
 }
