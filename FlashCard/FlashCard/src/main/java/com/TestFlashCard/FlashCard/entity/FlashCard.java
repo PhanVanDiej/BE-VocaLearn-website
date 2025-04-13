@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.util.Date;
-import java.util.List;
 
 @Data
 @Entity
@@ -12,28 +11,27 @@ import java.util.List;
 public class FlashCard {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private int id;
 
-    @Column(name = "title", nullable = false)
+    @Column(name = "title", nullable = false, length = 100)
     private String title;
-
-    @Column(name = "tag")
-    private String tag;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", columnDefinition = "ENUM('private', 'public') DEFAULT 'public'")
     private FlashCardStatus status;
 
-    @OneToMany(mappedBy = "flashCard", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<UserFlashCards> userFlashCards;
-
-    @OneToMany(mappedBy = "flashCard", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<FlashCardCards> flashCardCards;
+    @Column(name = "reviewDate")
+    private Date reviewDate;
 
     @Column(name = "createdAt", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private Date createdAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "topicID", nullable = false)
+    private FlashCardTopic topic;
+
+    public enum FlashCardStatus {
+        PRIVATE, PUBLIC
+    }
 }
 
-enum FlashCardStatus {
-    PRIVATE, PUBLIC
-}

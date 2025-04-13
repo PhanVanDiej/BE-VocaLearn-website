@@ -33,7 +33,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     // Thêm phương thức load user bằng ID (dùng cho JWT filter)
-    public UserDetails loadUserById(Long userId) {
+    public UserDetails loadUserById(int userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         

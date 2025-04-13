@@ -37,11 +37,8 @@ public class securityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/user/login").permitAll() // Cho phép truy cập /login mà không cần xác thực
-                        .requestMatchers("/api/user/register").permitAll()
-                        .requestMatchers("/api/user").permitAll()
-                        .anyRequest().authenticated() // Các request khác cần xác thực
-                )
+                        .requestMatchers("/api/user/update").hasRole("ADMIN")
+                        .anyRequest().permitAll())
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

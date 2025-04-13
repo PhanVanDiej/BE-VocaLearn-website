@@ -44,17 +44,17 @@ public class UserService {
     }
 
     // UPDATE
-    public User updateUser(User userDetails, Long id) {
-        return userRepository.findById(id).map(user -> {
-            user.setAccountName(userDetails.getAccountName());
-            user.setBirthday(userDetails.getBirthday());
-            user.setEmail(userDetails.getEmail());
-            user.setPassWord(userDetails.getPassWord());
-            return userRepository.save(user);
-        }).orElse(null);
+    public ResponseEntity<?> updateUser(int id) {
+        try {
+            User user = userRepository.findById(id).orElse(null);
+            userRepository.save(user);
+            return new ResponseEntity<>("Update success User with id: " + id, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
-    public void deleteUser(Long id) {
+    public void deleteUser(int id) {
         userRepository.deleteById(id);
     }
 
@@ -66,7 +66,7 @@ public class UserService {
         return userRepository.findByAccountName(accountName);
     }
 
-    public User getUserById(Long id) {
+    public User getUserById(int id) {
         return userRepository.findById(id).orElse(null);
     }
 

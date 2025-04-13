@@ -9,35 +9,32 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.Date;
-import java.util.List;
-
 import org.hibernate.annotations.CreationTimestamp;
-
 import com.TestFlashCard.FlashCard.Enum.Role;
 
 @Data
-@Entity
-@Table (name = "user_table")
 @Getter
 @Setter
-@NoArgsConstructor // Tạo constructor không tham số
-@AllArgsConstructor // Tạo constructor với tất cả tham số
-@Builder // Hỗ trợ pattern Builder
+@Entity
+@Table (name = "user")
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class User{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private int id;
 
-    @Column(name = "fullName", nullable = false)
+    @Column(name = "fullName", nullable = false, length = 100)
     private String fullName;
 
     @Column(name = "birthday")
     private Date birthday;
 
-    @Column(name = "email", nullable = false, unique = true)
+    @Column(name = "email", nullable = false, unique = true, length = 100)
     private String email;
 
-    @Column(name = "accountName", nullable = false, unique = true)
+    @Column(name = "accountName", nullable = false, unique = true, length = 50)
     private String accountName;
 
     @Column(name = "passWord", nullable = false)
@@ -50,16 +47,4 @@ public class User{
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, columnDefinition = "ENUM('USER', 'ADMIN') DEFAULT 'USER'")
     private Role role;
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<UserFlashCards> userFlashCards;
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Comment> comments;
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<TestResult> testResults;
-
-    @Column(name="VERIFICATIONCODE", columnDefinition="varchar(100) not null", nullable=false)
-    private String verificationCode;
 }

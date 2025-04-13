@@ -5,29 +5,41 @@ import lombok.Data;
 import java.util.Date;
 import java.util.List;
 
+import org.hibernate.annotations.CreationTimestamp;
+
 @Data
 @Entity
 @Table(name = "exam")
 public class Exam {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
-    @Column(name="title",nullable = false)
+    @Column(nullable = false)
+    private Integer duration;
+
+    @Column(nullable = false, length = 100)
     private String title;
 
-    @Column(name = "duration", nullable = false)
-    private int duration;
+    @Column(nullable = false)
+    private Integer year;
 
-    @Column(name = "createdAt", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    @Column(nullable = false, length = 100)
+    private String type;
+
+    @Column(nullable = false, length = 100)
+    private String set;
+
+    @CreationTimestamp
+    @Column(name = "createdAt", updatable = false)
     private Date createdAt;
 
-    @OneToMany(mappedBy = "exam", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Question> questions;
+    @OneToMany(mappedBy = "exam", cascade = CascadeType.ALL)
+    private List<ToeicQuestion> questions;
 
-    @OneToMany(mappedBy = "exam", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "exam", cascade = CascadeType.ALL)
     private List<Comment> comments;
 
-    @OneToMany(mappedBy = "exam", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<TestResult> testResults;
+    @OneToMany(mappedBy = "exam", cascade = CascadeType.ALL)
+    private List<ExamReview> examReviews;
 }

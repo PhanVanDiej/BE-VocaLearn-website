@@ -1,26 +1,30 @@
 package com.TestFlashCard.FlashCard.entity;
+
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.util.Date;
-import java.util.List;
 
 @Entity
-@Table(name = "comment")
+@Table(name = "comment_replies")
 @Data
-public class Comment {
+public class CommentReply {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "userID")
+    @JoinColumn(name = "commentID", nullable = false)
+    private Comment comment;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "userID", nullable = false)
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "examID")
-    private Exam exam;
+    @JoinColumn(name = "parentReplyID", nullable = false)
+    private CommentReply parentReply;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
@@ -28,7 +32,4 @@ public class Comment {
     @CreationTimestamp
     @Column(name = "createAt", updatable = false)
     private Date createAt;
-
-    @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL)
-    private List<CommentReply> replies;
 }
