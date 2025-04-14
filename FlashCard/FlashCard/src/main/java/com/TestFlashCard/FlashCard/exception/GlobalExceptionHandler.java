@@ -19,8 +19,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidationException(MethodArgumentNotValidException ex) {
-        System.out.println("Exception caught: " + ex.getClass().getName());
-        ex.printStackTrace();
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
         problemDetail.setTitle("Validation error");
 
@@ -30,14 +28,11 @@ public class GlobalExceptionHandler {
                     error.getField(),
                     error.getDefaultMessage());
         });
-        System.out.println("La tai ai");
         return problemDetail;
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ProblemDetail handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
-        System.out.println("Exception caught: " + ex.getClass().getName());
-        ex.printStackTrace();
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
         problemDetail.setTitle("Invalid request format");
 
@@ -57,8 +52,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BindException.class)
     public ProblemDetail handleBindException(BindException ex) {
-        System.out.println("Exception caught: " + ex.getClass().getName());
-        ex.printStackTrace();
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
         problemDetail.setTitle("Validation error");
 
@@ -70,10 +63,17 @@ public class GlobalExceptionHandler {
         return problemDetail;
     }
 
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ProblemDetail handleResourceNotFound(ResourceNotFoundException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+        problemDetail.setTitle("Resource Not Found");
+        problemDetail.setProperty("errorCode", "RESOURCE_NOT_FOUNDl");
+        problemDetail.setDetail(ex.getMessage());
+        return problemDetail;
+    }
+
     @ExceptionHandler(Exception.class)
     ProblemDetail handleAllExceptions(Exception ex) {
-        System.out.println("Exception caught: " + ex.getClass().getName());
-        ex.printStackTrace();
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);
         problemDetail.setTitle("Internal Server Error");
         problemDetail.setDetail(ex.getMessage());

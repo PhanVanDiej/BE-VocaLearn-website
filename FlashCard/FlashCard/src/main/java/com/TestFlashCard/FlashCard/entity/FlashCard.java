@@ -5,6 +5,11 @@ import lombok.Data;
 
 import java.util.Date;
 
+import org.hibernate.annotations.CreationTimestamp;
+
+import com.TestFlashCard.FlashCard.Enum.FlashCardStatus;
+import com.TestFlashCard.FlashCard.Enum.LearningStatus;
+
 @Data
 @Entity
 @Table(name = "flashCard")
@@ -17,21 +22,25 @@ public class FlashCard {
     private String title;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", columnDefinition = "ENUM('private', 'public') DEFAULT 'public'")
+    @Column(name = "status", columnDefinition = "ENUM('PRIVATE', 'PUBLIC') DEFAULT 'PUBLIC'")
     private FlashCardStatus status;
 
     @Column(name = "reviewDate")
     private Date reviewDate;
 
+    @Column (name = "cycle", nullable = false)
+    private int cycle;
+
+    @Enumerated(EnumType.STRING)
+    @Column (name = "learningStatus", nullable = false, columnDefinition ="ENUM('MASTERED', 'IN_PROGRESS', 'NEW', 'REVIEW_NEEDED') DEFAULT 'NEW'")
+    private LearningStatus learningStatus;
+
+    @CreationTimestamp
     @Column(name = "createdAt", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private Date createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "topicID", nullable = false)
     private FlashCardTopic topic;
-
-    public enum FlashCardStatus {
-        PRIVATE, PUBLIC
-    }
 }
 

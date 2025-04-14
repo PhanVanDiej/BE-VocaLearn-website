@@ -38,6 +38,8 @@ public class securityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/user/update").hasRole("ADMIN")
+                        .requestMatchers("/api/flashcard/createList").authenticated()
+                        .requestMatchers("/api/flashcard/createTopic").authenticated()
                         .anyRequest().permitAll())
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
