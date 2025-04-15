@@ -1,6 +1,6 @@
 package com.TestFlashCard.FlashCard.Enum;
 
-public enum FlashCardStatus {
+public enum FlashCardTopicStatus {
     PRIVATE,
     PUBLIC
 }

@@ -28,7 +28,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -178,5 +180,11 @@ public class UserController {
           problemDetail.setTitle("Invalid request");
           problemDetail.setProperty("message", "At least one field (id or accountName) must be provided");
           return ResponseEntity.badRequest().body(problemDetail);
+     }
+
+     @DeleteMapping("/delete/{id}")
+     public ResponseEntity<?> deleteUserById(@PathVariable Integer id) throws Exception {
+          userService.deleteUser(id);
+          return ResponseEntity.ok().body("Delete User with Id: " + id + " successfully!");
      }
 }

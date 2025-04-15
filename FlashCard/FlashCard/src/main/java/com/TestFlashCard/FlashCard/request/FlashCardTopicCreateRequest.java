@@ -1,5 +1,7 @@
 package com.TestFlashCard.FlashCard.request;
 
+import com.TestFlashCard.FlashCard.Enum.FlashCardTopicStatus;
+
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -16,4 +18,6 @@ public class FlashCardTopicCreateRequest {
     @NotNull (message = "User's ID cannot be null")
     @Min(value = 1)
     private Integer userID;
+    @NotNull(message = "Topic's status cannot be null")
+    private FlashCardTopicStatus status;
 }

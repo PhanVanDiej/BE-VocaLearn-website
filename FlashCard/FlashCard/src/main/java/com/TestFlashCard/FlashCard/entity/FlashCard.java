@@ -7,7 +7,6 @@ import java.util.Date;
 
 import org.hibernate.annotations.CreationTimestamp;
 
-import com.TestFlashCard.FlashCard.Enum.FlashCardStatus;
 import com.TestFlashCard.FlashCard.Enum.LearningStatus;
 
 @Data
@@ -20,10 +19,6 @@ public class FlashCard {
 
     @Column(name = "title", nullable = false, length = 100)
     private String title;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", columnDefinition = "ENUM('PRIVATE', 'PUBLIC') DEFAULT 'PUBLIC'")
-    private FlashCardStatus status;
 
     @Column(name = "reviewDate")
     private Date reviewDate;

@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.TestFlashCard.FlashCard.entity.User;
+import com.TestFlashCard.FlashCard.exception.ResourceNotFoundException;
 import com.TestFlashCard.FlashCard.repository.IUser_Repository;
 
 import lombok.RequiredArgsConstructor;
@@ -55,6 +56,8 @@ public class UserService {
     }
 
     public void deleteUser(int id) {
+        User user = userRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException("Cannot find user with id : " + id));
         userRepository.deleteById(id);
     }
 

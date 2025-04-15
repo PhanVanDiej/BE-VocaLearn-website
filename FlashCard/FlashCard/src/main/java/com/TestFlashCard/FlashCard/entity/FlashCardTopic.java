@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 
+import com.TestFlashCard.FlashCard.Enum.FlashCardTopicStatus;
+
 import java.util.Date;
 
 @Entity
@@ -24,4 +26,8 @@ public class FlashCardTopic {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "userID", nullable = false)
     private User user;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", columnDefinition = "ENUM('PRIVATE', 'PUBLIC') DEFAULT 'PUBLIC'")
+    private FlashCardTopicStatus status;
 }

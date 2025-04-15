@@ -16,7 +16,6 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidationException(MethodArgumentNotValidException ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
@@ -67,7 +66,7 @@ public class GlobalExceptionHandler {
     public ProblemDetail handleResourceNotFound(ResourceNotFoundException ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
         problemDetail.setTitle("Resource Not Found");
-        problemDetail.setProperty("errorCode", "RESOURCE_NOT_FOUNDl");
+        problemDetail.setProperty("errorCode", "RESOURCE_NOT_FOUND");
         problemDetail.setDetail(ex.getMessage());
         return problemDetail;
     }
