@@ -6,5 +6,6 @@ public record ListFlashCardsResponse(
     int id,
     String title,
     Date reviewDate,
+    int cycle,
     String learningStatus
 ) {}

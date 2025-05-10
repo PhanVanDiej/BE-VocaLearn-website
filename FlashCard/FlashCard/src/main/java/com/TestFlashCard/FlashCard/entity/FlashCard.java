@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.util.Date;
+import java.util.List;
 
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -37,5 +38,8 @@ public class FlashCard {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "topicID", nullable = false)
     private FlashCardTopic topic;
+
+    @OneToMany(mappedBy = "flashCard",cascade = CascadeType.ALL)
+    private List<Card> cards;
 }
 

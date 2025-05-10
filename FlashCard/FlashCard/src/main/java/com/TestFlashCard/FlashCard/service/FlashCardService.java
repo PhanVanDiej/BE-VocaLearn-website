@@ -2,6 +2,7 @@ package com.TestFlashCard.FlashCard.service;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.TestFlashCard.FlashCard.Enum.LearningStatus;
@@ -26,14 +27,17 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class FlashCardService {
 
+    @Autowired
     public final IFlashCard_Repository flashCard_Repository;
+    @Autowired
     public final IFlashCardTopic_Repository flashCardTopic_Repository;
+    @Autowired
     public final IUser_Repository user_Repository;
 
     public List<ListFlashCardTopicResponse> getFlashCardTopicsByUser(int userID) {
         if (!user_Repository.existsById(userID))
             throw new ResourceNotFoundException("User not found with id: " + userID);
-        return flashCardTopic_Repository.findByUserId(userID).stream().map(this::converTopicsResponse).toList();
+        return flashCardTopic_Repository.findByUserId(userID).stream().map(this::convertTopicsResponse).toList();
     }
 
     public List<ListFlashCardsResponse> getFlashCardsByTopic(int topicID) {
@@ -49,10 +53,11 @@ public class FlashCardService {
                 flashCard.getId(),
                 flashCard.getTitle(),
                 flashCard.getReviewDate(),
+                flashCard.getCycle(),
                 flashCard.getLearningStatus().name());
     }
 
-    private ListFlashCardTopicResponse converTopicsResponse(FlashCardTopic topic) {
+    private ListFlashCardTopicResponse convertTopicsResponse(FlashCardTopic topic) {
         return new ListFlashCardTopicResponse(topic.getId(), topic.getTitle(), topic.getStatus().name());
     }
 
@@ -105,5 +110,20 @@ public class FlashCardService {
             flashCard.setReviewDate(flashCardDetail.getReviewDate());
 
         flashCard_Repository.save(flashCard);
+    }
+
+    @Transactional
+    public void deleteTopic(int id){
+        FlashCardTopic topic=flashCardTopic_Repository.findById(id).orElseThrow(
+            ()-> new ResourceNotFoundException("Cannot find Topic with id: "+id)
+        );
+        flashCardTopic_Repository.delete(topic);
+    }
+    @Transactional
+    public void deleteFlashCard(int id){
+        FlashCard flashCard=flashCard_Repository.findById(id).orElseThrow(
+            ()-> new ResourceNotFoundException("Cannot find FlashCard with id: "+ id)
+        );
+        flashCard_Repository.delete(flashCard);
     }
 }

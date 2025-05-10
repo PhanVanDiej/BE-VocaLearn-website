@@ -19,7 +19,7 @@ public class Comment {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "examID")
+    @JoinColumn(name = "examID", nullable = false)
     private Exam exam;
 
     @Column(nullable = false, columnDefinition = "TEXT")

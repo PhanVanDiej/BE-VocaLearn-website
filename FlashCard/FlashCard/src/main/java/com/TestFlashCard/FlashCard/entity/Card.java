@@ -25,8 +25,14 @@ public class Card {
     @Column(name = "audio", length = 255)
     private String audio;
 
+    @Column(name = "pronounce", length = 255)
+    private String pronounce;
+
     @Column(name = "level", columnDefinition = "INT DEFAULT 1")
     private Integer level = 1;
+    
+    @Column(name = "partOfSpeech",nullable = false, length = 50)
+    private String partOfSpeech;
 
     @Column(name = "example")
     private String example;

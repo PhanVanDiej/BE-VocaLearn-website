@@ -28,7 +28,7 @@ public class Exam {
     private String type;
 
     @Column(nullable = false, length = 100)
-    private String set;
+    private String collection;
 
     @CreationTimestamp
     @Column(name = "createdAt", updatable = false)

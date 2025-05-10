@@ -7,6 +7,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import com.TestFlashCard.FlashCard.Enum.FlashCardTopicStatus;
 
 import java.util.Date;
+import java.util.List;
 
 @Entity
 @Table(name = "flashCard_topic")
@@ -30,4 +31,7 @@ public class FlashCardTopic {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", columnDefinition = "ENUM('PRIVATE', 'PUBLIC') DEFAULT 'PUBLIC'")
     private FlashCardTopicStatus status;
+
+    @OneToMany(mappedBy = "topic", cascade = CascadeType.ALL)
+    private List<FlashCard>flashCards;
 }
