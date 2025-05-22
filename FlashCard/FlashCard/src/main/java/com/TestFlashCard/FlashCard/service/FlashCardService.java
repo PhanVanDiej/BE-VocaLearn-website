@@ -81,6 +81,7 @@ public class FlashCardService {
                 () -> new ResourceNotFoundException("Cannot find User with id: " + flashCardTopicDetail.getUserID()));
         FlashCardTopic topic = new FlashCardTopic();
         topic.setTitle(flashCardTopicDetail.getTitle());
+        topic.setStatus(flashCardTopicDetail.getStatus());
         topic.setUser(user);
         flashCardTopic_Repository.save(topic);
     }

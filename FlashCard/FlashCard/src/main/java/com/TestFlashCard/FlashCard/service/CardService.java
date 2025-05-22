@@ -2,15 +2,22 @@ package com.TestFlashCard.FlashCard.service;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.TestFlashCard.FlashCard.entity.Card;
+import com.TestFlashCard.FlashCard.entity.FlashCard;
 import com.TestFlashCard.FlashCard.exception.ResourceExistedException;
 import com.TestFlashCard.FlashCard.exception.ResourceNotFoundException;
+import com.TestFlashCard.FlashCard.exception.StorageException;
 import com.TestFlashCard.FlashCard.repository.ICard_Repository;
+import com.TestFlashCard.FlashCard.repository.IFlashCard_Repository;
 import com.TestFlashCard.FlashCard.request.CardCreateRequest;
+import com.TestFlashCard.FlashCard.request.CardUpdateRequest;
 import com.TestFlashCard.FlashCard.response.CardsResponse;
 
 import jakarta.transaction.Transactional;
@@ -25,6 +32,14 @@ public class CardService {
     @Autowired
     private final DigitalOceanStorageService storageService;
 
+    @Autowired
+    private final IFlashCard_Repository flashCard_Repository;
+
+    @Autowired
+    private final MediaService mediaService;
+
+    private static final String TRANSLITERATION_API_URL = "https://api.dictionaryapi.dev/api/v2/entries/en/";
+
     public List<CardsResponse> getFlashCardDetail(int flashCardID) {
         return card_Repository.findByFlashCardId(flashCardID).stream().map(this::convertToResponse).toList();
     }
@@ -36,6 +51,7 @@ public class CardService {
     }
 
     private CardsResponse convertToResponse(Card card) {
+
         return new CardsResponse(
                 card.getId(),
                 card.getTerminology(),
@@ -49,20 +65,36 @@ public class CardService {
     }
 
     @Transactional
-    public void createCard(CardCreateRequest cardDetail, String imageFileUrl) throws IOException {
+    public void createCard(CardCreateRequest cardDetail, MultipartFile image) throws IOException {
         if (checkDuplicatedTerminology(cardDetail.getTerminology(), cardDetail.getFlashCardID(),
                 cardDetail.getPartOfSpeech()))
             throw new ResourceExistedException("The terminology is existed!");
 
+        RestTemplate restTemplate = new RestTemplate();
         try {
             Card card = new Card();
+            List<Map<String, Object>> response = restTemplate
+                    .getForObject(TRANSLITERATION_API_URL + cardDetail.getTerminology(), List.class);
+
+            if (response != null && !response.isEmpty()) {
+                Map<String, Object> firstEntry = response.get(0);
+                List<Map<String, Object>> phonetics = (List<Map<String, Object>>) firstEntry.get("phonetics");
+
+                if (phonetics != null && !phonetics.isEmpty()) {
+                    String phoneticText = (String) phonetics.get(0).get("text");
+                    card.setPronounce(phoneticText);
+                }
+            }
+            FlashCard flashCard = flashCard_Repository.findById(cardDetail.getFlashCardID()).orElseThrow(
+                    () -> new ResourceNotFoundException(
+                            "Cannot find the flash card with id: " + cardDetail.getFlashCardID()));
             card.setTerminology(cardDetail.getTerminology());
             card.setDefinition(cardDetail.getDefinition());
             card.setExample(cardDetail.getExample());
             card.setLevel(cardDetail.getLevel());
-            card.setPronounce(cardDetail.getPronounce());
             card.setPartOfSpeech(cardDetail.getPartOfSpeech());
-            card.setImage(imageFileUrl);
+            card.setImage(mediaService.getImageUrl(image));
+            card.setFlashCard(flashCard);
 
             card_Repository.save(card);
         } catch (Exception exception) {
@@ -75,5 +107,58 @@ public class CardService {
         Card card = card_Repository.findByTerminologyIgnoreCaseAndFlashCardIdAndPartOfSpeech(terminology, flashCardID,
                 partOfSpeech);
         return card != null;
+    }
+
+    @Transactional
+    public void updateCardDetail(CardUpdateRequest request, int cardID) {
+        Card card = card_Repository.findById(cardID).orElseThrow(
+                () -> new ResourceNotFoundException("Cannot find the Card with id : " + cardID));
+
+        if (request.getDefinition() != null)
+            card.setDefinition(request.getDefinition());
+        if (request.getExample() != null)
+            card.setExample(request.getExample());
+        if (request.getPronounce() != null)
+            card.setPronounce(request.getPronounce());
+        if (request.getLevel() != null)
+            card.setLevel(request.getLevel());
+        if (request.getPartOfSpeech() != null)
+            card.setPartOfSpeech(request.getPartOfSpeech());
+        if (request.getTerminology() != null)
+            card.setTerminology(request.getTerminology());
+
+        card_Repository.save(card);
+    }
+
+    @Transactional
+    public void changeImage(int cardID, String imageUrl) throws IOException, StorageException{
+        Card card = card_Repository.findById(cardID).orElseThrow(
+            ()-> new ResourceNotFoundException("Cannot find the Card with id : " + cardID)
+        );
+        if(card.getImage()!=null && !card.getImage().isEmpty())
+            storageService.deleteImage(card.getImage());
+        card.setImage(imageUrl);
+        card_Repository.save(card);
+    }
+
+    @Transactional
+    public void deleteImage(int cardID){
+        Card card = card_Repository.findById(cardID).orElseThrow(
+            ()-> new ResourceNotFoundException("Cannot find the Card with id : " + cardID)
+        );
+        if(card.getImage()!=null && !card.getImage().isEmpty())
+            storageService.deleteImage(card.getImage());
+        card.setImage(null);
+        card_Repository.save(card);
+    }
+
+    @Transactional
+    public void deleteCard(int cardID){
+        Card card = card_Repository.findById(cardID).orElseThrow(
+            ()-> new ResourceNotFoundException("Cannot find the Card with id : " + cardID)
+        );
+        if(card.getImage()!=null && !card.getImage().isEmpty())
+            storageService.deleteImage(card.getImage());
+        card_Repository.deleteById(cardID);
     }
 }

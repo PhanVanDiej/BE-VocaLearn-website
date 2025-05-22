@@ -98,4 +98,21 @@ public class DigitalOceanStorageService {
         // => Trả về "file-name.jpg"
         return fileUrl.substring(fileUrl.lastIndexOf('/') + 1);
     }
+
+    public String uploadAudio(String fileName, InputStream inputStream, String contentType) throws IOException {
+        String uniqueFileName = generateUniqueFileName(fileName);
+
+        S3Client s3Client = getS3Client();
+
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(spaceName)
+                .key(uniqueFileName)
+                .contentType(contentType)
+                .acl("public-read")
+                .build();
+
+        s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, inputStream.available()));
+
+        return String.format("%s/%s/%s", endpoint, spaceName, uniqueFileName);
+    }
 }

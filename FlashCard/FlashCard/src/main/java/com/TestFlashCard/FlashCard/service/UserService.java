@@ -24,7 +24,6 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // CREATE
     public ResponseEntity<?> createUser(User user) {
         try {
             user.setPassWord(passwordEncoder.encode(user.getPassWord()));
@@ -44,7 +43,6 @@ public class UserService {
         return userRepository.findByEmail(email) != null;
     }
 
-    // UPDATE
     public ResponseEntity<?> updateUser(int id) {
         try {
             User user = userRepository.findById(id).orElse(null);

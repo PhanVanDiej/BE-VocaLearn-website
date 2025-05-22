@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-public class CardCreateRequest {
+public class CardUpdateRequest {
     private String terminology;
     private String definition;
     private String audio;
