@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -25,7 +25,7 @@ public class ExamReview {
 
     @CreationTimestamp
     @Column(name = "createAt", updatable = false)
-    private Date createAt;
+    private LocalDateTime createAt;
 
     @Column(nullable = false)
     private Integer duration;

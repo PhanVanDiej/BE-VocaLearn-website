@@ -18,7 +18,6 @@ import com.TestFlashCard.FlashCard.request.CardCreateRequest;
 import com.TestFlashCard.FlashCard.request.CardUpdateRequest;
 import com.TestFlashCard.FlashCard.response.CardsResponse;
 import com.TestFlashCard.FlashCard.service.CardService;
-import com.TestFlashCard.FlashCard.service.DigitalOceanStorageService;
 import com.TestFlashCard.FlashCard.service.MediaService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -34,9 +33,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 @RequestMapping("/api/card")
 @RequiredArgsConstructor
 public class CardController {
-
-    @Autowired
-    private final DigitalOceanStorageService storageService;
 
     @Autowired
     private final CardService cardService;

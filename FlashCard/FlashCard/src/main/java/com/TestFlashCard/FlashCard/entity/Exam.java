@@ -2,7 +2,8 @@ package com.TestFlashCard.FlashCard.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import java.util.Date;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -32,7 +33,7 @@ public class Exam {
 
     @CreationTimestamp
     @Column(name = "createdAt", updatable = false)
-    private Date createdAt;
+    private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "exam", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ToeicQuestion> questions;

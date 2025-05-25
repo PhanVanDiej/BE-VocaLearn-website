@@ -22,6 +22,8 @@ import com.TestFlashCard.FlashCard.request.ExamCreateRequest;
 import com.TestFlashCard.FlashCard.request.ExamUpdateRequest;
 import com.TestFlashCard.FlashCard.response.ExamFilterdResponse;
 import com.TestFlashCard.FlashCard.response.ExamInformationResponse;
+import com.TestFlashCard.FlashCard.response.ToeicQuestionResponse;
+
 import org.springframework.util.FileSystemUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +37,8 @@ public class ExamService {
     private final IToeicQuestion_Repository toeicQuestion_repository;
     @Autowired
     private final ExcelParser excelParser;
+    @Autowired
+    private final MediaService mediaService;
 
     public List<ExamFilterdResponse> getByFilter(Integer year, String type, String collection, String title) {
         Specification<Exam> spec = Specification.where(ExamSpecification.hasYear(year))
@@ -54,13 +58,25 @@ public class ExamService {
                 () -> new ResourceNotFoundException("Cannot find the Exam with id : " + examID));
 
         return new ExamInformationResponse(
-                examID, exam.getDuration(),
+                examID,
+                exam.getDuration(),
                 getNumOfPart(examID),
                 getNumOfQuestion(examID),
                 exam.getTitle(),
                 exam.getYear(),
                 exam.getType(),
-                exam.getCollection());
+                exam.getCollection(),
+                exam.getQuestions().stream().map(this::convertQuestionToResponse).toList());
+    }
+    public ToeicQuestionResponse convertQuestionToResponse(ToeicQuestion question){
+        return new ToeicQuestionResponse(
+            question.getId(),
+            question.getPart(),
+            question.getDetail(),
+            question.getResult(),
+            question.getImage(),
+            question.getAudio()
+        );
     }
 
     @Transactional
@@ -107,15 +123,26 @@ public class ExamService {
     public void deleteById(int examID) {
         Exam exam = exam_Repository.findById(examID).orElseThrow(
                 () -> new ResourceNotFoundException("Cannot find the Exam with id : " + examID));
-
+        List<ToeicQuestion>questions=exam.getQuestions();
+        for(ToeicQuestion question: questions){
+            mediaService.deleteQuestionMedia(question);
+        }
         exam_Repository.delete(exam);
     }
 
+    @Transactional
     public void importQuestions(MultipartFile zipFile, Integer examId) throws IOException {
         // Lấy exam đã tồn tại
         Exam exam = exam_Repository.findById(examId)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam not found with id: " + examId));
 
+        //Xóa danh sách câu hỏi hiện tại
+        //Xóa file media
+        List<ToeicQuestion>currenQuestions=exam.getQuestions();
+        for(ToeicQuestion question: currenQuestions){
+            mediaService.deleteQuestionMedia(question);
+        }
+        exam.getQuestions().clear();
         // Extract file zip
         Path tempDir = Files.createTempDirectory("uploadExam");
         File file = new File(tempDir.toFile(), zipFile.getOriginalFilename());
@@ -135,5 +162,4 @@ public class ExamService {
         exam_Repository.save(exam);
         FileSystemUtils.deleteRecursively(tempDir);
     }
-
 }

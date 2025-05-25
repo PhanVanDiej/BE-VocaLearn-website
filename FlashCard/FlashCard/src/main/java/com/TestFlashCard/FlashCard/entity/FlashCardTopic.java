@@ -6,7 +6,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import com.TestFlashCard.FlashCard.Enum.FlashCardTopicStatus;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -22,7 +22,7 @@ public class FlashCardTopic {
 
     @CreationTimestamp
     @Column(name = "createAt", updatable = false)
-    private Date createAt;
+    private LocalDateTime createAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "userID", nullable = false)

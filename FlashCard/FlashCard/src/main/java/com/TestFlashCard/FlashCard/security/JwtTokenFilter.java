@@ -30,20 +30,27 @@ public class JwtTokenFilter extends OncePerRequestFilter {
         this.tokenProvider = tokenProvider;
         this.userDetailsService = userDetailsService;
     }
+
     @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain)
             throws ServletException, IOException {
+
         String path = request.getServletPath();
+
         if (path.startsWith("/api/user/login") ||
-                path.startsWith("/api/user/register")||
-                path.startsWith("/api/user/getAllUsers")||
+                path.startsWith("/api/user/register") ||
+                path.startsWith("/api/user/getAllUsers") ||
+                path.startsWith("/api/user/forgot-password") ||
+                path.startsWith("/api/user/verify-reset-code") ||
+                path.startsWith("/api/user/reset-password") ||
                 path.startsWith("/api/user/create")) {
             filterChain.doFilter(request, response);
             return;
         }
+
         try {
             String token = getTokenFromRequest(request);
             if (token == null) {
@@ -55,9 +62,9 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                         TokenError.NULL.getMessage()));
                 return;
             }
+
             TokenValidationResult tokenValidationResult = tokenProvider.validateToken(token);
             if (!tokenValidationResult.isValid()) {
-                // Trả về lỗi tương ứng với errorCode
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/json");
                 response.getWriter().write(String.format(
@@ -66,6 +73,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                         tokenValidationResult.getMessage()));
                 return;
             }
+
             int userId = tokenProvider.getUserIdFromToken(token);
             UserDetails userDetails = userDetailsService.loadUserById(userId);
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
@@ -73,15 +81,14 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        } catch (Exception ex) {
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Unknow error!!");
-            return;
-        }
-        try {
+            // ✅ Sau khi xử lý thành công → tiếp tục filter
             filterChain.doFilter(request, response);
-        } catch (Exception e) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write(e.getMessage());
+
+        } catch (Exception ex) {
+            // ✅ Tránh tiếp tục xử lý sau khi đã set lỗi
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\": \"UNKNOWN\", \"message\": \"Unknown error occurred.\"}");
         }
     }
 

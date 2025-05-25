@@ -2,7 +2,8 @@ package com.TestFlashCard.FlashCard.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import java.util.Date;
+
+import java.time.LocalDateTime;
 
 @Data
 @Entity
@@ -21,7 +22,7 @@ public class TestResult {
     private Exam exam;
 
     @Column(name = "createAt", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
-    private Date createAt;
+    private LocalDateTime createAt;
 
     @Column(name = "duration", nullable = false)
     private int duration;

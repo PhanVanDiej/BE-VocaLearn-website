@@ -70,6 +70,10 @@ public class UserService {
     public User getUserById(int id) {
         return userRepository.findById(id).orElse(null);
     }
+    public User getUserByEmail(String email){
+        User user=userRepository.findByEmail(email);
+        return user;
+    }
 
     public boolean checkPassword(String rawPassword, String encodedPassword) {
         return passwordEncoder.matches(rawPassword, encodedPassword);

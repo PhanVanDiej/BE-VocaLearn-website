@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -32,7 +32,7 @@ public class ToeicQuestion {
 
     @CreationTimestamp
     @Column(name = "createAt", updatable = false)
-    private Date createAt;
+    private LocalDateTime createAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "examID", nullable = false)

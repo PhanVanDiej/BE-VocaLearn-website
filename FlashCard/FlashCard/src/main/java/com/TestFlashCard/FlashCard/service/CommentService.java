@@ -1,0 +1,99 @@
+package com.TestFlashCard.FlashCard.service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.TestFlashCard.FlashCard.entity.User;
+import com.TestFlashCard.FlashCard.exception.ResourceNotFoundException;
+import com.TestFlashCard.FlashCard.entity.Comment;
+import com.TestFlashCard.FlashCard.entity.CommentReply;
+import com.TestFlashCard.FlashCard.entity.Exam;
+import com.TestFlashCard.FlashCard.repository.ICommentReply_Repository;
+import com.TestFlashCard.FlashCard.repository.IComment_Repository;
+import com.TestFlashCard.FlashCard.repository.IExam_Repository;
+import com.TestFlashCard.FlashCard.request.CommentCreateRequest;
+import com.TestFlashCard.FlashCard.request.CommentReplyCreateRequest;
+import com.TestFlashCard.FlashCard.response.CommentReplyResponse;
+import com.TestFlashCard.FlashCard.response.CommentResponse;
+
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class CommentService {
+    @Autowired
+    private final IComment_Repository comment_Repository;
+    @Autowired
+    private final ICommentReply_Repository commentReply_Repository;
+    @Autowired
+    private final IExam_Repository exam_Repository;
+
+    @Transactional
+    public void createComment(User user, CommentCreateRequest request) {
+        Exam exam = exam_Repository.findById(request.getExamID()).orElseThrow(
+                () -> new ResourceNotFoundException("Cannot find the Exam with id: " + request.getExamID()));
+        Comment comment = new Comment();
+        comment.setContent(request.getContent());
+        comment.setExam(exam);
+        comment.setUser(user);
+        comment_Repository.save(comment);
+    }
+
+    @Transactional
+    public void createReply(User user, CommentReplyCreateRequest request) {
+        Comment comment = comment_Repository.findById(request.getCommentID()).orElseThrow(
+                () -> new ResourceNotFoundException("Cannot find the Comment with id: " + request.getCommentID()));
+
+        CommentReply reply = new CommentReply();
+        reply.setComment(comment);
+        reply.setContent(request.getContent());
+        reply.setUser(user);
+        if (request.getParentReplyID() != null) {
+            CommentReply parent = commentReply_Repository.findById(request.getParentReplyID())
+                    .orElseThrow(() -> new ResourceNotFoundException("Parent reply not found"));
+            reply.setParentReply(parent);
+        }
+        commentReply_Repository.save(reply);
+    }
+
+    public List<CommentResponse> getCommentsByExamId(Integer examId) {
+        List<Comment> comments = comment_Repository.findByExamIdOrderByCreateAtDesc(examId);
+
+        return comments.stream().map(comment -> {
+            CommentResponse cr = new CommentResponse();
+            cr.setId(comment.getId());
+            cr.setContent(comment.getContent());
+            cr.setUserName(comment.getUser().getAccountName());
+            cr.setCreateAt(comment.getCreateAt());
+
+            // reply cấp 1
+            List<CommentReply> topReplies = comment.getReplies().stream()
+                    .filter(r -> r.getParentReply() == null)
+                    .collect(Collectors.toList());
+
+            cr.setReplies(topReplies.stream().map(this::buildReplyTree).toList());
+
+            return cr;
+        }).toList();
+    }
+
+    private CommentReplyResponse buildReplyTree(CommentReply reply) {
+        CommentReplyResponse rr = new CommentReplyResponse();
+        rr.setId(reply.getId());
+        rr.setContent(reply.getContent());
+        rr.setUserName(reply.getUser().getAccountName());
+        rr.setCreateAt(reply.getCreateAt());
+
+        List<CommentReplyResponse> children = reply.getChildren().stream()
+                .map(this::buildReplyTree)
+                .toList();
+
+        rr.setReplies(children);
+        return rr;
+    }
+
+}

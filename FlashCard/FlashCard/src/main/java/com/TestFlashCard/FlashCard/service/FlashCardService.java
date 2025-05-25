@@ -17,6 +17,7 @@ import com.TestFlashCard.FlashCard.request.FlashCardCreateRequest;
 import com.TestFlashCard.FlashCard.request.FlashCardTopicCreateRequest;
 import com.TestFlashCard.FlashCard.request.FlashCardTopicUpdateRequest;
 import com.TestFlashCard.FlashCard.request.FlashCardUpdateRequest;
+import com.TestFlashCard.FlashCard.response.CardsResponse;
 import com.TestFlashCard.FlashCard.response.ListFlashCardTopicResponse;
 import com.TestFlashCard.FlashCard.response.ListFlashCardsResponse;
 
@@ -33,6 +34,10 @@ public class FlashCardService {
     public final IFlashCardTopic_Repository flashCardTopic_Repository;
     @Autowired
     public final IUser_Repository user_Repository;
+    @Autowired
+    private final CardService cardService;
+    @Autowired
+    private final DigitalOceanStorageService storageService;
 
     public List<ListFlashCardTopicResponse> getFlashCardTopicsByUser(int userID) {
         if (!user_Repository.existsById(userID))
@@ -118,6 +123,15 @@ public class FlashCardService {
         FlashCardTopic topic=flashCardTopic_Repository.findById(id).orElseThrow(
             ()-> new ResourceNotFoundException("Cannot find Topic with id: "+id)
         );
+
+        List<FlashCard> flashCards=flashCard_Repository.findByTopicId(id);
+        for(FlashCard flashCard:flashCards){
+            List<CardsResponse> cards=cardService.getFlashCardDetail(flashCard.getId());
+            for(CardsResponse card:cards){
+                if(card.image()!=null)
+                storageService.deleteImage(card.image());
+            }
+        }
         flashCardTopic_Repository.delete(topic);
     }
     @Transactional

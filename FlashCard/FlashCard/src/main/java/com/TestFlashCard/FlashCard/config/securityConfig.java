@@ -2,6 +2,7 @@ package com.TestFlashCard.FlashCard.config;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -16,15 +17,15 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.TestFlashCard.FlashCard.security.JwtTokenFilter;
 
+import lombok.RequiredArgsConstructor;
+
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class securityConfig {
 
+    @Autowired
     private final JwtTokenFilter jwtTokenFilter;
-
-    public securityConfig(JwtTokenFilter jwtTokenFilter) {
-        this.jwtTokenFilter = jwtTokenFilter;
-    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -38,9 +39,12 @@ public class securityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/user/update").hasRole("ADMIN")
-                        .requestMatchers("/api/flashcard/createList").authenticated()
-                        .requestMatchers("/api/flashcard/createTopic").authenticated()
-                        .anyRequest().permitAll())
+                        .requestMatchers("/api/user/login").permitAll()
+                        .requestMatchers("/api/user/forgot-password").permitAll()
+                        .requestMatchers("/api/user/verify-reset-code").permitAll()
+                        .requestMatchers("/api/user/reset-password").permitAll()
+                        .requestMatchers("/api/user/register").permitAll()
+                        .anyRequest().authenticated())
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

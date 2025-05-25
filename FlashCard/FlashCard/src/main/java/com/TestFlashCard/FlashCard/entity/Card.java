@@ -2,7 +2,8 @@ package com.TestFlashCard.FlashCard.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import java.util.Date;
+
+import java.time.LocalDateTime;
 
 import org.hibernate.annotations.CreationTimestamp;
 @Data
@@ -39,7 +40,7 @@ public class Card {
 
     @CreationTimestamp
     @Column(name = "createAt", updatable = false)
-    private Date createAt;
+    private LocalDateTime createAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "flashCardID", nullable = false)

@@ -1,19 +1,26 @@
 package com.TestFlashCard.FlashCard.controller;
 
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.TestFlashCard.FlashCard.Enum.Role;
 import com.TestFlashCard.FlashCard.config.JwtConfig;
+import com.TestFlashCard.FlashCard.entity.PasswordResetToken;
 import com.TestFlashCard.FlashCard.entity.User;
+import com.TestFlashCard.FlashCard.repository.IPasswordResetToken_Repository;
+import com.TestFlashCard.FlashCard.repository.IUser_Repository;
 import com.TestFlashCard.FlashCard.request.GetUserByFilterRequest;
+import com.TestFlashCard.FlashCard.request.ResetPasswordRequest;
 import com.TestFlashCard.FlashCard.request.UserCreateRequest;
 import com.TestFlashCard.FlashCard.request.UserLoginRequest;
 import com.TestFlashCard.FlashCard.request.UserUpdateRequest;
 import com.TestFlashCard.FlashCard.response.LoginResponse;
 import com.TestFlashCard.FlashCard.response.renewalTokenResponse;
 import com.TestFlashCard.FlashCard.security.JwtTokenProvider;
+import com.TestFlashCard.FlashCard.service.EmailService;
 import com.TestFlashCard.FlashCard.service.UserService;
+import com.TestFlashCard.FlashCard.service.VisitLogService;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -21,13 +28,13 @@ import io.jsonwebtoken.Jwts;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-import java.security.Principal;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,9 +50,18 @@ public class UserController {
      @Autowired
      private final UserService userService;
      @Autowired
+     private final IUser_Repository user_Repository;
+     @Autowired
      private JwtTokenProvider jwtTokenProvider;
      @Autowired
      private JwtConfig jwtConfig;
+     @Autowired
+     private final IPasswordResetToken_Repository passwordResetToken_Repository;
+     @Autowired
+     private final EmailService emailService;
+     @Autowired
+     private PasswordEncoder passwordEncoder;
+     private final VisitLogService visitLogService;
 
      @GetMapping("/getAllUsers")
      public ResponseEntity<List<User>> getAllUsers() {
@@ -115,6 +131,8 @@ public class UserController {
           String renewalToken = jwtTokenProvider.generateRenewalToken(user.getId());
           LoginResponse response = new LoginResponse(accessToken, renewalToken, user.getId(), user.getAccountName(),
                     user.getRole().toString());
+
+          visitLogService.create();
           return new ResponseEntity<LoginResponse>(response, HttpStatus.OK);
      }
 
@@ -132,6 +150,7 @@ public class UserController {
                User user = userService.getUserById(userId);
                if (user != null) {
                     String token = jwtTokenProvider.generateAccessToken(user);
+                    visitLogService.create();
                     return new ResponseEntity<renewalTokenResponse>(new renewalTokenResponse(token),
                               HttpStatus.ACCEPTED);
                } else
@@ -187,4 +206,55 @@ public class UserController {
           userService.deleteUser(id);
           return ResponseEntity.ok().body("Delete User with Id: " + id + " successfully!");
      }
+
+     @PostMapping("/forgot-password")
+     public ResponseEntity<?> sendResetCode(@RequestParam String email) {
+          System.out.println(email);
+          User user = userService.getUserByEmail(email);
+          if (user == null) {
+               return ResponseEntity.badRequest().body("Email doesn't exist");
+          }
+
+          String token = String.valueOf((int) (Math.random() * 900000) + 100000); // 6 chữ số
+          PasswordResetToken resetToken = new PasswordResetToken();
+          resetToken.setEmail(email);
+          resetToken.setToken(token);
+          passwordResetToken_Repository.save(resetToken);
+
+          // Gửi email
+          emailService.send(email, "Yêu cầu đổi mật khẩu - Vocabulary English FlashCard account",
+                    "Mã xác thực đổi mật khẩu của bạn: " + token);
+
+          return ResponseEntity.ok("Token has been send to email : " + email);
+     }
+
+     @PostMapping("/verify-reset-code")
+     public ResponseEntity<?> verifyCode(@RequestParam String email, @RequestParam String token) {
+          PasswordResetToken latest = passwordResetToken_Repository.findTopByEmailOrderByCreatedAtDesc(email)
+                    .orElseThrow(() -> new IllegalArgumentException("Cannot find the verified token"));
+
+          if (latest.isUsed())
+               return ResponseEntity.badRequest().body("This token has been used!");
+          if (!latest.getToken().equals(token))
+               return ResponseEntity.badRequest().body("Incorrect verified token!");
+
+          // Gắn flag used nếu cần
+          latest.setUsed(true);
+          passwordResetToken_Repository.save(latest);
+
+          return ResponseEntity.ok("Token has been verified successfully!");
+     }
+
+     @PostMapping("/reset-password")
+     public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+          User user = userService.getUserByEmail(request.getEmail());
+          if (user == null)
+               return ResponseEntity.badRequest().body("Email doesn't exist");
+
+          user.setPassWord(passwordEncoder.encode(request.getNewPassword()));
+          user_Repository.save(user);
+
+          return ResponseEntity.ok("Reset password successfully!");
+     }
+
 }

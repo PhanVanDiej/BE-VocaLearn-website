@@ -115,4 +115,19 @@ public class DigitalOceanStorageService {
 
         return String.format("%s/%s/%s", endpoint, spaceName, uniqueFileName);
     }
+    public void deleteAudio(String fileUrl) {
+        try {
+            String key = extractKeyFromUrl(fileUrl);
+            S3Client s3Client = getS3Client();
+
+            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
+                    .bucket(spaceName)
+                    .key(key)
+                    .build();
+
+            s3Client.deleteObject(deleteObjectRequest);
+        } catch (S3Exception exception) {
+            throw new StorageException("Error when delete Audio from DigitalOcean Space!", exception);
+        }
+    }
 }
