@@ -1,6 +1,7 @@
 package com.TestFlashCard.FlashCard.security;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -31,6 +32,17 @@ public class JwtTokenFilter extends OncePerRequestFilter {
         this.userDetailsService = userDetailsService;
     }
 
+    private static final List<String> PUBLIC_ENDPOINTS = List.of(
+            "/api/user/login",
+            "/api/user/register",
+            "/api/user/forgot-password",
+            "/api/user/verify-reset-code",
+            "/api/user/reset-password");
+
+    private boolean isPublicEndpoint(String path) {
+        return PUBLIC_ENDPOINTS.stream().anyMatch(path::equals);
+    }
+
     @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
@@ -38,15 +50,11 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain)
             throws ServletException, IOException {
 
+        System.out.println(">> [FILTER] Path: " + request.getServletPath());
+
         String path = request.getServletPath();
 
-        if (path.startsWith("/api/user/login") ||
-                path.startsWith("/api/user/register") ||
-                path.startsWith("/api/user/getAllUsers") ||
-                path.startsWith("/api/user/forgot-password") ||
-                path.startsWith("/api/user/verify-reset-code") ||
-                path.startsWith("/api/user/reset-password") ||
-                path.startsWith("/api/user/create")) {
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod()) || isPublicEndpoint(path))  {
             filterChain.doFilter(request, response);
             return;
         }

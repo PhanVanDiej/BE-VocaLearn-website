@@ -52,7 +52,7 @@ public class EvaluateService {
                 () -> new ResourceNotFoundException("Cannot find the evaluate with id: " + evaluateID));
 
         if (evaluate.getImage() != null)
-            storageService.deleteImage(null);
+            storageService.deleteImage(evaluate.getImage());
 
         evaluate_Repository.delete(evaluate);
     }

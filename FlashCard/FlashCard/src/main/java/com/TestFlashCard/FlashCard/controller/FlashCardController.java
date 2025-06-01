@@ -1,11 +1,13 @@
 package com.TestFlashCard.FlashCard.controller;
 
+import java.security.Principal;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -15,6 +17,7 @@ import com.TestFlashCard.FlashCard.request.FlashCardCreateRequest;
 import com.TestFlashCard.FlashCard.request.FlashCardTopicCreateRequest;
 import com.TestFlashCard.FlashCard.request.FlashCardTopicUpdateRequest;
 import com.TestFlashCard.FlashCard.request.FlashCardUpdateRequest;
+import com.TestFlashCard.FlashCard.response.FlashCardTopicPublicResponse;
 import com.TestFlashCard.FlashCard.response.ListFlashCardTopicResponse;
 import com.TestFlashCard.FlashCard.response.ListFlashCardsResponse;
 import com.TestFlashCard.FlashCard.service.FlashCardService;
@@ -25,7 +28,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-
 
 @RestController
 @RequestMapping("/api/flashcard")
@@ -45,8 +47,8 @@ public class FlashCardController {
         List<ListFlashCardsResponse> flashCards = flashCardService.getFlashCardsByTopic(topicID);
         return new ResponseEntity<List<ListFlashCardsResponse>>(flashCards, HttpStatus.OK);
     }
-    
-    @PostMapping("/createList")
+
+    @PostMapping("/createFlashCard")
     public ResponseEntity<?> createFlashCard(@RequestBody @Valid FlashCardCreateRequest request) {
         try {
             flashCardService.createFlashCard(request);
@@ -59,9 +61,10 @@ public class FlashCardController {
     }
 
     @PostMapping("/createTopic")
-    public ResponseEntity<?> createFlashCardTopic(@RequestBody @Valid FlashCardTopicCreateRequest request) {
+    public ResponseEntity<?> createFlashCardTopic(@RequestBody @Valid FlashCardTopicCreateRequest request,
+            Principal principal) {
         try {
-            flashCardService.createFlashCardTopic(request);
+            flashCardService.createFlashCardTopic(request, principal.getName());
             return ResponseEntity.ok().body("Create FlashCard's topic successfull !");
         } catch (ResourceNotFoundException ex) {
             return new ResponseEntity<>("Error: " + ex.getMessage(), HttpStatus.NOT_FOUND);
@@ -70,13 +73,13 @@ public class FlashCardController {
         }
     }
 
-    @PostMapping("/updateTopic")
+    @PutMapping("/updateTopic")
     public ResponseEntity<?> updateTopic(@RequestBody FlashCardTopicUpdateRequest request) {
         flashCardService.updateTopic(request);
         return ResponseEntity.ok().body("Update topic with id: " + request.getId() + " successfully !");
     }
 
-    @PostMapping("/updateFlashCard")
+    @PutMapping("/updateFlashCard")
     public ResponseEntity<?> updateFlashCard(@RequestBody FlashCardUpdateRequest request) {
         flashCardService.updateFlashCard(request);
         return ResponseEntity.ok().body("Update FlashCard with id: " + request.getId() + " successfully !");
@@ -93,4 +96,11 @@ public class FlashCardController {
         flashCardService.deleteFlashCard(id);
         return ResponseEntity.ok().body("FlashCard with id = " + id + " has been deleted successfully !");
     }
+
+    @GetMapping("/getPublicTopics")
+    public ResponseEntity<?> getPublicTopics() {
+        return new ResponseEntity<List<FlashCardTopicPublicResponse>>(flashCardService.getAllsPublicFlashCardTopic(),
+                HttpStatus.OK);
+    }
+
 }

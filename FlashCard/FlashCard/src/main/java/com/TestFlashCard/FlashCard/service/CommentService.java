@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.TestFlashCard.FlashCard.entity.User;
 import com.TestFlashCard.FlashCard.exception.ResourceNotFoundException;
+import com.TestFlashCard.FlashCard.Enum.Role;
 import com.TestFlashCard.FlashCard.entity.Comment;
 import com.TestFlashCard.FlashCard.entity.CommentReply;
 import com.TestFlashCard.FlashCard.entity.Exam;
@@ -94,6 +95,31 @@ public class CommentService {
 
         rr.setReplies(children);
         return rr;
+    }
+
+    @Transactional
+    public void deleteCommentById(Integer commentId, User requester) {
+        Comment comment = comment_Repository.findById(commentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Comment not found"));
+
+        // Kiểm tra quyền nếu cần
+        if (comment.getUser().getId() != requester.getId() || requester.getRole() != Role.ADMIN) {
+            throw new SecurityException("You are not allowed to delete this comment");
+        }
+
+        comment_Repository.delete(comment); // sẽ xoá luôn cả replies nhờ orphanRemoval
+    }
+
+    @Transactional
+    public void deleteReplyById(Integer replyId, User requester) {
+        CommentReply reply = commentReply_Repository.findById(replyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Reply not found"));
+
+        if (reply.getUser().getId() != requester.getId() || requester.getRole() != Role.ADMIN) {
+            throw new SecurityException("You are not allowed to delete this reply");
+        }
+
+        commentReply_Repository.delete(reply); // xoá luôn reply con nếu có, nhờ orphanRemoval
     }
 
 }

@@ -36,7 +36,7 @@ public class ExamReviewService {
     @Transactional
     public ExamReviewResponse submitExam(ExamSubmitRequest request, User user) {
         // Lấy Exam
-        Exam exam = exam_Repository.findById(request.getExamId())
+        Exam exam = exam_Repository.findById(request.getExamID())
                 .orElseThrow(() -> new ResourceNotFoundException("Exam not found"));
 
         int correctCount = 0;
@@ -72,8 +72,8 @@ public class ExamReviewService {
 
         examReview_Repository.save(examReview); // cascade lưu cả list
         ExamReviewResponse response = new ExamReviewResponse();
-        response.setExamId(exam.getId());
-        response.setUserId(user.getId());
+        response.setExamID(exam.getId());
+        response.setUserID(user.getId());
         response.setDuration(examReview.getDuration());
         response.setCorrectAnswers(examReview.getResult());
         response.setTotalQuestions(questionReviews.size());

@@ -28,8 +28,11 @@ import io.jsonwebtoken.Jwts;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+import java.io.IOException;
+import java.security.Principal;
 import java.util.List;
 
+import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -163,8 +166,28 @@ public class UserController {
           }
      }
 
+     @PutMapping("/updateProfile")
+     public ResponseEntity<?> changeProfile(@RequestBody @Valid UserUpdateRequest request, Principal principal) {
+          User user = userService.getUserByAccountName(principal.getName());
+          if (request.getAccountName() != null)
+               user.setAccountName(request.getAccountName());
+          if (request.getBirthday() != null)
+               user.setBirthday(request.getBirthday());
+          if (request.getEmail() != null)
+               user.setEmail(request.getEmail());
+          if (request.getPassWord() != null)
+               user.setPassWord(request.getPassWord());
+          if (request.getFullName() != null)
+               user.setFullName(request.getFullName());
+
+          return userService.updateUser(user);
+     }
+
      @PutMapping("/update")
-     public ResponseEntity<?> updateUser(@RequestBody @Valid UserUpdateRequest request) {
+     public ResponseEntity<?> update(@RequestBody @Valid UserUpdateRequest request) throws IOException {
+          if(request.getId()==null){
+               throw new BadRequestException("id cannot be null");
+          }
           User user = userService.getUserById(request.getId());
           if (request.getAccountName() != null)
                user.setAccountName(request.getAccountName());
@@ -177,21 +200,21 @@ public class UserController {
           if (request.getFullName() != null)
                user.setFullName(request.getFullName());
 
-          return userService.updateUser(request.getId());
+          return userService.updateUser(user);
      }
-
-     @PostMapping("/getUserByFilter")
-     public ResponseEntity<?> getUserByFilter(@RequestBody @Valid GetUserByFilterRequest request) {
-          if (request.getId() != null) {
-               User user = userService.getUserById(request.getId());
+     @GetMapping("/getUserByFilter")
+     public ResponseEntity<?> getUserByFilter(@RequestParam(required = false) Integer userID,
+               @RequestParam(required = false) String accountName) {
+          if (userID != null) {
+               User user = userService.getUserById(userID);
                if (user == null)
-                    return new ResponseEntity<>("Cannot find user with id: " + request.getId(), HttpStatus.NOT_FOUND);
+                    return new ResponseEntity<>("Cannot find user with id: " + userID, HttpStatus.NOT_FOUND);
                return new ResponseEntity<User>(user, HttpStatus.OK);
           }
-          if (request.getAccountName() != null) {
-               User user = userService.getUserByAccountName(request.getAccountName());
+          if (accountName != null && !accountName.isEmpty()) {
+               User user = userService.getUserByAccountName(accountName);
                if (user == null)
-                    return new ResponseEntity<>("Cannot find user with account name: " + request.getAccountName(),
+                    return new ResponseEntity<>("Cannot find user with account name: " + accountName,
                               HttpStatus.NOT_FOUND);
                return new ResponseEntity<User>(user, HttpStatus.OK);
           }

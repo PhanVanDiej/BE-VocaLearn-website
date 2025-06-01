@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.TestFlashCard.FlashCard.entity.User;
@@ -43,11 +44,10 @@ public class UserService {
         return userRepository.findByEmail(email) != null;
     }
 
-    public ResponseEntity<?> updateUser(int id) {
+    public ResponseEntity<?> updateUser(User user) {
         try {
-            User user = userRepository.findById(id).orElse(null);
             userRepository.save(user);
-            return new ResponseEntity<>("Update success User with id: " + id, HttpStatus.OK);
+            return new ResponseEntity<>("Update success User with id: " + user.getId(), HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -63,7 +63,7 @@ public class UserService {
         return userRepository.findAll();
     }
 
-    public User getUserByAccountName(String accountName) {
+    public User getUserByAccountName(String accountName) throws UsernameNotFoundException {
         return userRepository.findByAccountName(accountName);
     }
 

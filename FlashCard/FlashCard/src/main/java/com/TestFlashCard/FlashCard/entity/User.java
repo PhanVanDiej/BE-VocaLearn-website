@@ -6,8 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Date;
 import org.hibernate.annotations.CreationTimestamp;
 import com.TestFlashCard.FlashCard.Enum.Role;
 
@@ -26,7 +26,7 @@ public class User{
     private String fullName;
 
     @Column(name = "birthday")
-    private Date birthday;
+    private LocalDate birthday;
 
     @Column(name = "email", nullable = false, unique = true, length = 100)
     private String email;

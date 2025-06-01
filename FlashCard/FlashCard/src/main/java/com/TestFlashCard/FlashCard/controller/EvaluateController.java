@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 @RequiredArgsConstructor
 @RestController
@@ -35,33 +36,27 @@ public class EvaluateController {
     @Autowired
     private final UserService userService;
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> createEvaluate(@RequestParam("data") String dataJson,
-            @RequestParam("image") MultipartFile image, Principal principal) throws IOException {
+    public ResponseEntity<?> createEvaluate(@RequestParam String data,
+            @RequestParam(required = false) MultipartFile image, Principal principal) throws IOException {
         User user = userService.getUserByAccountName(principal.getName());
 
         ObjectMapper object = new ObjectMapper();
-        EvaluateCreateRequest request = object.readValue(dataJson, EvaluateCreateRequest.class);
+        EvaluateCreateRequest request = object.readValue(data, EvaluateCreateRequest.class);
 
         evaluateService.createEvaluate(request, image, user);
 
         return ResponseEntity.ok("Create new Evaluate successfully!");
     }
 
-    @DeleteMapping("/delete")
-    public ResponseEntity<?> deleteEvaluate(@RequestParam Integer id) {
+    @DeleteMapping("/delete/{evaluateID}")
+    public ResponseEntity<?> deleteEvaluate(@PathVariable("evaluateID") Integer id) {
         evaluateService.deleteEvaluate(id);
         return ResponseEntity.ok("Delete evaluate with id: " + id + "successfully!");
     }
 
-    @GetMapping("/getAllEvaluates")
-    public ResponseEntity<?> getAllEvaluates() {
-        List<EvaluateResponse> evaluates = evaluateService.getAllEvaluates();
-        return new ResponseEntity<List<EvaluateResponse>>(evaluates, HttpStatus.OK);
-    }
-
-    @GetMapping("/getEvaluatesByStar")
-    public ResponseEntity<?> getMethodName(@RequestParam Integer star) throws IOException {
-        List<EvaluateResponse> evaluates = evaluateService.getEvaluatesByStar(star);
+    @GetMapping("/get")
+    public ResponseEntity<?> getMethodName(@RequestParam(required = false) Integer star) throws IOException {
+        List<EvaluateResponse> evaluates = star!=null ? evaluateService.getEvaluatesByStar(star):evaluateService.getAllEvaluates();
         return new ResponseEntity<List<EvaluateResponse>>(evaluates, HttpStatus.OK);
     }
 }

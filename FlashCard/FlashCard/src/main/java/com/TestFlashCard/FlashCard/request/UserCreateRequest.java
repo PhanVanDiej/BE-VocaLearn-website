@@ -1,8 +1,9 @@
 package com.TestFlashCard.FlashCard.request;
 
-import java.util.Date;
+import java.time.LocalDate;
 
 import com.TestFlashCard.FlashCard.Enum.Role;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -24,7 +25,8 @@ public class UserCreateRequest {
     private String email = null;
 
     @NotNull (message = "User's birthday cannot be null")
-    private Date birthday=null;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate birthday=null;
 
     @NotNull (message = "User's accountName cannot be null")
     @NotBlank (message = "User's accountName cannot be blank")

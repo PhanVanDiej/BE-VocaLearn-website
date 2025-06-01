@@ -7,8 +7,8 @@ import lombok.Data;
 
 @Data
 public class ExamReviewResponse {
-    private Integer examId;
-    private Integer userId;
+    private Integer examID;
+    private Integer userID;
     private Integer totalQuestions;
     private Integer correctAnswers;
     private Integer duration;

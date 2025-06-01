@@ -3,9 +3,13 @@ package com.TestFlashCard.FlashCard.service;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.kafka.KafkaProperties.Retry.Topic;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import com.TestFlashCard.FlashCard.Enum.FlashCardTopicStatus;
 import com.TestFlashCard.FlashCard.Enum.LearningStatus;
+import com.TestFlashCard.FlashCard.JpaSpec.FlashCardTopicSpecification;
 import com.TestFlashCard.FlashCard.entity.FlashCard;
 import com.TestFlashCard.FlashCard.entity.FlashCardTopic;
 import com.TestFlashCard.FlashCard.entity.User;
@@ -18,6 +22,7 @@ import com.TestFlashCard.FlashCard.request.FlashCardTopicCreateRequest;
 import com.TestFlashCard.FlashCard.request.FlashCardTopicUpdateRequest;
 import com.TestFlashCard.FlashCard.request.FlashCardUpdateRequest;
 import com.TestFlashCard.FlashCard.response.CardsResponse;
+import com.TestFlashCard.FlashCard.response.FlashCardTopicPublicResponse;
 import com.TestFlashCard.FlashCard.response.ListFlashCardTopicResponse;
 import com.TestFlashCard.FlashCard.response.ListFlashCardsResponse;
 
@@ -81,9 +86,8 @@ public class FlashCardService {
     }
 
     @Transactional
-    public void createFlashCardTopic(FlashCardTopicCreateRequest flashCardTopicDetail) {
-        User user = user_Repository.findById(flashCardTopicDetail.getUserID()).orElseThrow(
-                () -> new ResourceNotFoundException("Cannot find User with id: " + flashCardTopicDetail.getUserID()));
+    public void createFlashCardTopic(FlashCardTopicCreateRequest flashCardTopicDetail, String accountName) {
+        User user = user_Repository.findByAccountName(accountName);
         FlashCardTopic topic = new FlashCardTopic();
         topic.setTitle(flashCardTopicDetail.getTitle());
         topic.setStatus(flashCardTopicDetail.getStatus());
@@ -140,5 +144,20 @@ public class FlashCardService {
             ()-> new ResourceNotFoundException("Cannot find FlashCard with id: "+ id)
         );
         flashCard_Repository.delete(flashCard);
+    }
+
+    @Transactional
+    public List<FlashCardTopicPublicResponse> getAllsPublicFlashCardTopic(){
+        Specification<FlashCardTopic> spec = Specification.where(FlashCardTopicSpecification.hasStatus(FlashCardTopicStatus.PUBLIC));
+        return flashCardTopic_Repository.findAll(spec).stream().map(this::convertToPublicTopicResponse).toList();
+    }
+
+    private FlashCardTopicPublicResponse convertToPublicTopicResponse(FlashCardTopic topic){
+        return new FlashCardTopicPublicResponse(
+            topic.getId(),
+            topic.getUser().getAccountName(),
+            topic.getTitle(),
+            topic.getStatus().toString()
+        );
     }
 }

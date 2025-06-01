@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.TestFlashCard.FlashCard.entity.User;
 import com.TestFlashCard.FlashCard.request.CommentCreateRequest;
+import com.TestFlashCard.FlashCard.request.CommentReplyCreateRequest;
 import com.TestFlashCard.FlashCard.request.ExamCreateRequest;
 import com.TestFlashCard.FlashCard.request.ExamSubmitRequest;
 import com.TestFlashCard.FlashCard.request.ExamUpdateRequest;
@@ -114,5 +115,29 @@ public class ExamController {
         User user = userService.getUserByAccountName(accountName);
         commentService.createComment(user, request);
         return ResponseEntity.ok("Comment created!");
+    }
+
+    @PostMapping("/reply-comment/create")
+    public ResponseEntity<?> createReply(@RequestBody @Valid CommentReplyCreateRequest request, Principal principal) {
+        String accountName = principal.getName();
+        User user = userService.getUserByAccountName(accountName);
+
+        commentService.createReply(user, request);
+
+        return ResponseEntity.ok("Reply created successfully.");
+    }
+
+    @DeleteMapping("/comment/delete/{commentID}")
+    public ResponseEntity<?> deleteComment(@PathVariable Integer commentID, Principal principal) {
+        User user = userService.getUserByAccountName(principal.getName());
+        commentService.deleteCommentById(commentID, user);
+        return ResponseEntity.ok("Delete Comment with id :" + commentID + " successfully!");
+    }
+
+    @DeleteMapping("/reply-comment/delete/{commentReplyID}")
+    public ResponseEntity<?> deleteCommentReply(@PathVariable Integer commentReplyID, Principal principal) {
+        User user = userService.getUserByAccountName(principal.getName());
+        commentService.deleteReplyById(commentReplyID, user);
+        return ResponseEntity.ok("Delete Comment with id :" + commentReplyID + " successfully!");
     }
 }

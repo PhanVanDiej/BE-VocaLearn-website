@@ -9,7 +9,9 @@ import lombok.Data;
 public class CommentReplyCreateRequest {
     @NotNull
     private Integer commentID;
+
     private Integer parentReplyID;
+    
     @NotNull
     @NotEmpty
     @NotBlank
