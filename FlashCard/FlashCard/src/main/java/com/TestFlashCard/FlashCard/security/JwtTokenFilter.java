@@ -36,11 +36,10 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             "/api/user/login",
             "/api/user/register",
             "/api/user/forgot-password",
-            "/api/user/verify-reset-code",
-            "/api/user/reset-password");
+            "/api/user/verify-reset-code");
 
     private boolean isPublicEndpoint(String path) {
-        return PUBLIC_ENDPOINTS.stream().anyMatch(path::equals);
+        return PUBLIC_ENDPOINTS.stream().anyMatch(path::startsWith);
     }
 
     @Override

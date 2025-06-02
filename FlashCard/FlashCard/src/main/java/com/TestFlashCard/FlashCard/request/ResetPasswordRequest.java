@@ -7,12 +7,12 @@ import lombok.Data;
 
 @Data
 public class ResetPasswordRequest {
+    @NotNull (message = "old Password cannot be null")
+    @NotEmpty(message = "old Password cannot be empty")
+    @NotBlank(message = "old Password cannot be blank")
+    private String oldPassword;
     @NotNull (message = "New Password cannot be null")
     @NotEmpty(message = "New Password cannot be empty")
     @NotBlank(message = "New Password cannot be blank")
-    public String newPassword;
-    @NotNull (message = "Email cannot be null")
-    @NotEmpty (message = "Email cannot be empty")
-    @NotBlank (message = "Email cannot be blank")
-    public String email;
+    private String newPassword;
 }

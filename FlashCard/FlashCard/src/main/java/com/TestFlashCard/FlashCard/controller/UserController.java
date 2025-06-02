@@ -8,8 +8,10 @@ import com.TestFlashCard.FlashCard.Enum.Role;
 import com.TestFlashCard.FlashCard.config.JwtConfig;
 import com.TestFlashCard.FlashCard.entity.PasswordResetToken;
 import com.TestFlashCard.FlashCard.entity.User;
+import com.TestFlashCard.FlashCard.exception.ResourceNotFoundException;
 import com.TestFlashCard.FlashCard.repository.IPasswordResetToken_Repository;
 import com.TestFlashCard.FlashCard.repository.IUser_Repository;
+import com.TestFlashCard.FlashCard.request.ForgetPasswordRequest;
 import com.TestFlashCard.FlashCard.request.GetUserByFilterRequest;
 import com.TestFlashCard.FlashCard.request.ResetPasswordRequest;
 import com.TestFlashCard.FlashCard.request.UserCreateRequest;
@@ -185,7 +187,7 @@ public class UserController {
 
      @PutMapping("/update")
      public ResponseEntity<?> update(@RequestBody @Valid UserUpdateRequest request) throws IOException {
-          if(request.getId()==null){
+          if (request.getId() == null) {
                throw new BadRequestException("id cannot be null");
           }
           User user = userService.getUserById(request.getId());
@@ -202,6 +204,7 @@ public class UserController {
 
           return userService.updateUser(user);
      }
+
      @GetMapping("/getUserByFilter")
      public ResponseEntity<?> getUserByFilter(@RequestParam(required = false) Integer userID,
                @RequestParam(required = false) String accountName) {
@@ -231,28 +234,44 @@ public class UserController {
      }
 
      @PostMapping("/forgot-password")
-     public ResponseEntity<?> sendResetCode(@RequestParam String email) {
-          System.out.println(email);
-          User user = userService.getUserByEmail(email);
-          if (user == null) {
-               return ResponseEntity.badRequest().body("Email doesn't exist");
+     public ResponseEntity<?> sendResetCode(@RequestBody @Valid ForgetPasswordRequest request) throws IOException {
+          try {
+               String email = request.getEmail();
+               User user = userService.getUserByEmail(email);
+
+               if (user == null) {
+                    throw new ResourceNotFoundException("Email doesn't exist");
+               }
+
+               if (!user.getAccountName().equals(request.getAccountName())) {
+                    throw new ResourceNotFoundException("Cannot find the User with accountName: "
+                              + request.getAccountName() + ". Wrong AccountName!");
+               }
+               String token = String.valueOf((int) (Math.random() * 900000) + 100000); // 6 chữ số
+               PasswordResetToken resetToken = new PasswordResetToken();
+               resetToken.setEmail(email);
+               resetToken.setToken(token);
+               passwordResetToken_Repository.save(resetToken);
+
+               // Luu token lam password tam thoi
+               user.setPassWord(token);
+               user_Repository.save(user);
+
+               // Gửi email
+               emailService.send(
+                         email,
+                         "Yêu cầu đổi mật khẩu - Vocabulary English FlashCard account",
+                         "Mật khẩu mới cho tài khoản " + user.getAccountName() + ": " + token +
+                                   "\n\nĐây chỉ là mật khẩu tạm thời.\nĐể đảm bảo bảo mật, vui lòng cập nhật mật khẩu của bạn.");
+
+               return ResponseEntity.ok("New password has been send to email : " + email);
+          } catch (Exception exception) {
+               throw new IOException("Intenal Server Error: " + exception.getMessage());
           }
-
-          String token = String.valueOf((int) (Math.random() * 900000) + 100000); // 6 chữ số
-          PasswordResetToken resetToken = new PasswordResetToken();
-          resetToken.setEmail(email);
-          resetToken.setToken(token);
-          passwordResetToken_Repository.save(resetToken);
-
-          // Gửi email
-          emailService.send(email, "Yêu cầu đổi mật khẩu - Vocabulary English FlashCard account",
-                    "Mã xác thực đổi mật khẩu của bạn: " + token);
-
-          return ResponseEntity.ok("Token has been send to email : " + email);
      }
 
      @PostMapping("/verify-reset-code")
-     public ResponseEntity<?> verifyCode(@RequestParam String email, @RequestParam String token) {
+     public ResponseEntity<?> verifyCode(@RequestBody String email, @RequestParam String token) {
           PasswordResetToken latest = passwordResetToken_Repository.findTopByEmailOrderByCreatedAtDesc(email)
                     .orElseThrow(() -> new IllegalArgumentException("Cannot find the verified token"));
 
@@ -269,15 +288,16 @@ public class UserController {
      }
 
      @PostMapping("/reset-password")
-     public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
-          User user = userService.getUserByEmail(request.getEmail());
-          if (user == null)
-               return ResponseEntity.badRequest().body("Email doesn't exist");
+     public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request, Principal principal) throws IOException{
+          User user = userService.getUserByAccountName(principal.getName());
+          
+          if(!userService.checkPassword(request.getOldPassword(), user.getPassWord())){
+               throw new BadRequestException("Incorrect Password!!!");
+          }
 
           user.setPassWord(passwordEncoder.encode(request.getNewPassword()));
           user_Repository.save(user);
 
           return ResponseEntity.ok("Reset password successfully!");
      }
-
 }

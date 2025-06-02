@@ -42,7 +42,6 @@ public class securityConfig {
                         .requestMatchers("/api/user/login").permitAll()
                         .requestMatchers("/api/user/forgot-password").permitAll()
                         .requestMatchers("/api/user/verify-reset-code").permitAll()
-                        .requestMatchers("/api/user/reset-password").permitAll()
                         .requestMatchers("/api/user/register").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);

@@ -68,6 +68,22 @@ public class ExamService {
                 exam.getCollection(),
                 exam.getQuestions().stream().map(this::convertQuestionToResponse).toList());
     }
+    public List<ExamInformationResponse> getByCreatAt(){
+        List<Exam> exams =exam_Repository.findAllByOrderByCreatedAtDesc();
+        return exams.stream().map(this::convertToExamDetailResponse).toList();
+    }
+    public ExamInformationResponse convertToExamDetailResponse(Exam exam){
+        return new ExamInformationResponse(
+                exam.getId(),
+                exam.getDuration(),
+                getNumOfPart(exam.getId()),
+                getNumOfQuestion(exam.getId()),
+                exam.getTitle(),
+                exam.getYear(),
+                exam.getType(),
+                exam.getCollection(),
+                exam.getQuestions().stream().map(this::convertQuestionToResponse).toList());
+    }
     public ToeicQuestionResponse convertQuestionToResponse(ToeicQuestion question){
         return new ToeicQuestionResponse(
             question.getId(),

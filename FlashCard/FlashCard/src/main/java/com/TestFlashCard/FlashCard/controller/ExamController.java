@@ -5,11 +5,13 @@ import java.security.Principal;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.TestFlashCard.FlashCard.entity.Exam;
 import com.TestFlashCard.FlashCard.entity.User;
 import com.TestFlashCard.FlashCard.request.CommentCreateRequest;
 import com.TestFlashCard.FlashCard.request.CommentReplyCreateRequest;
@@ -18,6 +20,7 @@ import com.TestFlashCard.FlashCard.request.ExamSubmitRequest;
 import com.TestFlashCard.FlashCard.request.ExamUpdateRequest;
 import com.TestFlashCard.FlashCard.response.CommentResponse;
 import com.TestFlashCard.FlashCard.response.ExamFilterdResponse;
+import com.TestFlashCard.FlashCard.response.ExamInformationResponse;
 import com.TestFlashCard.FlashCard.response.ExamReviewResponse;
 import com.TestFlashCard.FlashCard.service.CommentService;
 import com.TestFlashCard.FlashCard.service.ExamReviewService;
@@ -59,6 +62,12 @@ public class ExamController {
         List<ExamFilterdResponse> exams = examService.getByFilter(year, type, collection, title);
         return ResponseEntity.ok(exams);
     }
+    @GetMapping("/getByCreateAt")
+    public ResponseEntity<?> getByCreateAt() {
+        List<ExamInformationResponse> response = examService.getByCreatAt();
+        return new ResponseEntity<List<ExamInformationResponse>>(response,HttpStatus.OK);
+    }
+    
 
     @GetMapping("/detail/{examID}")
     public ResponseEntity<?> getById(@PathVariable Integer examID) {
