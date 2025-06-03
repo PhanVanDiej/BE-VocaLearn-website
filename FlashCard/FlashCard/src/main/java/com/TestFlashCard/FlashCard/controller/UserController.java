@@ -2,8 +2,11 @@ package com.TestFlashCard.FlashCard.controller;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.TestFlashCard.FlashCard.Enum.EUserStatus;
 import com.TestFlashCard.FlashCard.Enum.Role;
 import com.TestFlashCard.FlashCard.config.JwtConfig;
 import com.TestFlashCard.FlashCard.entity.PasswordResetToken;
@@ -12,17 +15,20 @@ import com.TestFlashCard.FlashCard.exception.ResourceNotFoundException;
 import com.TestFlashCard.FlashCard.repository.IPasswordResetToken_Repository;
 import com.TestFlashCard.FlashCard.repository.IUser_Repository;
 import com.TestFlashCard.FlashCard.request.ForgetPasswordRequest;
-import com.TestFlashCard.FlashCard.request.GetUserByFilterRequest;
 import com.TestFlashCard.FlashCard.request.ResetPasswordRequest;
 import com.TestFlashCard.FlashCard.request.UserCreateRequest;
 import com.TestFlashCard.FlashCard.request.UserLoginRequest;
+import com.TestFlashCard.FlashCard.request.UserUpdateProfileRequest;
 import com.TestFlashCard.FlashCard.request.UserUpdateRequest;
 import com.TestFlashCard.FlashCard.response.LoginResponse;
 import com.TestFlashCard.FlashCard.response.renewalTokenResponse;
 import com.TestFlashCard.FlashCard.security.JwtTokenProvider;
+import com.TestFlashCard.FlashCard.service.DigitalOceanStorageService;
 import com.TestFlashCard.FlashCard.service.EmailService;
+import com.TestFlashCard.FlashCard.service.MediaService;
 import com.TestFlashCard.FlashCard.service.UserService;
 import com.TestFlashCard.FlashCard.service.VisitLogService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -37,6 +43,7 @@ import java.util.List;
 import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -65,8 +72,15 @@ public class UserController {
      @Autowired
      private final EmailService emailService;
      @Autowired
+     private final MediaService mediaService;
+     @Autowired
      private PasswordEncoder passwordEncoder;
      private final VisitLogService visitLogService;
+     @Autowired
+     private ObjectMapper objectMapper;
+
+     @Autowired
+     private final DigitalOceanStorageService storageService;
 
      @GetMapping("/getAllUsers")
      public ResponseEntity<List<User>> getAllUsers() {
@@ -75,7 +89,15 @@ public class UserController {
      }
 
      @PostMapping("/create")
-     public ResponseEntity<?> createUser(@RequestBody @Valid UserCreateRequest request) {
+     public ResponseEntity<?> createUser(@RequestPart String dataJson,
+               @RequestPart(required = false) MultipartFile avatar) throws IOException {
+
+          if (dataJson == null) {
+               throw new BadRequestException("data for create cannot be null");
+          }
+
+          UserCreateRequest request = objectMapper.readValue(dataJson, UserCreateRequest.class);
+
           if (userService.checkExistedAccountName(request.getAccountName())) {
                return new ResponseEntity<>("Failed to create user. Account name has been existed!",
                          HttpStatus.BAD_REQUEST);
@@ -86,18 +108,19 @@ public class UserController {
           User newUser = new User();
 
           newUser.setAccountName(request.getAccountName());
-          newUser.setBirthday(request.getBirthday());
           newUser.setEmail(request.getEmail());
           newUser.setFullName(request.getFullName());
           newUser.setPassWord(request.getPassWord());
+          newUser.setAddress(request.getAddress());
+          newUser.setPhoneNumber(request.getPhoneNumber());
+          newUser.setAvatar(mediaService.getImageUrl(avatar));
+
           if (request.getRole() == null) {
                return new ResponseEntity<>("User's Role cannot be null", HttpStatus.BAD_REQUEST);
           }
           newUser.setRole(request.getRole());
 
-          userService.createUser(newUser);
-
-          return new ResponseEntity<>("create new User success", HttpStatus.OK);
+          return userService.createUser(newUser);
      }
 
      @PostMapping("/register")
@@ -112,21 +135,25 @@ public class UserController {
           User newUser = new User();
 
           newUser.setAccountName(request.getAccountName());
-          newUser.setBirthday(request.getBirthday());
           newUser.setEmail(request.getEmail());
           newUser.setFullName(request.getFullName());
           newUser.setPassWord(request.getPassWord());
+          newUser.setAddress(request.getAddress());
+          newUser.setPhoneNumber(request.getPhoneNumber());
           newUser.setRole(Role.USER);
+          newUser.setIsDeleted(EUserStatus.FALSE);
 
           return userService.createUser(newUser);
      }
 
      @PostMapping("/login")
-     public ResponseEntity<?> loginUser(@RequestBody @Valid UserLoginRequest request) {
+     public ResponseEntity<?> loginUser(@RequestBody @Valid UserLoginRequest request) throws IOException {
           User user = userService.getUserByAccountName(request.getAccountName());
           if (user == null) {
                return new ResponseEntity<>("Account name doesn't exist.", HttpStatus.BAD_REQUEST);
           }
+          if(user.getIsDeleted()==EUserStatus.TRUE)
+               throw new BadRequestException("Account has been deleted!");
 
           if (!userService.checkPassword(request.getPassWord(), user.getPassWord())) {
                return new ResponseEntity<>("Invalid Password", HttpStatus.UNAUTHORIZED);
@@ -168,8 +195,15 @@ public class UserController {
           }
      }
 
-     @PutMapping("/updateProfile")
-     public ResponseEntity<?> changeProfile(@RequestBody @Valid UserUpdateRequest request, Principal principal) {
+     @PutMapping(value = "/updateProfile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+     public ResponseEntity<?> changeProfile(@RequestPart String dataJson,
+               @RequestPart(required = false) MultipartFile avatar, Principal principal) throws IOException {
+          if (dataJson == null) {
+               throw new BadRequestException("data for create cannot be null");
+          }
+
+          UserUpdateProfileRequest request = objectMapper.readValue(dataJson, UserUpdateProfileRequest.class);
+
           User user = userService.getUserByAccountName(principal.getName());
           if (request.getAccountName() != null)
                user.setAccountName(request.getAccountName());
@@ -177,16 +211,32 @@ public class UserController {
                user.setBirthday(request.getBirthday());
           if (request.getEmail() != null)
                user.setEmail(request.getEmail());
-          if (request.getPassWord() != null)
-               user.setPassWord(request.getPassWord());
           if (request.getFullName() != null)
                user.setFullName(request.getFullName());
+          if (request.getAddress() != null)
+               user.setAddress(request.getAddress());
+          if (request.getPhoneNumber() != null)
+               user.setPhoneNumber(request.getPhoneNumber());
+
+          if (avatar != null) {
+               if (user.getAvatar() != null)
+                    storageService.deleteImage(user.getAvatar());
+               user.setAvatar(mediaService.getImageUrl(avatar));
+          }
 
           return userService.updateUser(user);
      }
 
      @PutMapping("/update")
-     public ResponseEntity<?> update(@RequestBody @Valid UserUpdateRequest request) throws IOException {
+     public ResponseEntity<?> update(@RequestPart String dataJson, @RequestPart MultipartFile avatar)
+               throws IOException {
+
+          if (dataJson == null) {
+               throw new BadRequestException("data for create cannot be null");
+          }
+
+          UserUpdateRequest request = objectMapper.readValue(dataJson, UserUpdateRequest.class);
+
           if (request.getId() == null) {
                throw new BadRequestException("id cannot be null");
           }
@@ -201,7 +251,16 @@ public class UserController {
                user.setPassWord(request.getPassWord());
           if (request.getFullName() != null)
                user.setFullName(request.getFullName());
+          if (request.getAddress() != null)
+               user.setAddress(request.getAddress());
+          if (request.getPhoneNumber() != null)
+               user.setPhoneNumber(request.getPhoneNumber());
 
+          if (avatar != null) {
+               if (user.getAvatar() != null)
+                    storageService.deleteImage(user.getAvatar());
+               mediaService.getImageUrl(avatar);
+          }
           return userService.updateUser(user);
      }
 
@@ -288,10 +347,11 @@ public class UserController {
      }
 
      @PostMapping("/reset-password")
-     public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request, Principal principal) throws IOException{
+     public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request, Principal principal)
+               throws IOException {
           User user = userService.getUserByAccountName(principal.getName());
-          
-          if(!userService.checkPassword(request.getOldPassword(), user.getPassWord())){
+
+          if (!userService.checkPassword(request.getOldPassword(), user.getPassWord())) {
                throw new BadRequestException("Incorrect Password!!!");
           }
 

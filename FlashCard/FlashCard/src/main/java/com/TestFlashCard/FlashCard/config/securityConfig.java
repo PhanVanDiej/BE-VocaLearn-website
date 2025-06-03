@@ -24,7 +24,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class securityConfig {
 
-    @Autowired
     private final JwtTokenFilter jwtTokenFilter;
 
     @Bean
@@ -43,6 +42,7 @@ public class securityConfig {
                         .requestMatchers("/api/user/forgot-password").permitAll()
                         .requestMatchers("/api/user/verify-reset-code").permitAll()
                         .requestMatchers("/api/user/register").permitAll()
+                        .requestMatchers("/api/user/create").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

@@ -1,18 +1,16 @@
 package com.TestFlashCard.FlashCard.request;
 
 import java.time.LocalDate;
+
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
-
 @Data
-public class UserUpdateRequest {
-    @NotNull
-    private Integer id;
+public class UserUpdateProfileRequest {
+
     @Size(min = 1, max = 50)
     private String accountName;
 
@@ -28,6 +26,4 @@ public class UserUpdateRequest {
 
     private String address;
     private String phoneNumber;
-
-    private String passWord;
 }

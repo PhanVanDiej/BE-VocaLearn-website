@@ -8,7 +8,11 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+
+import org.hibernate.annotations.Collate;
 import org.hibernate.annotations.CreationTimestamp;
+
+import com.TestFlashCard.FlashCard.Enum.EUserStatus;
 import com.TestFlashCard.FlashCard.Enum.Role;
 
 @Data
@@ -31,6 +35,15 @@ public class User{
     @Column(name = "email", nullable = false, unique = true, length = 100)
     private String email;
 
+    @Column(name = "avatar")
+    private String avatar;
+
+    @Column(name =  "phoneNumber")
+    private String phoneNumber;
+
+    @Column(name = "address")
+    private String address;
+
     @Column(name = "accountName", nullable = false, unique = true, length = 50)
     private String accountName;
 
@@ -40,6 +53,10 @@ public class User{
     @Column(name = "createAt", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     @CreationTimestamp
     private LocalDateTime createAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "isDeleted", nullable = false, columnDefinition = "ENUM ('FALSE', 'TRUE') DEFAULT 'FALSE'")
+    private EUserStatus isDeleted;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, columnDefinition = "ENUM('USER', 'ADMIN') DEFAULT 'USER'")

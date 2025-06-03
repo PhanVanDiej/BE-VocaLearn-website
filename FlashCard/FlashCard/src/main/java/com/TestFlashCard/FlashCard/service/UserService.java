@@ -1,13 +1,16 @@
 package com.TestFlashCard.FlashCard.service;
-
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import com.TestFlashCard.FlashCard.Enum.EUserStatus;
+import com.TestFlashCard.FlashCard.JpaSpec.UserSpecification;
 import com.TestFlashCard.FlashCard.entity.User;
 import com.TestFlashCard.FlashCard.exception.ResourceNotFoundException;
 import com.TestFlashCard.FlashCard.repository.IUser_Repository;
@@ -33,7 +36,6 @@ public class UserService {
         } catch (Exception e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
     }
 
     public boolean checkExistedAccountName(String accountName) {
@@ -56,11 +58,14 @@ public class UserService {
     public void deleteUser(int id) {
         User user = userRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Cannot find user with id : " + id));
-        userRepository.deleteById(id);
+        
+        user.setIsDeleted(EUserStatus.TRUE);
+        userRepository.save(user);
     }
 
     public List<User> getAllUsers() {
-        return userRepository.findAll();
+        Specification<User> specification=Specification.where(UserSpecification.hasStatus(EUserStatus.FALSE));
+        return userRepository.findAll(specification);
     }
 
     public User getUserByAccountName(String accountName) throws UsernameNotFoundException {

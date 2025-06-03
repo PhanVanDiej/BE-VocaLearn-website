@@ -34,6 +34,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 
     private static final List<String> PUBLIC_ENDPOINTS = List.of(
             "/api/user/login",
+            "/api/user/create",
             "/api/user/register",
             "/api/user/forgot-password",
             "/api/user/verify-reset-code");
@@ -55,6 +56,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 
         if ("OPTIONS".equalsIgnoreCase(request.getMethod()) || isPublicEndpoint(path))  {
             filterChain.doFilter(request, response);
+            System.out.println(">> [FILTER] Path Pass Auth: " + request.getServletPath());
             return;
         }
 
@@ -93,6 +95,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 
         } catch (Exception ex) {
             // ✅ Tránh tiếp tục xử lý sau khi đã set lỗi
+            ex.printStackTrace();
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             response.setContentType("application/json");
             response.getWriter().write("{\"error\": \"UNKNOWN\", \"message\": \"Unknown error occurred.\"}");
