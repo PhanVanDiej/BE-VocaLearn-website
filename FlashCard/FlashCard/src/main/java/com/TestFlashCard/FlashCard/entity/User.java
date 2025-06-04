@@ -8,8 +8,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-
-import org.hibernate.annotations.Collate;
 import org.hibernate.annotations.CreationTimestamp;
 
 import com.TestFlashCard.FlashCard.Enum.EUserStatus;

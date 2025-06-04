@@ -14,8 +14,12 @@ import org.zeroturnaround.zip.ZipUtil;
 
 import com.TestFlashCard.FlashCard.JpaSpec.ExamSpecification;
 import com.TestFlashCard.FlashCard.entity.Exam;
+import com.TestFlashCard.FlashCard.entity.ExamCollection;
+import com.TestFlashCard.FlashCard.entity.ExamType;
 import com.TestFlashCard.FlashCard.entity.ToeicQuestion;
 import com.TestFlashCard.FlashCard.exception.ResourceNotFoundException;
+import com.TestFlashCard.FlashCard.repository.ICommentReply_Repository;
+import com.TestFlashCard.FlashCard.repository.IComment_Repository;
 import com.TestFlashCard.FlashCard.repository.IExam_Repository;
 import com.TestFlashCard.FlashCard.repository.IToeicQuestion_Repository;
 import com.TestFlashCard.FlashCard.request.ExamCreateRequest;
@@ -39,9 +43,18 @@ public class ExamService {
     private final ExcelParser excelParser;
     @Autowired
     private final MediaService mediaService;
+    @Autowired
+    private final IComment_Repository comment_Repository;
+    @Autowired
+    private final ICommentReply_Repository commentReply_Repository;
+    @Autowired
+    private final ExamTypeService examTypeService;
+    @Autowired
+    private final ExamCollectionService examCollectionService;
 
     public List<ExamFilterdResponse> getByFilter(Integer year, String type, String collection, String title) {
-        Specification<Exam> spec = Specification.where(ExamSpecification.hasYear(year))
+        Specification<Exam> spec = Specification.where(ExamSpecification.isDeleted(false))
+                .and(ExamSpecification.hasYear(year))
                 .and(ExamSpecification.hasType(type)).and(ExamSpecification.hasCollection(collection))
                 .and(ExamSpecification.containsTitle(title));
         return exam_Repository.findAll(spec).stream().map(this::convertToResponse).toList();
@@ -53,26 +66,26 @@ public class ExamService {
                 exam.getTitle());
     }
 
-    public ExamInformationResponse getByID(int examID) {
+    public ExamInformationResponse getByID(int examID) throws IOException {
         Exam exam = exam_Repository.findById(examID).orElseThrow(
                 () -> new ResourceNotFoundException("Cannot find the Exam with id : " + examID));
-
-        return new ExamInformationResponse(
-                examID,
-                exam.getDuration(),
-                getNumOfPart(examID),
-                getNumOfQuestion(examID),
-                exam.getTitle(),
-                exam.getYear(),
-                exam.getType(),
-                exam.getCollection(),
-                exam.getQuestions().stream().map(this::convertQuestionToResponse).toList());
+        if(exam.isDeleted())
+            throw new ResourceNotFoundException("Cannot find the Exam with id : " + examID);
+        return convertToExamDetailResponse(exam);
     }
-    public List<ExamInformationResponse> getByCreatAt(){
-        List<Exam> exams =exam_Repository.findAllByOrderByCreatedAtDesc();
+
+    public int countAllCommentsAndReplies(Integer examId) {
+        int commentCount = comment_Repository.countByExamId(examId);
+        int replyCount = commentReply_Repository.countRepliesByExamId(examId);
+        return commentCount + replyCount;
+    }
+
+    public List<ExamInformationResponse> getByCreatAt() {
+        List<Exam> exams = exam_Repository.findByIsDeletedFalseOrderByCreatedAtDesc();
         return exams.stream().map(this::convertToExamDetailResponse).toList();
     }
-    public ExamInformationResponse convertToExamDetailResponse(Exam exam){
+
+    public ExamInformationResponse convertToExamDetailResponse(Exam exam) {
         return new ExamInformationResponse(
                 exam.getId(),
                 exam.getDuration(),
@@ -80,28 +93,33 @@ public class ExamService {
                 getNumOfQuestion(exam.getId()),
                 exam.getTitle(),
                 exam.getYear(),
-                exam.getType(),
-                exam.getCollection(),
+                exam.getType().getType(),
+                exam.getCollection().getCollection(),
+                exam.getAttemps(),
+                countAllCommentsAndReplies(exam.getId()),
                 exam.getQuestions().stream().map(this::convertQuestionToResponse).toList());
     }
-    public ToeicQuestionResponse convertQuestionToResponse(ToeicQuestion question){
+
+    public ToeicQuestionResponse convertQuestionToResponse(ToeicQuestion question) {
         return new ToeicQuestionResponse(
-            question.getId(),
-            question.getPart(),
-            question.getDetail(),
-            question.getResult(),
-            question.getImage(),
-            question.getAudio()
-        );
+                question.getId(),
+                question.getPart(),
+                question.getDetail(),
+                question.getResult(),
+                question.getImage(),
+                question.getAudio());
     }
 
     @Transactional
     public void create(ExamCreateRequest examDetail) throws IOException {
         Exam exam = new Exam();
-        exam.setCollection(examDetail.getCollection().name());
+
+        ExamType examType = examTypeService.getDetailByType(examDetail.getType());
+        ExamCollection examCollection = examCollectionService.getDetailByCollection(examDetail.getCollection());
+        exam.setCollection(examCollection);
         exam.setDuration(examDetail.getDuration());
         exam.setTitle(examDetail.getTitle());
-        exam.setType(examDetail.getType().name());
+        exam.setType(examType);
         exam.setYear(examDetail.getYear());
 
         exam_Repository.save(exam);
@@ -117,33 +135,40 @@ public class ExamService {
     }
 
     @Transactional
-    public void updateExam(ExamUpdateRequest examDetail, int examID) {
+    public void updateExam(ExamUpdateRequest examDetail, int examID) throws IOException {
         Exam exam = exam_Repository.findById(examID).orElseThrow(
                 () -> new ResourceNotFoundException("Cannot find the Exam with id : " + examID));
+
+        ExamType examType = examTypeService.getDetailByType(examDetail.getType());
+        ExamCollection examCollection = examCollectionService.getDetailByCollection(examDetail.getCollection());
 
         if (examDetail.getDuration() != null)
             exam.setDuration(examDetail.getDuration());
         if (examDetail.getCollection() != null)
-            exam.setCollection(examDetail.getCollection().name());
+            exam.setCollection(examCollection);
         if (examDetail.getTitle() != null)
             exam.setTitle(examDetail.getTitle());
         if (examDetail.getType() != null)
-            exam.setType(examDetail.getType().name());
+            exam.setType(examType);
         if (examDetail.getYear() != null)
             exam.setYear(examDetail.getYear());
+        if (examDetail.getAttemps() != null)
+            exam.setAttemps(examDetail.getAttemps());
 
         exam_Repository.save(exam);
     }
 
     @Transactional
-    public void deleteById(int examID) {
+    public void softDeleteById(int examID) {
         Exam exam = exam_Repository.findById(examID).orElseThrow(
                 () -> new ResourceNotFoundException("Cannot find the Exam with id : " + examID));
-        List<ToeicQuestion>questions=exam.getQuestions();
-        for(ToeicQuestion question: questions){
-            mediaService.deleteQuestionMedia(question);
-        }
-        exam_Repository.delete(exam);
+        // List<ToeicQuestion> questions = exam.getQuestions();
+        // for (ToeicQuestion question : questions) {
+        // mediaService.deleteQuestionMedia(question);
+        // }
+        // exam_Repository.delete(exam);
+        exam.setDeleted(true);
+        exam_Repository.save(exam);
     }
 
     @Transactional
@@ -152,10 +177,10 @@ public class ExamService {
         Exam exam = exam_Repository.findById(examId)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam not found with id: " + examId));
 
-        //Xóa danh sách câu hỏi hiện tại
-        //Xóa file media
-        List<ToeicQuestion>currenQuestions=exam.getQuestions();
-        for(ToeicQuestion question: currenQuestions){
+        // Xóa danh sách câu hỏi hiện tại
+        // Xóa file media
+        List<ToeicQuestion> currenQuestions = exam.getQuestions();
+        for (ToeicQuestion question : currenQuestions) {
             mediaService.deleteQuestionMedia(question);
         }
         exam.getQuestions().clear();

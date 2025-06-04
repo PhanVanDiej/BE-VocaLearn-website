@@ -228,7 +228,7 @@ public class UserController {
      }
 
      @PutMapping("/update")
-     public ResponseEntity<?> update(@RequestPart String dataJson, @RequestPart MultipartFile avatar)
+     public ResponseEntity<?> update(@RequestPart String dataJson, @RequestPart(required = false) MultipartFile avatar)
                throws IOException {
 
           if (dataJson == null) {
@@ -259,7 +259,7 @@ public class UserController {
           if (avatar != null) {
                if (user.getAvatar() != null)
                     storageService.deleteImage(user.getAvatar());
-               mediaService.getImageUrl(avatar);
+               user.setAvatar(mediaService.getImageUrl(avatar));
           }
           return userService.updateUser(user);
      }

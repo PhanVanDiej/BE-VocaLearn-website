@@ -6,21 +6,9 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-public class ExamCreateRequest {
-    @NotNull(message = "duration cannot be null")
-    private Integer duration;
-
+public class ExamTypeUpdateRequest {
     @NotNull
     @NotBlank
     @NotEmpty
-    private String title;
-
-    @NotNull
-    private Integer year;
-
-    @NotNull
     private String type;
-
-    @NotNull
-    private String collection;
 }

@@ -39,6 +39,8 @@ public class CardController {
 
     @Autowired
     private final MediaService mediaService;
+    @Autowired
+    private final ObjectMapper objectMapper;
 
     @GetMapping("/detail/{cardID}")
     public ResponseEntity<?> getCardDetail(@PathVariable Integer cardID) throws IOException {
@@ -59,8 +61,7 @@ public class CardController {
             @RequestParam("data") String dataJson) throws IOException {
 
         // Transform string to json object
-        ObjectMapper object = new ObjectMapper();
-        CardCreateRequest request = object.readValue(dataJson, CardCreateRequest.class);
+        CardCreateRequest request = objectMapper.readValue(dataJson, CardCreateRequest.class);
 
         cardService.createCard(request, image);
         return ResponseEntity.ok("Create new Card successfully!");

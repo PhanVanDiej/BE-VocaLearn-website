@@ -1,9 +1,6 @@
 package com.TestFlashCard.FlashCard.request;
 
-import java.time.LocalDate;
-
 import com.TestFlashCard.FlashCard.Enum.Role;
-import com.fasterxml.jackson.annotation.JsonFormat;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

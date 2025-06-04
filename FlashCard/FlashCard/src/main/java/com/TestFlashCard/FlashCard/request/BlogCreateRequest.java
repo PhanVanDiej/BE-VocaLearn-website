@@ -6,21 +6,21 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-public class ExamCreateRequest {
-    @NotNull(message = "duration cannot be null")
-    private Integer duration;
-
+public class BlogCreateRequest {
     @NotNull
-    @NotBlank
     @NotEmpty
+    @NotBlank
     private String title;
-
     @NotNull
-    private Integer year;
-
+    @NotEmpty
+    @NotBlank
+    private String category;
     @NotNull
-    private String type;
-
+    @NotEmpty
+    @NotBlank
+    private String shortDetail;
     @NotNull
-    private String collection;
+    @NotEmpty
+    @NotBlank
+    private String detail;
 }

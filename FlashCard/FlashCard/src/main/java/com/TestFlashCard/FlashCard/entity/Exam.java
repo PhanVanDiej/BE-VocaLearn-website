@@ -25,11 +25,16 @@ public class Exam {
     @Column(nullable = false)
     private Integer year;
 
-    @Column(nullable = false, length = 100)
-    private String type;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "type_id", nullable = false)
+    private ExamType type;
 
-    @Column(nullable = false, length = 100)
-    private String collection;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "collection_id", nullable = false)
+    private ExamCollection collection;
+
+    @Column(name = "attemps")
+    private Integer attemps = 0;
 
     @CreationTimestamp
     @Column(name = "createdAt", updatable = false)
@@ -43,4 +48,7 @@ public class Exam {
 
     @OneToMany(mappedBy = "exam", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ExamReview> examReviews;
+
+    @Column(name = "isDeleted", nullable = false)
+    private boolean isDeleted = false;
 }

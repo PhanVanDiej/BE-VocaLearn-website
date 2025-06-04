@@ -1,0 +1,30 @@
+package com.TestFlashCard.FlashCard.entity;
+
+import jakarta.persistence.*;
+import lombok.Data;
+
+@Entity
+@Data
+@Table(name = "blog")
+public class Blog {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+
+    @Column(name = "title", nullable = false)
+    private String title;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
+    private BlogCategory category;
+
+    @Column(name = "short_detail", nullable = false)
+    private String shortDetail;
+
+    @Column(name = "image")
+    private String image;
+
+    @Column(name = "detail", nullable = false)
+    private String detail;
+
+}

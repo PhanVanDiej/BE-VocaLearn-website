@@ -1,4 +1,5 @@
 package com.TestFlashCard.FlashCard.service;
+
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.TestFlashCard.FlashCard.Enum.EUserStatus;
+import com.TestFlashCard.FlashCard.Enum.Role;
 import com.TestFlashCard.FlashCard.JpaSpec.UserSpecification;
 import com.TestFlashCard.FlashCard.entity.User;
 import com.TestFlashCard.FlashCard.exception.ResourceNotFoundException;
@@ -58,13 +60,14 @@ public class UserService {
     public void deleteUser(int id) {
         User user = userRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Cannot find user with id : " + id));
-        
+
         user.setIsDeleted(EUserStatus.TRUE);
         userRepository.save(user);
     }
 
     public List<User> getAllUsers() {
-        Specification<User> specification=Specification.where(UserSpecification.hasStatus(EUserStatus.FALSE));
+        Specification<User> specification = Specification
+                .where(UserSpecification.hasStatus(EUserStatus.FALSE).and(UserSpecification.hasRole(Role.USER)));
         return userRepository.findAll(specification);
     }
 
@@ -75,8 +78,9 @@ public class UserService {
     public User getUserById(int id) {
         return userRepository.findById(id).orElse(null);
     }
-    public User getUserByEmail(String email){
-        User user=userRepository.findByEmail(email);
+
+    public User getUserByEmail(String email) {
+        User user = userRepository.findByEmail(email);
         return user;
     }
 

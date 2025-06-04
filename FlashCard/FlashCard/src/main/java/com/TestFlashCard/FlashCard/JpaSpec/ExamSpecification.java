@@ -5,6 +5,9 @@ import org.springframework.data.jpa.domain.Specification;
 import com.TestFlashCard.FlashCard.entity.Exam;
 
 public class ExamSpecification {
+    public static Specification<Exam> isDeleted(boolean check) {
+        return (root, query, cb) -> cb.equal(root.get("isDeleted"), check);
+    }
     public static Specification<Exam> hasYear(Integer year) {
         return (root, query, cb) -> year == null ? null : cb.equal(root.get("year"), year);
     }

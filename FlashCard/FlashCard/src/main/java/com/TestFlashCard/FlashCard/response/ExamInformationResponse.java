@@ -11,5 +11,7 @@ public record ExamInformationResponse(
     int year,
     String type,
     String collection,
+    int attemps,
+    int numberOfComment,
     List<ToeicQuestionResponse> questions
 ) {}
