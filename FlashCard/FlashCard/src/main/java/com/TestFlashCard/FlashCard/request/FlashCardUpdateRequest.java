@@ -1,6 +1,6 @@
 package com.TestFlashCard.FlashCard.request;
 
-import java.util.Date;
+import java.time.LocalDate;
 
 import com.TestFlashCard.FlashCard.Enum.LearningStatus;
 
@@ -19,7 +19,7 @@ public class FlashCardUpdateRequest {
     private String title;
 
     private LearningStatus learningStatus;
-    private Date reviewDate;
+    private LocalDate reviewDate;
 
     @Min(value = 1, message = "Cycle must be greater than or equal to 1")
     @Max(value = 30, message = "Cycle must be smaller than or equal to 30")

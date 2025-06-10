@@ -13,5 +13,6 @@ public record ExamInformationResponse(
     String collection,
     int attemps,
     int numberOfComment,
+    String fileImportName,
     List<ToeicQuestionResponse> questions
 ) {}

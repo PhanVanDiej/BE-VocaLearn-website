@@ -12,4 +12,6 @@ import com.TestFlashCard.FlashCard.entity.Exam;
 public interface IExam_Repository extends JpaRepository<Exam, Integer>, JpaSpecificationExecutor<Exam>{
     List<Exam>findAll();
     List<Exam> findByIsDeletedFalseOrderByCreatedAtDesc();
+    List<Exam> findAllByOrderByCreatedAtDesc();
+    List<Exam> findTop3ByOrderByAttempsDesc();
 }

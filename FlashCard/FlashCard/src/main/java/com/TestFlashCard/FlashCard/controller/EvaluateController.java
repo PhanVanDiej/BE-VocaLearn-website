@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.TestFlashCard.FlashCard.entity.User;
 import com.TestFlashCard.FlashCard.request.EvaluateCreateRequest;
+import com.TestFlashCard.FlashCard.request.EvaluateUpdateRequest;
 import com.TestFlashCard.FlashCard.response.EvaluateResponse;
 import com.TestFlashCard.FlashCard.service.EvaluateService;
 import com.TestFlashCard.FlashCard.service.UserService;
@@ -26,6 +27,9 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
 
 @RequiredArgsConstructor
 @RestController
@@ -58,5 +62,11 @@ public class EvaluateController {
     public ResponseEntity<?> getMethodName(@RequestParam(required = false) Integer star) throws IOException {
         List<EvaluateResponse> evaluates = star!=null ? evaluateService.getEvaluatesByStar(star):evaluateService.getAllEvaluates();
         return new ResponseEntity<List<EvaluateResponse>>(evaluates, HttpStatus.OK);
+    }
+
+    @PutMapping("/update/{id}")
+    public ResponseEntity<?> updateEvaluate(@PathVariable Integer id, @RequestBody EvaluateUpdateRequest request ) throws IOException{
+        evaluateService.update(request.getAdminReply(), id);
+        return ResponseEntity.ok("Update evaluate successfully");
     }
 }

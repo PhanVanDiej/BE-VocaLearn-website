@@ -1,6 +1,7 @@
 package com.TestFlashCard.FlashCard.request;
 
 import com.TestFlashCard.FlashCard.Enum.FlashCardTopicStatus;
+import com.TestFlashCard.FlashCard.Enum.LearningStatus;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -17,4 +18,5 @@ public class FlashCardTopicUpdateRequest {
     @NotEmpty(message = "Topic's title cannot be empty")
     private String title;
     private FlashCardTopicStatus status;
+    private LearningStatus learningStatus;
 }

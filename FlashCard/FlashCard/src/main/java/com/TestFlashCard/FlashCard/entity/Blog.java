@@ -24,7 +24,6 @@ public class Blog {
     @Column(name = "image")
     private String image;
 
-    @Column(name = "detail", nullable = false)
+    @Column(name = "detail", nullable = false, columnDefinition = "LONGTEXT")
     private String detail;
-
 }

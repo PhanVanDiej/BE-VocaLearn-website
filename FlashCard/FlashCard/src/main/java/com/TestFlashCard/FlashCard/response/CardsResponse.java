@@ -8,6 +8,7 @@ public record CardsResponse(
     String audio,
     String pronounce,
     int level,
+    int isRemember,
     String partOfSpeech,
     String example
 ){}

@@ -32,12 +32,24 @@ public class ExamReviewService {
     private final IExam_Repository exam_Repository;
     @Autowired
     private final IToeicQuestion_Repository toeicQuestion_Repository;
+    @Autowired
+    private final AttempLogService attempLogService;
 
     @Transactional
     public ExamReviewResponse submitExam(ExamSubmitRequest request, User user) {
         // Lấy Exam
+
         Exam exam = exam_Repository.findById(request.getExamID())
                 .orElseThrow(() -> new ResourceNotFoundException("Exam not found"));
+
+        // Tăng số lần thi
+        attempLogService.createAttemp(exam.getId(), user.getId());
+
+        // Khởi tạo ExamReview
+        ExamReview examReview = new ExamReview();
+        examReview.setExam(exam);
+        examReview.setUser(user);
+        examReview.setDuration(request.getDuration());
 
         int correctCount = 0;
         List<QuestionReview> questionReviews = new ArrayList<>();
@@ -46,31 +58,28 @@ public class ExamReviewService {
             ToeicQuestion question = toeicQuestion_Repository.findById(record.getQuestionId())
                     .orElseThrow(() -> new ResourceNotFoundException("Question not found: " + record.getQuestionId()));
 
-            // So sánh đáp án
             boolean isCorrect = question.getResult().equalsIgnoreCase(String.valueOf(record.getAnswer()));
             if (isCorrect)
                 correctCount++;
 
+            // Tạo review cho từng câu
             QuestionReview qr = new QuestionReview();
             qr.setToeicQuestion(question);
             qr.setUserAnswer(String.valueOf(record.getAnswer()));
+            qr.setExamReview(examReview); // ✅ Gán examReview ngay lập tức
+
             questionReviews.add(qr);
         }
 
-        // Tạo ExamReview
-        ExamReview examReview = new ExamReview();
-        examReview.setExam(exam);
-        examReview.setUser(user);
-        examReview.setDuration(request.getDuration());
-        examReview.setResult(correctCount);
+        // Gán danh sách câu hỏi vào examReview
         examReview.setQuestionReviews(questionReviews);
+        examReview.setResult(correctCount);
 
-        // Gán liên kết ngược để JPA cascade đúng
-        for (QuestionReview qr : questionReviews) {
-            qr.setExamReview(examReview);
-        }
+        // Lưu vào DB (cascade sẽ lưu luôn QuestionReview)
+        examReview_Repository.save(examReview);
+        exam_Repository.save(exam);
 
-        examReview_Repository.save(examReview); // cascade lưu cả list
+        // Tạo response trả về
         ExamReviewResponse response = new ExamReviewResponse();
         response.setExamID(exam.getId());
         response.setUserID(user.getId());
@@ -79,13 +88,14 @@ public class ExamReviewService {
         response.setTotalQuestions(questionReviews.size());
         response.setCreatedAt(examReview.getCreateAt());
 
+        // Map từng câu hỏi thành response
         List<QuestionReviewResponse> questionReviewResponses = questionReviews.stream().map(qr -> {
             QuestionReviewResponse qrr = new QuestionReviewResponse();
             qrr.setQuestionId(qr.getToeicQuestion().getId());
             qrr.setUserAnswer(qr.getUserAnswer());
             qrr.setCorrectAnswer(qr.getToeicQuestion().getResult());
-            qrr.setCorrect(qr.getUserAnswer() != null &&
-                    qr.getUserAnswer().equalsIgnoreCase(qr.getToeicQuestion().getResult()));
+            qrr.setCorrect(qrr.getUserAnswer() != null &&
+                    qrr.getUserAnswer().equalsIgnoreCase(qrr.getCorrectAnswer()));
             return qrr;
         }).toList();
 

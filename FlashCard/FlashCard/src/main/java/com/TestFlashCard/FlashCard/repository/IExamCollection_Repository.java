@@ -10,5 +10,6 @@ import com.TestFlashCard.FlashCard.entity.ExamCollection;
 @Repository
 public interface IExamCollection_Repository extends JpaRepository<ExamCollection,Integer>{
     List<ExamCollection>findByIsDeletedFalse();
+    ExamCollection findByCollectionAndIsDeletedFalse(String collection);
     ExamCollection findByCollection(String collection);
 }

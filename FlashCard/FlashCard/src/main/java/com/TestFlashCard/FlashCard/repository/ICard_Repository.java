@@ -11,4 +11,5 @@ import com.TestFlashCard.FlashCard.entity.Card;
 public interface ICard_Repository extends JpaRepository<Card,Integer> {
     public Card findByTerminologyIgnoreCaseAndFlashCardIdAndPartOfSpeech(String terminology, Integer flashCardId, String partOfSpeech);
     List<Card> findByFlashCardId(int flashCardID);
+    int countByFlashCardId(Integer flashCardID);
 }

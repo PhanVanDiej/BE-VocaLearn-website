@@ -3,6 +3,7 @@ package com.TestFlashCard.FlashCard.service;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -39,32 +40,36 @@ public class BlogService {
             throw new ResourceExistedException("Cannot create new Blog Category. This category has been existed!");
         BlogCategory category = new BlogCategory();
         category.setTitle(request.getTitle());
-        category.setDeleted(false);
         blogCategory_Repository.save(category);
     }
 
     @Transactional
     public List<BlogCategory> getAllCategory() throws IOException {
-        return blogCategory_Repository.findByIsDeletedFalse();
+        return blogCategory_Repository.findAll();
     }
 
     @Transactional
     public void updateCategory(BlogCategoryCreateRequest request, int id) {
-        if (blogCategory_Repository.findByTitle(request.getTitle()) != null)
-            throw new ResourceExistedException(
-                    "Cannot update new Blog Category. The category's title has been existed!");
         BlogCategory blogCategory = blogCategory_Repository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Cannot find the Blog Category with id: " + id));
+        if (!blogCategory.getTitle().equals(request.getTitle()))
+            if (blogCategory_Repository.findByTitle(request.getTitle()) != null)
+                throw new ResourceExistedException(
+                        "Cannot update new Blog Category. The category's title has been existed!");
+
         blogCategory.setTitle(request.getTitle());
         blogCategory_Repository.save(blogCategory);
     }
 
     @Transactional
-    public void deleteCategory(int id) {
+    public void deleteCategory(int id) throws IOException {
         BlogCategory blogCategory = blogCategory_Repository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Cannot find the Blog Category with id: " + id));
-        blogCategory.setDeleted(true);
-        blogCategory_Repository.save(blogCategory);
+        List<Blog> blogs = blog_Repository.findAllByCategory(blogCategory);
+        if (!blogs.isEmpty())
+            throw new BadRequestException(
+                    "Cannot delete Blog Category with id: " + id + ". Please delete All Blogs in this category first.");
+        blogCategory_Repository.delete(blogCategory);
     }
 
     @Transactional
@@ -119,7 +124,7 @@ public class BlogService {
     }
 
     @Transactional
-    public void deleteBlog(int id) {
+    public void deleteBlog(int id) throws IOException {
         Blog blog = blog_Repository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Cannot find the Blog with id: " + id));
         if (blog.getImage() != null)
@@ -135,5 +140,14 @@ public class BlogService {
                 blog.getShortDetail(),
                 blog.getImage(),
                 blog.getDetail());
+    }
+
+    @Transactional
+    public List<BlogResponse> getByCategory(String param) throws IOException {
+        BlogCategory category = blogCategory_Repository.findByTitle(param);
+        if (category == null)
+            throw new ResourceNotFoundException("Cannot find the Blog Category with title: " + param);
+        List<Blog> blogs = blog_Repository.findAllByCategory(category);
+        return blogs.stream().map(this::convertToBlogResponse).toList();
     }
 }

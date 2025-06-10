@@ -73,11 +73,10 @@ public class CardController {
         return ResponseEntity.ok("Updating card with id : " + id + " successfully !");
     }
 
-    @PutMapping(value = "/update/image/{cardID}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping(value = "/update/image/{cardID}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> changeImage(@PathVariable Integer cardID, @RequestParam MultipartFile image)
             throws IOException {
         String imageUrl = mediaService.getImageUrl(image);
-        System.out.println(imageUrl);
         cardService.changeImage(cardID, imageUrl);
         return ResponseEntity.ok("Changing image successfully!");
     }
@@ -98,5 +97,12 @@ public class CardController {
     public ResponseEntity<?> createListCards(@RequestParam List<MultipartFile> files) throws Exception {
         List<String> imageUrls = new ArrayList<>();
         return ResponseEntity.ok(null);
+    }
+
+    @PutMapping("resetAll/{flashcardId}")
+    public ResponseEntity<?> resetAllCards(@PathVariable Integer flashcardId) {
+        
+        cardService.resetListCard(flashcardId);
+        return ResponseEntity.ok("Reset List cards success.");
     }
 }

@@ -5,6 +5,7 @@ import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 
 import com.TestFlashCard.FlashCard.Enum.FlashCardTopicStatus;
+import com.TestFlashCard.FlashCard.Enum.LearningStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,6 +21,9 @@ public class FlashCardTopic {
     @Column(name = "title", nullable = false, length = 255)
     private String title;
 
+    @Column(name = "visit_count", nullable = false)
+    private Integer visitCount;
+
     @CreationTimestamp
     @Column(name = "createAt", updatable = false)
     private LocalDateTime createAt;
@@ -31,6 +35,10 @@ public class FlashCardTopic {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", columnDefinition = "ENUM('PRIVATE', 'PUBLIC') DEFAULT 'PUBLIC'")
     private FlashCardTopicStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "learning_status", columnDefinition = "ENUM('MASTERED', 'IN_PROGRESS', 'NEW', 'REVIEW_NEEDED') DEFAULT 'NEW'")
+    private LearningStatus leaningStatus;
 
     @OneToMany(mappedBy = "topic", cascade = CascadeType.ALL)
     private List<FlashCard>flashCards;

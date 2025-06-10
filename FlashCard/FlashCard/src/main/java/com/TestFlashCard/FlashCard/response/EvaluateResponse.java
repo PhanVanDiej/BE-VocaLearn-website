@@ -7,5 +7,9 @@ public record EvaluateResponse(
     String content,
     int star,
     String image,
-    LocalDateTime createAt
+    LocalDateTime createAt,
+    String fullName,
+    String email,
+    String avatar,
+    String adminReply
 ) {}

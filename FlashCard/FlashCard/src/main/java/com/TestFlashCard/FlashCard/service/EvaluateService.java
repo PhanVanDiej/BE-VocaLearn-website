@@ -30,7 +30,7 @@ public class EvaluateService {
     @Autowired
     private final DigitalOceanStorageService storageService;
 
-    public void createEvaluate(EvaluateCreateRequest request, MultipartFile imagFile, User user) throws IOException{
+    public void createEvaluate(EvaluateCreateRequest request, MultipartFile imagFile, User user) throws IOException {
 
         Evaluate evaluate = new Evaluate();
         evaluate.setContent(request.getContent());
@@ -44,6 +44,7 @@ public class EvaluateService {
             evaluate.setImage(null);
         }
 
+        evaluate.setAdminReply("Đội ngũ Admin chân thành cảm ơn bài đánh giá của bạn. Chúng tôi luôn cảm kích với những ý kiến từ bạn để xây dựng trang web ngày càng hoàn thiện. Trân trọng. ");
         evaluate_Repository.save(evaluate);
     }
 
@@ -63,16 +64,31 @@ public class EvaluateService {
 
     public List<EvaluateResponse> getEvaluatesByStar(int star) throws IOException {
         Specification<Evaluate> evaluateSpecification = Specification.where(EvaluateSpecification.hasStar(star));
-        return evaluate_Repository.findAll(evaluateSpecification).stream().map(this::convertToEvaluateResponse).toList();
+        return evaluate_Repository.findAll(evaluateSpecification).stream().map(this::convertToEvaluateResponse)
+                .toList();
     }
 
-    private EvaluateResponse convertToEvaluateResponse(Evaluate evaluate){
+    public void update(String adminReply, int id) throws IOException {
+        Evaluate evaluate = evaluate_Repository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException("Cannot find the evaluate with id: " + id));
+        if (adminReply != null)
+            evaluate.setAdminReply(adminReply);
+        evaluate_Repository.save(evaluate);
+    }
+
+    private EvaluateResponse convertToEvaluateResponse(Evaluate evaluate) {
         return new EvaluateResponse(
-            evaluate.getId(),
-            evaluate.getContent(),
-            evaluate.getStar(),
-            evaluate.getImage(),
-            evaluate.getCreateAt()
-        );
+                evaluate.getId(),
+                evaluate.getContent(),
+                evaluate.getStar(),
+                evaluate.getImage(),
+                evaluate.getCreateAt(),
+                evaluate.getUser().getFullName(),
+                evaluate.getUser().getEmail(),
+                evaluate.getUser().getAvatar(),
+                evaluate.getAdminReply());
+    }
+    public long countAll(){
+        return evaluate_Repository.count();
     }
 }

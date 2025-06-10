@@ -17,6 +17,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
@@ -115,6 +116,7 @@ public class DigitalOceanStorageService {
 
         return String.format("%s/%s/%s", endpoint, spaceName, uniqueFileName);
     }
+
     public void deleteAudio(String fileUrl) {
         try {
             String key = extractKeyFromUrl(fileUrl);
@@ -129,5 +131,24 @@ public class DigitalOceanStorageService {
         } catch (S3Exception exception) {
             throw new StorageException("Error when delete Audio from DigitalOcean Space!", exception);
         }
+    }
+
+    public String copyFile(String sourceFileUrl, String newFileName) {
+        S3Client s3Client = getS3Client();
+        String sourceKey = extractKeyFromUrl(sourceFileUrl);
+        String destinationKey = generateUniqueFileName(newFileName);
+
+        // Copy trong cùng 1 bucket (Spaces)
+        CopyObjectRequest copyReq = CopyObjectRequest.builder()
+                .copySource(spaceName + "/" + sourceKey)
+                .destinationBucket(spaceName)
+                .destinationKey(destinationKey)
+                .acl("public-read")
+                .build();
+
+        s3Client.copyObject(copyReq);
+
+        // Trả về url mới
+        return String.format("%s/%s/%s", endpoint, spaceName, destinationKey);
     }
 }

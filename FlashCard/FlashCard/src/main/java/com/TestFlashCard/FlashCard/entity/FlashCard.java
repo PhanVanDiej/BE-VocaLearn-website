@@ -3,8 +3,8 @@ package com.TestFlashCard.FlashCard.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.List;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -23,7 +23,7 @@ public class FlashCard {
     private String title;
 
     @Column(name = "reviewDate")
-    private Date reviewDate;
+    private LocalDate reviewDate;
 
     @Column (name = "cycle", nullable = false)
     private int cycle;

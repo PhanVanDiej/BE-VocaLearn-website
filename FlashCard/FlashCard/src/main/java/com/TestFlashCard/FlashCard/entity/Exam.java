@@ -34,7 +34,7 @@ public class Exam {
     private ExamCollection collection;
 
     @Column(name = "attemps")
-    private Integer attemps = 0;
+    private int attemps;
 
     @CreationTimestamp
     @Column(name = "createdAt", updatable = false)
@@ -51,4 +51,7 @@ public class Exam {
 
     @Column(name = "isDeleted", nullable = false)
     private boolean isDeleted = false;
+
+    @Column(name = "fileImportName")
+    private String fileImportName;
 }

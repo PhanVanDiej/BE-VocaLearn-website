@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequestMapping("/api/blog")
@@ -100,6 +101,16 @@ public class BlogController {
     public ResponseEntity<?> deleteBlog(@PathVariable Integer id) throws IOException {
         blogService.deleteBlog(id);
         return ResponseEntity.ok("Delete Blog with id: " + id + " successfully!");
+    }
+
+    @GetMapping("/filter")
+    public ResponseEntity<?> getByCategory(@RequestParam String category) throws IOException {
+        return new ResponseEntity<>(blogService.getByCategory(category), HttpStatus.OK);
+    }
+
+    @GetMapping("/test")
+    public ResponseEntity<String> test() {
+        return ResponseEntity.ok("Test OK");
     }
 
 }

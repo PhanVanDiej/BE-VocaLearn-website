@@ -12,6 +12,7 @@ public class CardUpdateRequest {
     private String partOfSpeech;
     private Integer level;
     private String example;
+    private Integer isRemember;
     
     @NotNull(message = "flashCard ID cannot be null")
     private Integer flashCardID;

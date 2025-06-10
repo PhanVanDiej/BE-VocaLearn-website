@@ -24,8 +24,11 @@ public class Evaluate {
     @Column(nullable = false)
     private Integer star;
 
-    @Column(length = 255)
+    @Column(name = "image")
     private String image;
+
+    @Column(name = "admin_reply", nullable = true, columnDefinition = "TEXT")
+    private String adminReply;
 
     @CreationTimestamp
     @Column(name = "createAt", updatable = false)

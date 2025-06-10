@@ -1,5 +1,6 @@
 package com.TestFlashCard.FlashCard.controller;
 
+import java.io.IOException;
 import java.security.Principal;
 import java.util.List;
 
@@ -17,7 +18,6 @@ import com.TestFlashCard.FlashCard.request.FlashCardCreateRequest;
 import com.TestFlashCard.FlashCard.request.FlashCardTopicCreateRequest;
 import com.TestFlashCard.FlashCard.request.FlashCardTopicUpdateRequest;
 import com.TestFlashCard.FlashCard.request.FlashCardUpdateRequest;
-import com.TestFlashCard.FlashCard.response.FlashCardTopicPublicResponse;
 import com.TestFlashCard.FlashCard.response.ListFlashCardTopicResponse;
 import com.TestFlashCard.FlashCard.response.ListFlashCardsResponse;
 import com.TestFlashCard.FlashCard.service.FlashCardService;
@@ -48,6 +48,16 @@ public class FlashCardController {
         return new ResponseEntity<List<ListFlashCardsResponse>>(flashCards, HttpStatus.OK);
     }
 
+    @GetMapping("/topic/{id}")
+    public ResponseEntity<?> getFlashCardTopicById(@PathVariable Integer id) throws IOException {
+        return new ResponseEntity<>(flashCardService.getFlashCardTopicById(id), HttpStatus.OK);
+    }
+
+    @GetMapping("/getTopicPopular")
+    public ResponseEntity<?> getAllTopicPopular() throws IOException {
+        return new ResponseEntity<>(flashCardService.getFlashCardTopicByVisitCount(), HttpStatus.OK);
+    }
+
     @PostMapping("/createFlashCard")
     public ResponseEntity<?> createFlashCard(@RequestBody @Valid FlashCardCreateRequest request) {
         try {
@@ -62,20 +72,14 @@ public class FlashCardController {
 
     @PostMapping("/createTopic")
     public ResponseEntity<?> createFlashCardTopic(@RequestBody @Valid FlashCardTopicCreateRequest request,
-            Principal principal) {
-        try {
-            flashCardService.createFlashCardTopic(request, principal.getName());
-            return ResponseEntity.ok().body("Create FlashCard's topic successfull !");
-        } catch (ResourceNotFoundException ex) {
-            return new ResponseEntity<>("Error: " + ex.getMessage(), HttpStatus.NOT_FOUND);
-        } catch (Exception ex) {
-            return ResponseEntity.internalServerError().body("Error :" + ex.getMessage());
-        }
+            Principal principal) throws IOException {
+        flashCardService.createFlashCardTopic(request, principal.getName());
+        return ResponseEntity.ok().body("Create FlashCard's topic successfull !");
     }
 
     @PutMapping("/updateTopic")
-    public ResponseEntity<?> updateTopic(@RequestBody FlashCardTopicUpdateRequest request) {
-        flashCardService.updateTopic(request);
+    public ResponseEntity<?> updateTopic(@RequestBody FlashCardTopicUpdateRequest request, Principal principal) {
+        flashCardService.updateTopic(request, principal.getName());
         return ResponseEntity.ok().body("Update topic with id: " + request.getId() + " successfully !");
     }
 
@@ -97,10 +101,16 @@ public class FlashCardController {
         return ResponseEntity.ok().body("FlashCard with id = " + id + " has been deleted successfully !");
     }
 
-    @GetMapping("/getPublicTopics")
-    public ResponseEntity<?> getPublicTopics() {
-        return new ResponseEntity<List<FlashCardTopicPublicResponse>>(flashCardService.getAllsPublicFlashCardTopic(),
-                HttpStatus.OK);
+    @GetMapping("/id/{id}")
+    public ResponseEntity<?> getFlashCardById(@PathVariable Integer id) {
+        return ResponseEntity.ok(flashCardService.getFlashCardById(id));
     }
+
+    @PostMapping("/savePublishTopic/{topicID}")
+    public ResponseEntity<?> savePublishTopic(@PathVariable Integer topicID,Principal principal) {
+        flashCardService.savePublishTopic(topicID, principal.getName());
+        return ResponseEntity.ok("Save new Flashcard Topic successfully");
+    }
+    
 
 }

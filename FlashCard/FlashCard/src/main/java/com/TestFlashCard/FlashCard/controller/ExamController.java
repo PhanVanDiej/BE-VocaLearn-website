@@ -24,7 +24,6 @@ import com.TestFlashCard.FlashCard.request.ExamTypeCreateRequest;
 import com.TestFlashCard.FlashCard.request.ExamTypeUpdateRequest;
 import com.TestFlashCard.FlashCard.request.ExamUpdateRequest;
 import com.TestFlashCard.FlashCard.response.CommentResponse;
-import com.TestFlashCard.FlashCard.response.ExamFilterdResponse;
 import com.TestFlashCard.FlashCard.response.ExamInformationResponse;
 import com.TestFlashCard.FlashCard.response.ExamReviewResponse;
 import com.TestFlashCard.FlashCard.service.CommentService;
@@ -48,7 +47,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 @RestController
 @RequestMapping("/api/exam")
 @RequiredArgsConstructor
-
 public class ExamController {
 
     @Autowired
@@ -70,7 +68,7 @@ public class ExamController {
             @RequestParam(required = false) String collection,
             @RequestParam(required = false) String title) {
 
-        List<ExamFilterdResponse> exams = examService.getByFilter(year, type, collection, title);
+        List<ExamInformationResponse> exams = examService.getByFilter(year, type, collection, title);
         return ResponseEntity.ok(exams);
     }
 
@@ -87,8 +85,7 @@ public class ExamController {
 
     @PostMapping("/create")
     public ResponseEntity<?> createExam(@RequestBody @Valid ExamCreateRequest request) throws IOException {
-        examService.create(request);
-        return ResponseEntity.ok("Create a new Exam successfully !");
+        return ResponseEntity.ok(examService.create(request));
     }
 
     @PutMapping("/update/{examID}")
@@ -100,7 +97,7 @@ public class ExamController {
 
     @DeleteMapping("/delete/{examID}")
     public ResponseEntity<?> deleteExamById(@PathVariable Integer examID) {
-        examService.softDeleteById(examID);
+        examService.DeleteById(examID);
         return ResponseEntity.ok("Delete Exam with id : " + examID + " successfully!");
     }
 
@@ -120,6 +117,8 @@ public class ExamController {
             Principal principal) {
         String accountName = principal.getName();
         User user = userService.getUserByAccountName(accountName);
+        System.out.println("Trước khi chạy vào service------------");
+
         ExamReviewResponse response = examReviewService.submitExam(request, user);
         return ResponseEntity.ok(response);
     }
@@ -232,7 +231,7 @@ public class ExamController {
     
     @DeleteMapping("/collection/delete/{id}")
     public ResponseEntity<?> deleteExamCollection(@PathVariable Integer id) throws IOException{
-        examCollectionService.softDelete(id);
+        examCollectionService.Delete(id);
         return ResponseEntity.ok("Delete ExamCOllection with id: " + id +" successfully!");
     }
     

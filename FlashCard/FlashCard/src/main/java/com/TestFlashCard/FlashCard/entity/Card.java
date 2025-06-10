@@ -17,7 +17,7 @@ public class Card {
     @Column(name = "terminology", nullable = false, length = 255)
     private String terminology;
 
-    @Column(name = "definition")
+    @Column(name = "definition", columnDefinition = "TEXT")
     private String definition;
 
     @Column(name = "image", length = 255)
@@ -35,8 +35,11 @@ public class Card {
     @Column(name = "partOfSpeech",nullable = false, length = 50)
     private String partOfSpeech;
 
-    @Column(name = "example")
+    @Column(name = "example", columnDefinition = "TEXT")
     private String example;
+
+    @Column (name="isRemember", columnDefinition = "int default 0")
+    private Integer isRemember;
 
     @CreationTimestamp
     @Column(name = "createAt", updatable = false)

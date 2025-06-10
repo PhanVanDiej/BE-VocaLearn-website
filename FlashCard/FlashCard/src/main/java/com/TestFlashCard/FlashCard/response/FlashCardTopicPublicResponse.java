@@ -4,5 +4,6 @@ public record FlashCardTopicPublicResponse(
     int id,
     String userName,
     String title,
-    String status
+    String status,
+    int visitCount
 ) {}

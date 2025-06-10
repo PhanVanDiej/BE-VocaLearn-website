@@ -1,11 +1,12 @@
 package com.TestFlashCard.FlashCard.response;
 
-import java.util.Date;
+import java.time.LocalDate;
 
 public record ListFlashCardsResponse(
     int id,
     String title,
-    Date reviewDate,
+    LocalDate reviewDate,
     int cycle,
-    String learningStatus
+    String learningStatus,
+    int words
 ) {}
