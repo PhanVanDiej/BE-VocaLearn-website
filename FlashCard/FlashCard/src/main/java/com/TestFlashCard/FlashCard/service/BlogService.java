@@ -139,7 +139,9 @@ public class BlogService {
                 blog.getCategory().getTitle(),
                 blog.getShortDetail(),
                 blog.getImage(),
-                blog.getDetail());
+                blog.getDetail(),
+                blog.getAuthor(),
+                blog.getCreateAt());
     }
 
     @Transactional

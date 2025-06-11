@@ -11,5 +11,6 @@ public record EvaluateResponse(
     String fullName,
     String email,
     String avatar,
-    String adminReply
+    String adminReply,
+    LocalDateTime replyAt
 ) {}

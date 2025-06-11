@@ -1,5 +1,9 @@
 package com.TestFlashCard.FlashCard.entity;
 
+import java.time.LocalDateTime;
+
+import org.hibernate.annotations.CreationTimestamp;
+
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -26,4 +30,10 @@ public class Blog {
 
     @Column(name = "detail", nullable = false, columnDefinition = "LONGTEXT")
     private String detail;
+
+    @Column (name = "createAt")
+    private LocalDateTime createAt;
+
+    @Column (name = "author")
+    private String author;
 }

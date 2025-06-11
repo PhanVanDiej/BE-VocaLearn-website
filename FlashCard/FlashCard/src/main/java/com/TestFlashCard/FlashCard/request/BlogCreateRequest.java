@@ -23,4 +23,6 @@ public class BlogCreateRequest {
     @NotEmpty
     @NotBlank
     private String detail;
+
+    private String author;
 }

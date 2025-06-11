@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -29,6 +30,9 @@ public class Evaluate {
 
     @Column(name = "admin_reply", nullable = true, columnDefinition = "TEXT")
     private String adminReply;
+
+    @Column (name = "replyAt", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP" )
+    private LocalDateTime replyAt;
 
     @CreationTimestamp
     @Column(name = "createAt", updatable = false)
