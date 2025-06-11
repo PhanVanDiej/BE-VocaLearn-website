@@ -94,10 +94,19 @@ public class DigitalOceanStorageService {
     }
 
     private String extractKeyFromUrl(String fileUrl) {
-        // Ví dụ:
-        // https://your-space.nyc3.digitaloceanspaces.com/your-bucket/file-name.jpg
-        // => Trả về "file-name.jpg"
-        return fileUrl.substring(fileUrl.lastIndexOf('/') + 1);
+        // endpoint sẽ không có dấu "/" cuối
+        String base = endpoint.endsWith("/") ? endpoint : endpoint + "/";
+        // base ví dụ: https://your-space.sgp1.digitaloceanspaces.com/
+        if (fileUrl.startsWith(base)) {
+            return fileUrl.substring(base.length());
+        }
+        // fallback: tìm đoạn sau endpoint
+        int idx = fileUrl.indexOf(".digitaloceanspaces.com/");
+        if (idx != -1) {
+            return fileUrl.substring(idx + ".digitaloceanspaces.com/".length() + 1);
+        }
+        // fallback cuối cùng: chỉ lấy tên file
+        return fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
     }
 
     public String uploadAudio(String fileName, InputStream inputStream, String contentType) throws IOException {
@@ -137,6 +146,7 @@ public class DigitalOceanStorageService {
         S3Client s3Client = getS3Client();
         String sourceKey = extractKeyFromUrl(sourceFileUrl);
         String destinationKey = generateUniqueFileName(newFileName);
+        System.out.println("Copying file: " + sourceKey + " in bucket: " + spaceName);
 
         // Copy trong cùng 1 bucket (Spaces)
         CopyObjectRequest copyReq = CopyObjectRequest.builder()
