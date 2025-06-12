@@ -1,6 +1,7 @@
 package com.TestFlashCard.FlashCard.service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,31 +23,33 @@ public class ToeicQuestionService {
     @Autowired
     private final IExam_Repository exam_Repository;
 
-    public ToeicQuestionResponse getById(int questionID){
+    public ToeicQuestionResponse getById(int questionID) {
         ToeicQuestion question = toeicQuestion_Repository.findById(questionID).orElseThrow(
-            ()-> new ResourceNotFoundException("Cannot find the toeic question with id: " +questionID)
-        );
+                () -> new ResourceNotFoundException("Cannot find the toeic question with id: " + questionID));
         return convertQuestionToResponse(question);
     }
 
-    public List<ToeicQuestionResponse> getByExamId(int examID){
+    public List<ToeicQuestionResponse> getByExamId(int examID) {
         Exam exam = exam_Repository.findById(examID).orElseThrow(
-            ()-> new ResourceNotFoundException("Cannot find the Exam with id : " +examID)
-        );
+                () -> new ResourceNotFoundException("Cannot find the Exam with id : " + examID));
 
         List<ToeicQuestion> questions = toeicQuestion_Repository.findByExamId(examID);
         return questions.stream().map(this::convertQuestionToResponse).toList();
     }
 
-    public ToeicQuestionResponse convertQuestionToResponse(ToeicQuestion question){
+    public ToeicQuestionResponse convertQuestionToResponse(ToeicQuestion question) {
+        List<ToeicQuestionResponse.OptionResponse> options = question.getOptions().stream()
+                .map(opt -> new ToeicQuestionResponse.OptionResponse(opt.getMark(), opt.getDetail()))
+                .collect(Collectors.toList());
+
         return new ToeicQuestionResponse(
-            question.getId(),
-            question.getPart(),
-            question.getDetail(),
-            question.getResult(),
-            question.getImage(),
-            question.getAudio()
-        );
+                question.getId(),
+                question.getPart(),
+                question.getDetail(),
+                question.getResult(),
+                question.getImage(),
+                question.getAudio(),
+                options);
     }
 
 }

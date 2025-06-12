@@ -19,4 +19,5 @@ public class FlashCardTopicUpdateRequest {
     private String title;
     private FlashCardTopicStatus status;
     private LearningStatus learningStatus;
+    private Integer visitCount;
 }

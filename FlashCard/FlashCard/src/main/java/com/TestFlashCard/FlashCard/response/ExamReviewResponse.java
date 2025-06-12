@@ -9,9 +9,15 @@ import lombok.Data;
 public class ExamReviewResponse {
     private Integer examID;
     private Integer userID;
+    private String userName;
+    private String examTitle;
+    private String examCollection;
     private Integer totalQuestions;
     private Integer correctAnswers;
+    private Integer incorrectAnswers;
+    private Integer nullAnswers;
     private Integer duration;
     private LocalDateTime createdAt;
+    private String section;
     private List<QuestionReviewResponse> questionReviews;
 }

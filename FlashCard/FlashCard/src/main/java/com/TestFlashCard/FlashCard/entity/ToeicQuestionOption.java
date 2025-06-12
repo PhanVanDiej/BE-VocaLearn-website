@@ -17,6 +17,9 @@ public class ToeicQuestionOption {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String detail;
 
+    @Column
+    private String mark;
+
     @CreationTimestamp
     @Column(name = "createAt", updatable = false)
     private LocalDateTime createAt;

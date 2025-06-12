@@ -16,7 +16,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.TestFlashCard.FlashCard.entity.User;
 import com.TestFlashCard.FlashCard.request.EvaluateCreateRequest;
-import com.TestFlashCard.FlashCard.request.EvaluateUpdateByUserRequest;
 import com.TestFlashCard.FlashCard.request.EvaluateUpdateRequest;
 import com.TestFlashCard.FlashCard.response.EvaluateResponse;
 import com.TestFlashCard.FlashCard.service.EvaluateService;

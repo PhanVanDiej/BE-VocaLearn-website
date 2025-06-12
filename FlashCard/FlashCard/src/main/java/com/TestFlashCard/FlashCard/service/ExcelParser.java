@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -32,19 +31,20 @@ public class ExcelParser {
         List<ToeicQuestion> questions = new ArrayList<>();
 
         try (FileInputStream fis = new FileInputStream(excelFile);
-            Workbook workbook = new XSSFWorkbook(fis)) {
+                Workbook workbook = new XSSFWorkbook(fis)) {
 
             Sheet sheet = workbook.getSheetAt(0);
 
             for (Row row : sheet) {
-                if (row.getRowNum() == 0) continue; // Skip header
+                if (row.getRowNum() == 0)
+                    continue; // Skip header
 
                 ToeicQuestion question = new ToeicQuestion();
                 question.setPart(getCellValue(row.getCell(0)));
                 question.setDetail(getCellValue(row.getCell(1)));
                 question.setResult(getCellValue(row.getCell(2)));
-                
-                //upload file ảnh và setImage
+
+                // upload file ảnh và setImage
                 String imageFileName = getCellValue(row.getCell(3));
                 if (imageFileName != null && !imageFileName.isBlank()) {
                     File imageFile = new File(mediaFolder, imageFileName);
@@ -55,7 +55,7 @@ public class ExcelParser {
                         throw new FileNotFoundException("Image file not found: " + imageFile.getPath());
                     }
                 }
-                //upload audio và setAudio
+                // upload audio và setAudio
                 String audioFileName = getCellValue(row.getCell(4));
                 if (audioFileName != null && !audioFileName.isBlank()) {
                     File audioFile = new File(mediaFolder, audioFileName);
@@ -74,6 +74,14 @@ public class ExcelParser {
                         ToeicQuestionOption option = new ToeicQuestionOption();
                         option.setDetail(detail);
                         option.setToeicQuestion(question);
+                        if (i == 5)
+                            option.setMark("A");
+                        else if (i == 6)
+                            option.setMark("B");
+                        else if (i == 7)
+                            option.setMark("C");
+                        else if (i == 8)
+                            option.setMark("D");
                         options.add(option);
                     }
                 }
@@ -90,7 +98,8 @@ public class ExcelParser {
     }
 
     private String getCellValue(Cell cell) {
-        if (cell == null) return null;
+        if (cell == null)
+            return null;
         return switch (cell.getCellType()) {
             case STRING -> cell.getStringCellValue();
             case NUMERIC -> String.valueOf((int) cell.getNumericCellValue());
@@ -98,5 +107,5 @@ public class ExcelParser {
             default -> null;
         };
     }
-    
+
 }

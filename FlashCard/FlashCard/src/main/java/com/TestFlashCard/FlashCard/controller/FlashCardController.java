@@ -112,5 +112,10 @@ public class FlashCardController {
         return ResponseEntity.ok("Save new Flashcard Topic successfully");
     }
     
+    @PutMapping("/raiseVisitCount/{id}")
+    public ResponseEntity<?> putMethodName(@PathVariable Integer id) {
+        flashCardService.updateVisitCountTopic(id);
+        return ResponseEntity.ok("Visit count + 1");
+    }
 
 }

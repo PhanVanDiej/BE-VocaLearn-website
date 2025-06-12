@@ -33,6 +33,9 @@ public class ExamReview {
     @Column(nullable = false)
     private Integer result;
 
+    @Column
+    private Integer incorrect;
+
     @OneToMany(mappedBy = "examReview", cascade = CascadeType.ALL)
     private List<QuestionReview> questionReviews;
 }

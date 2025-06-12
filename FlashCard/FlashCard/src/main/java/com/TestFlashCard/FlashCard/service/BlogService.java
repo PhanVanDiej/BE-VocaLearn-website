@@ -96,6 +96,11 @@ public class BlogService {
         blog.setDetail(request.getDetail());
         blog.setShortDetail(request.getShortDetail());
 
+        if (request.getAuthor() != null && !request.getAuthor().isEmpty() && !request.getAuthor().isBlank())
+            blog.setAuthor(request.getAuthor());
+        else
+            blog.setAuthor("Admin");
+
         if (image != null) {
             blog.setImage(mediaService.getImageUrl(image));
         }

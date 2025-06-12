@@ -11,11 +11,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.TestFlashCard.FlashCard.entity.Exam;
 import com.TestFlashCard.FlashCard.entity.ExamCollection;
 import com.TestFlashCard.FlashCard.entity.ExamType;
 import com.TestFlashCard.FlashCard.entity.User;
+import com.TestFlashCard.FlashCard.exception.ResourceNotFoundException;
+import com.TestFlashCard.FlashCard.repository.IExam_Repository;
 import com.TestFlashCard.FlashCard.request.CommentCreateRequest;
 import com.TestFlashCard.FlashCard.request.CommentReplyCreateRequest;
+import com.TestFlashCard.FlashCard.request.CommentUpdateRequest;
 import com.TestFlashCard.FlashCard.request.ExamCollectionCreateRequest;
 import com.TestFlashCard.FlashCard.request.ExamCollectionUpdateRequest;
 import com.TestFlashCard.FlashCard.request.ExamCreateRequest;
@@ -61,6 +65,8 @@ public class ExamController {
     private final ExamTypeService examTypeService;
     @Autowired
     private final ExamCollectionService examCollectionService;
+    @Autowired
+    private final IExam_Repository exam_Repository;
 
     @GetMapping("/filter")
     public ResponseEntity<?> getExamsByFilter(@RequestParam(required = false) Integer year,
@@ -113,11 +119,10 @@ public class ExamController {
     }
 
     @PostMapping("/submit")
-    public ResponseEntity<ExamReviewResponse> submitExam(@RequestBody @Valid ExamSubmitRequest request,
+    public ResponseEntity<?> submitExam(@RequestBody @Valid ExamSubmitRequest request,
             Principal principal) {
         String accountName = principal.getName();
         User user = userService.getUserByAccountName(accountName);
-        System.out.println("Trước khi chạy vào service------------");
 
         ExamReviewResponse response = examReviewService.submitExam(request, user);
         return ResponseEntity.ok(response);
@@ -159,6 +164,18 @@ public class ExamController {
         User user = userService.getUserByAccountName(principal.getName());
         commentService.deleteReplyById(commentReplyID, user);
         return ResponseEntity.ok("Delete Comment with id :" + commentReplyID + " successfully!");
+    }
+
+    @PutMapping("comment/update/{id}")
+    public ResponseEntity<?> updateComment(@PathVariable Integer id, @RequestBody CommentUpdateRequest request) {
+        commentService.updateComment(id, request);
+        
+        return ResponseEntity.ok("Update comment with id: " + id +" successfully");
+    }
+    @PutMapping("reply-comment/update/{id}")
+    public ResponseEntity<?> updateReplyComment(@PathVariable Integer id, @RequestBody CommentUpdateRequest request) {
+        commentService.updateCommentReply(id, request);
+        return ResponseEntity.ok("Update reply-comment with id: " + id +" successfully");
     }
 
     @GetMapping("/type/getAll")
@@ -235,5 +252,13 @@ public class ExamController {
         return ResponseEntity.ok("Delete ExamCOllection with id: " + id +" successfully!");
     }
     
-
+    @GetMapping("/result/getAllByExam/{examId}")
+    public ResponseEntity<?> getAllResult(@PathVariable Integer examId, Principal principal) {
+        User user = userService.getUserByAccountName(principal.getName());
+        Exam exam = exam_Repository.findById(examId).orElseThrow(
+            ()-> new ResourceNotFoundException("Cannot find the Exam with id: " + examId)
+        );
+        List<ExamReviewResponse> responses = examReviewService.getAllExamResultByUser(user, exam);
+        return ResponseEntity.ok(responses);
+    }
 }

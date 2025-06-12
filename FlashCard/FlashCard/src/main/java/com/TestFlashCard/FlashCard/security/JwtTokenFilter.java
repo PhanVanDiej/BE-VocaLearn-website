@@ -37,7 +37,19 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             "/api/user/create",
             "/api/user/register",
             "/api/user/forgot-password",
-            "/api/user/verify-reset-code");
+            "/api/user/verify-reset-code",
+            "/api/exam/getByCreateAt",
+            "/api/flashcard/getTopicPopular",
+            "/api/flashcard/id",
+            "/api/flashcard/topic",
+            "/api/flashcard/getFlashCardsByTopic",
+            "/api/flashcard/raiseVisitCount",
+            "/api/evaluate/get",
+            "/api/blog/category/getAll",
+            "/api/blog/id",
+            "/api/blog/getAll",
+            "/api/card/getByFlashCard"
+            );
 
     private boolean isPublicEndpoint(String path) {
         return PUBLIC_ENDPOINTS.stream().anyMatch(path::startsWith);

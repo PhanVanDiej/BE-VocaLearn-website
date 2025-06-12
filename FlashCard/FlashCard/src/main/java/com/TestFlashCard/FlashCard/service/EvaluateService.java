@@ -15,10 +15,8 @@ import com.TestFlashCard.FlashCard.entity.User;
 import com.TestFlashCard.FlashCard.exception.ResourceNotFoundException;
 import com.TestFlashCard.FlashCard.repository.IEvaluate_Repository;
 import com.TestFlashCard.FlashCard.request.EvaluateCreateRequest;
-import com.TestFlashCard.FlashCard.request.EvaluateUpdateByUserRequest;
 import com.TestFlashCard.FlashCard.response.EvaluateResponse;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service

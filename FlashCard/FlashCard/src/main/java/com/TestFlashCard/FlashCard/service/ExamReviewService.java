@@ -2,6 +2,12 @@ package com.TestFlashCard.FlashCard.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -52,6 +58,7 @@ public class ExamReviewService {
         examReview.setDuration(request.getDuration());
 
         int correctCount = 0;
+        int incorrectCount = 0;
         List<QuestionReview> questionReviews = new ArrayList<>();
 
         for (ToeicQuestionRecord record : request.getAnswers()) {
@@ -61,6 +68,8 @@ public class ExamReviewService {
             boolean isCorrect = question.getResult().equalsIgnoreCase(String.valueOf(record.getAnswer()));
             if (isCorrect)
                 correctCount++;
+            else
+                incorrectCount++;
 
             // Tạo review cho từng câu
             QuestionReview qr = new QuestionReview();
@@ -73,6 +82,7 @@ public class ExamReviewService {
 
         // Gán danh sách câu hỏi vào examReview
         examReview.setQuestionReviews(questionReviews);
+        examReview.setIncorrect(incorrectCount);
         examReview.setResult(correctCount);
 
         // Lưu vào DB (cascade sẽ lưu luôn QuestionReview)
@@ -83,11 +93,16 @@ public class ExamReviewService {
         ExamReviewResponse response = new ExamReviewResponse();
         response.setExamID(exam.getId());
         response.setUserID(user.getId());
+        response.setExamTitle(exam.getTitle());
+        response.setExamCollection(exam.getCollection().toString());
+        response.setUserName(user.getFullName());
         response.setDuration(examReview.getDuration());
         response.setCorrectAnswers(examReview.getResult());
+        response.setIncorrectAnswers(examReview.getIncorrect());
+        response.setNullAnswers(questionReviews.size() - examReview.getIncorrect() - examReview.getResult());
         response.setTotalQuestions(questionReviews.size());
         response.setCreatedAt(examReview.getCreateAt());
-
+        response.setSection(getPartSummaryFromReview(questionReviews));
         // Map từng câu hỏi thành response
         List<QuestionReviewResponse> questionReviewResponses = questionReviews.stream().map(qr -> {
             QuestionReviewResponse qrr = new QuestionReviewResponse();
@@ -101,6 +116,80 @@ public class ExamReviewService {
 
         response.setQuestionReviews(questionReviewResponses);
         return response;
+    }
+
+    @Transactional
+    public List<ExamReviewResponse> getAllExamResultByUser(User user, Exam exam) {
+        List<ExamReview> resultList = examReview_Repository.findByUserAndExam(user, exam);
+        return resultList.stream().map(review -> convertToRespone(review, review.getExam(), review.getUser()))
+                .collect(Collectors.toList());
+    }
+
+    public ExamReviewResponse convertToRespone(ExamReview review, Exam exam, User user) {
+        ExamReviewResponse response = new ExamReviewResponse();
+
+        response.setExamID(review.getExam().getId());
+        response.setUserID(review.getUser().getId());
+        response.setExamCollection(review.getUser().getFullName());
+        response.setExamTitle(review.getExam().getTitle());
+        response.setUserName(review.getUser().getFullName());
+        response.setDuration(review.getDuration());
+        response.setCorrectAnswers(review.getResult());
+        response.setIncorrectAnswers(review.getIncorrect());
+        response.setNullAnswers(review.getQuestionReviews().size() - review.getResult() - review.getIncorrect());
+        response.setTotalQuestions(review.getQuestionReviews().size());
+        response.setCreatedAt(review.getCreateAt());
+        response.setSection(getPartSummaryFromReview(review.getQuestionReviews()));
+        response.setQuestionReviews(convertToQuestionsResponse(review.getQuestionReviews()));
+        return response;
+
+    }
+
+    public List<QuestionReviewResponse> convertToQuestionsResponse(List<QuestionReview> questionReviews) {
+        return questionReviews.stream().map(qr -> {
+            QuestionReviewResponse qrr = new QuestionReviewResponse();
+            ToeicQuestion question = qr.getToeicQuestion();
+
+            qrr.setQuestionId(question.getId());
+            qrr.setUserAnswer(qr.getUserAnswer());
+            qrr.setCorrectAnswer(question.getResult());
+            qrr.setCorrect(
+                    qr.getUserAnswer() != null && qr.getUserAnswer().equalsIgnoreCase(question.getResult()));
+
+            // Map options A–D
+            List<QuestionReviewResponse.OptionResponse> optionResponses = question.getOptions().stream().map(opt -> {
+                QuestionReviewResponse.OptionResponse optRes = new QuestionReviewResponse.OptionResponse();
+                optRes.setMark(opt.getMark());
+                optRes.setDetail(opt.getDetail());
+                return optRes;
+            }).collect(Collectors.toList());
+
+            qrr.setOptions(optionResponses);
+
+            return qrr;
+        }).collect(Collectors.toList());
+    }
+
+    public String getPartSummaryFromReview(List<QuestionReview> reviewQuestions) {
+        // Lấy các part duy nhất, convert về số nguyên, loại null/rỗng
+        Set<Integer> partSet = reviewQuestions.stream()
+                .map(rq -> rq.getToeicQuestion() != null ? rq.getToeicQuestion().getPart() : null)
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(Integer::parseInt)
+                .collect(Collectors.toCollection(TreeSet::new));
+
+        // Kiểm tra đủ 1-7
+        boolean isFull = IntStream.rangeClosed(1, 7).allMatch(partSet::contains);
+        if (isFull)
+            return "Toàn bộ";
+        if (partSet.isEmpty())
+            return "N/A";
+        // Trả về chuỗi "Part 1, Part 2, ..."
+        return partSet.stream()
+                .map(i -> "Part " + i)
+                .collect(Collectors.joining(", "));
     }
 
 }

@@ -101,13 +101,18 @@ public class ExamService {
     }
 
     public ToeicQuestionResponse convertQuestionToResponse(ToeicQuestion question) {
+        List<ToeicQuestionResponse.OptionResponse> options = question.getOptions().stream()
+                .map(opt -> new ToeicQuestionResponse.OptionResponse(opt.getMark(), opt.getDetail()))
+                .collect(Collectors.toList());
+
         return new ToeicQuestionResponse(
                 question.getId(),
                 question.getPart(),
                 question.getDetail(),
                 question.getResult(),
                 question.getImage(),
-                question.getAudio());
+                question.getAudio(),
+                options);
     }
 
     @Transactional
@@ -169,7 +174,7 @@ public class ExamService {
                 () -> new ResourceNotFoundException("Cannot find the Exam with id : " + examID));
         List<ToeicQuestion> questions = exam.getQuestions();
         for (ToeicQuestion question : questions) {
-        mediaService.deleteQuestionMedia(question);
+            mediaService.deleteQuestionMedia(question);
         }
         exam_Repository.delete(exam);
     }
@@ -208,19 +213,19 @@ public class ExamService {
         FileSystemUtils.deleteRecursively(tempDir);
     }
 
-    public long countAll(){
+    public long countAll() {
         return exam_Repository.count();
     }
 
     public List<ExamAttemp> getTop3ExamByAttemps() {
         List<Exam> exams = exam_Repository.findTop3ByOrderByAttempsDesc();
         return exams.stream()
-            .map(e -> {
-                ExamAttemp dto = new ExamAttemp();
-                dto.setTest(e.getTitle());
-                dto.setAttemps(e.getAttemps());
-                return dto;
-            })
-            .collect(Collectors.toList());
+                .map(e -> {
+                    ExamAttemp dto = new ExamAttemp();
+                    dto.setTest(e.getTitle());
+                    dto.setAttemps(e.getAttemps());
+                    return dto;
+                })
+                .collect(Collectors.toList());
     }
 }

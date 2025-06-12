@@ -143,6 +143,15 @@ public class FlashCardService {
             topic.setStatus(topicDetail.getStatus());
         if (topicDetail.getLearningStatus() != null)
             topic.setLeaningStatus(topicDetail.getLearningStatus());
+        if(topicDetail.getVisitCount()!=null)
+            topic.setVisitCount(topicDetail.getVisitCount());
+        flashCardTopic_Repository.save(topic);
+    }
+
+    @Transactional
+    public void updateVisitCountTopic(int topicId){
+        FlashCardTopic topic = flashCardTopic_Repository.findById(topicId).orElseThrow(()-> new ResourceNotFoundException("Cannot find the topic with id: " + topicId));
+        topic.setVisitCount(topic.getVisitCount()+1);
         flashCardTopic_Repository.save(topic);
     }
 

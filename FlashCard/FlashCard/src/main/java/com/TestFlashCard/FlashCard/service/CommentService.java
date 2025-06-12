@@ -17,6 +17,7 @@ import com.TestFlashCard.FlashCard.repository.IComment_Repository;
 import com.TestFlashCard.FlashCard.repository.IExam_Repository;
 import com.TestFlashCard.FlashCard.request.CommentCreateRequest;
 import com.TestFlashCard.FlashCard.request.CommentReplyCreateRequest;
+import com.TestFlashCard.FlashCard.request.CommentUpdateRequest;
 import com.TestFlashCard.FlashCard.response.CommentReplyResponse;
 import com.TestFlashCard.FlashCard.response.CommentResponse;
 
@@ -68,7 +69,9 @@ public class CommentService {
             CommentResponse cr = new CommentResponse();
             cr.setId(comment.getId());
             cr.setContent(comment.getContent());
-            cr.setUserName(comment.getUser().getAccountName());
+            cr.setUserName(comment.getUser().getFullName());
+            cr.setAvatar(comment.getUser().getAvatar());
+            cr.setUserId(comment.getUser().getId());
             cr.setCreateAt(comment.getCreateAt());
 
             // reply cấp 1
@@ -86,8 +89,10 @@ public class CommentService {
         CommentReplyResponse rr = new CommentReplyResponse();
         rr.setId(reply.getId());
         rr.setContent(reply.getContent());
-        rr.setUserName(reply.getUser().getAccountName());
+        rr.setUserName(reply.getUser().getFullName());
         rr.setCreateAt(reply.getCreateAt());
+        rr.setAvatar(reply.getUser().getAvatar());
+        rr.setUserId(reply.getUser().getId());
 
         List<CommentReplyResponse> children = reply.getChildren().stream()
                 .map(this::buildReplyTree)
@@ -103,9 +108,9 @@ public class CommentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Comment not found"));
 
         // Kiểm tra quyền nếu cần
-        if (comment.getUser().getId() != requester.getId() || requester.getRole() != Role.ADMIN) {
-            throw new SecurityException("You are not allowed to delete this comment");
-        }
+        if (!(comment.getUser().getId()==requester.getId()) && requester.getRole() != Role.ADMIN) {
+    throw new SecurityException("You are not allowed to delete this comment");
+}
 
         comment_Repository.delete(comment); // sẽ xoá luôn cả replies nhờ orphanRemoval
     }
@@ -115,11 +120,34 @@ public class CommentService {
         CommentReply reply = commentReply_Repository.findById(replyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reply not found"));
 
-        if (reply.getUser().getId() != requester.getId() || requester.getRole() != Role.ADMIN) {
+        if (!(reply.getUser().getId()==requester.getId()) && requester.getRole() != Role.ADMIN) {
             throw new SecurityException("You are not allowed to delete this reply");
         }
 
         commentReply_Repository.delete(reply); // xoá luôn reply con nếu có, nhờ orphanRemoval
     }
+
+    @Transactional
+    public void updateComment(int commentId, CommentUpdateRequest request){
+        Comment comment = comment_Repository.findById(commentId).orElseThrow(
+            ()-> new ResourceNotFoundException("Cannot find the comment with id: " + commentId)
+        );
+        if(request.getContent()!=null)
+        comment.setContent(request.getContent());
+
+        comment_Repository.save(comment);
+    }
+
+    @Transactional
+    public void updateCommentReply(int commentId, CommentUpdateRequest request){
+        CommentReply reply = commentReply_Repository.findById(commentId).orElseThrow(
+            ()-> new ResourceNotFoundException("Cannot find the reply with id: " + commentId)
+        );
+        if(request.getContent()!=null)
+        reply.setContent(request.getContent());
+
+        commentReply_Repository.save(reply);
+    }
+
 
 }

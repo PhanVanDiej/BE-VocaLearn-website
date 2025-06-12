@@ -42,6 +42,18 @@ public class securityConfig {
                         .requestMatchers("/api/user/verify-reset-code").permitAll()
                         .requestMatchers("/api/user/register").permitAll()
                         .requestMatchers("/api/user/create").permitAll()
+                        .requestMatchers("/api/exam/getByCreateAt").permitAll()
+                        .requestMatchers("/api/flashcard/getTopicPopular").permitAll()
+                        .requestMatchers("/api/flashcard/id/**").permitAll()
+                        .requestMatchers("/api/flashcard/getFlashCardsByTopic/**").permitAll()
+                        .requestMatchers("/api/flashcard/topic/**").permitAll()
+                        .requestMatchers("/api/flashcard/raiseVisitCount/**").permitAll()
+                        .requestMatchers("/api/card/getByFlashCard/**").permitAll()
+                        .requestMatchers("/api/evaluate/get").permitAll()
+                        .requestMatchers("/api/blog/category/getAll").permitAll()
+                        .requestMatchers("/api/blog/id/**").permitAll()
+                        .requestMatchers("/api/blog/getAll").permitAll()
+
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
