@@ -169,10 +169,13 @@ public class MediaService {
             default -> null;
         };
     }
+
     @Transactional
-    public void deleteQuestionMedia(ToeicQuestion question){
-        storageService.deleteImage(question.getImage());
-        storageService.deleteAudio(question.getAudio());
+    public void deleteQuestionMedia(ToeicQuestion question) {
+        if (question.getImage() != null)
+            storageService.deleteImage(question.getImage());
+        if (question.getAudio() != null)
+            storageService.deleteAudio(question.getAudio());
         return;
     }
 }

@@ -7,7 +7,11 @@ import lombok.Data;
 @Data
 public class QuestionReviewResponse {
     private Integer questionId;
+    private Integer indexNumber;
+    private String conversation;
     private String detail;
+    private String image;
+    private String audio;
     private String userAnswer;
     private String correctAnswer;
     private boolean isCorrect;

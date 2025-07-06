@@ -121,7 +121,7 @@ public class CardService {
 
             card_Repository.save(card);
         } catch (Exception exception) {
-            throw new IOException("Error when create a new card: ", exception);
+            throw new IOException("Error when create a new card: "+ exception.getMessage());
         }
 
     }

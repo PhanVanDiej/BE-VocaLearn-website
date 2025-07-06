@@ -53,6 +53,10 @@ public class securityConfig {
                         .requestMatchers("/api/blog/category/getAll").permitAll()
                         .requestMatchers("/api/blog/id/**").permitAll()
                         .requestMatchers("/api/blog/getAll").permitAll()
+                        .requestMatchers("/api/exam/filter").permitAll()
+                        .requestMatchers("/api/exam/collection/getAll").permitAll()
+                        .requestMatchers("/api/exam/comments/**").permitAll()
+                        .requestMatchers("/api/exam/detail/**").permitAll()
 
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);

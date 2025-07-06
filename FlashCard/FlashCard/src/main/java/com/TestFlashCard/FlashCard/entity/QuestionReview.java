@@ -22,7 +22,7 @@ public class QuestionReview {
     @JoinColumn(name = "toeicQuestionID", nullable = false)
     private ToeicQuestion toeicQuestion;
 
-    @Column(length = 1)
+    @Column(length = 1, nullable = true)
     private String userAnswer;
 
     @CreationTimestamp

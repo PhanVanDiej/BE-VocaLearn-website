@@ -48,7 +48,11 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             "/api/blog/category/getAll",
             "/api/blog/id",
             "/api/blog/getAll",
-            "/api/card/getByFlashCard"
+            "/api/card/getByFlashCard",
+            "/api/exam/filter",
+            "/api/exam/collection/getAll",
+            "/api/exam/comments",
+            "/api/exam/detail/"
             );
 
     private boolean isPublicEndpoint(String path) {
@@ -101,6 +105,8 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                     userDetails, null, userDetails.getAuthorities());
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);
+            //
+            System.out.println(">> Authorities: " + userDetails.getAuthorities());
 
             // ✅ Sau khi xử lý thành công → tiếp tục filter
             filterChain.doFilter(request, response);

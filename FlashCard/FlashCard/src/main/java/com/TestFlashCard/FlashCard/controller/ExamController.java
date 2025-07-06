@@ -128,7 +128,7 @@ public class ExamController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{examID}/comments")
+    @GetMapping("/comments/{examID}")
     public ResponseEntity<List<CommentResponse>> getCommentsByExam(@PathVariable Integer examID) {
         List<CommentResponse> responses = commentService.getCommentsByExamId(examID);
         return ResponseEntity.ok(responses);
@@ -261,4 +261,10 @@ public class ExamController {
         List<ExamReviewResponse> responses = examReviewService.getAllExamResultByUser(user, exam);
         return ResponseEntity.ok(responses);
     }
+    @GetMapping("/result/id/{id}")
+    public ResponseEntity<?> getReviewById(@PathVariable Integer id) {
+        ExamReviewResponse response = examReviewService.getById(id);
+        return ResponseEntity.ok(response);
+    }
+    
 }

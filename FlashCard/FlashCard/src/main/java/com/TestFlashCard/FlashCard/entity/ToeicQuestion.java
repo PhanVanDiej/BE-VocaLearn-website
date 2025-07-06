@@ -15,10 +15,13 @@ public class ToeicQuestion {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @Column
+    private Integer indexNumber;
+
     @Column(length = 50)
     private String part;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT", nullable = true)
     private String detail;
 
     @Column(nullable = false, length = 1)
@@ -29,6 +32,9 @@ public class ToeicQuestion {
 
     @Column(length = 255)
     private String audio;
+
+    @Column
+    private String conversation;
 
     @CreationTimestamp
     @Column(name = "createAt", updatable = false)

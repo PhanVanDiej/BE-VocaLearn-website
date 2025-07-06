@@ -113,7 +113,6 @@ public class DigitalOceanStorageService {
         String uniqueFileName = generateUniqueFileName(fileName);
 
         S3Client s3Client = getS3Client();
-
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(spaceName)
                 .key(uniqueFileName)

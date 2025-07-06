@@ -1,11 +1,12 @@
 package com.TestFlashCard.FlashCard.service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -44,6 +45,9 @@ public class ExamReviewService {
     @Transactional
     public ExamReviewResponse submitExam(ExamSubmitRequest request, User user) {
         // Lấy Exam
+        if (request.getAnswers() == null) {
+            request.setAnswers(new ArrayList<>());
+        }
 
         Exam exam = exam_Repository.findById(request.getExamID())
                 .orElseThrow(() -> new ResourceNotFoundException("Exam not found"));
@@ -61,25 +65,31 @@ public class ExamReviewService {
         int incorrectCount = 0;
         List<QuestionReview> questionReviews = new ArrayList<>();
 
-        for (ToeicQuestionRecord record : request.getAnswers()) {
-            ToeicQuestion question = toeicQuestion_Repository.findById(record.getQuestionId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Question not found: " + record.getQuestionId()));
+        List<ToeicQuestion> allQuestions = toeicQuestion_Repository.findAllByExam(exam);
+        Map<Integer, Character> answerMap = request.getAnswers() != null
+                ? request.getAnswers().stream()
+                        .collect(Collectors.toMap(ToeicQuestionRecord::getQuestionId, ToeicQuestionRecord::getAnswer))
+                : new HashMap<>();
 
-            boolean isCorrect = question.getResult().equalsIgnoreCase(String.valueOf(record.getAnswer()));
+        for (ToeicQuestion question : allQuestions) {
+            QuestionReview qr = new QuestionReview();
+
+            Character userAnswer = answerMap.get(question.getId());
+            boolean isCorrect = userAnswer != null
+                    && question.getResult() != null
+                    && question.getResult().equalsIgnoreCase(String.valueOf(userAnswer));
+
             if (isCorrect)
                 correctCount++;
-            else
+            else if (userAnswer != null)
                 incorrectCount++;
 
-            // Tạo review cho từng câu
-            QuestionReview qr = new QuestionReview();
             qr.setToeicQuestion(question);
-            qr.setUserAnswer(String.valueOf(record.getAnswer()));
-            qr.setExamReview(examReview); // ✅ Gán examReview ngay lập tức
+            qr.setUserAnswer(userAnswer != null ? String.valueOf(userAnswer) : null);
+            qr.setExamReview(examReview);
 
             questionReviews.add(qr);
         }
-
         // Gán danh sách câu hỏi vào examReview
         examReview.setQuestionReviews(questionReviews);
         examReview.setIncorrect(incorrectCount);
@@ -91,10 +101,11 @@ public class ExamReviewService {
 
         // Tạo response trả về
         ExamReviewResponse response = new ExamReviewResponse();
+        response.setReviewId(examReview.getId());
         response.setExamID(exam.getId());
         response.setUserID(user.getId());
         response.setExamTitle(exam.getTitle());
-        response.setExamCollection(exam.getCollection().toString());
+        response.setExamCollection(exam.getCollection().getCollection());
         response.setUserName(user.getFullName());
         response.setDuration(examReview.getDuration());
         response.setCorrectAnswers(examReview.getResult());
@@ -125,12 +136,18 @@ public class ExamReviewService {
                 .collect(Collectors.toList());
     }
 
+    public ExamReviewResponse getById(int id) {
+        ExamReview review = examReview_Repository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException("Cannot find the Exam review with id: " + id));
+        return convertToRespone(review, review.getExam(), review.getUser());
+    }
+
     public ExamReviewResponse convertToRespone(ExamReview review, Exam exam, User user) {
         ExamReviewResponse response = new ExamReviewResponse();
-
+        response.setReviewId(review.getId());
         response.setExamID(review.getExam().getId());
         response.setUserID(review.getUser().getId());
-        response.setExamCollection(review.getUser().getFullName());
+        response.setExamCollection(review.getExam().getCollection().getCollection());
         response.setExamTitle(review.getExam().getTitle());
         response.setUserName(review.getUser().getFullName());
         response.setDuration(review.getDuration());
@@ -151,6 +168,11 @@ public class ExamReviewService {
             ToeicQuestion question = qr.getToeicQuestion();
 
             qrr.setQuestionId(question.getId());
+            qrr.setIndexNumber(question.getIndexNumber());
+            qrr.setDetail(question.getDetail());
+            qrr.setImage(question.getImage());
+            qrr.setAudio(question.getAudio());
+            qrr.setConversation(question.getConversation());
             qrr.setUserAnswer(qr.getUserAnswer());
             qrr.setCorrectAnswer(question.getResult());
             qrr.setCorrect(

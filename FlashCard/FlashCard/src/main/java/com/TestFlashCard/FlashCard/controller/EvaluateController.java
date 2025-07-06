@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.TestFlashCard.FlashCard.entity.User;
+import com.TestFlashCard.FlashCard.exception.ResourceNotFoundException;
 import com.TestFlashCard.FlashCard.request.EvaluateCreateRequest;
 import com.TestFlashCard.FlashCard.request.EvaluateUpdateRequest;
 import com.TestFlashCard.FlashCard.response.EvaluateResponse;
@@ -74,10 +75,13 @@ public class EvaluateController {
         return ResponseEntity.ok("Update evaluate successfully");
     }
 
-    @GetMapping("/getByUser")
-    public ResponseEntity<?> getByUser(Principal principal) {
+    @GetMapping("/loadByUser")
+    public ResponseEntity<?> getByUser(Principal principal) throws IOException{
+        System.out.println(">> Check Principal: " + principal);
         User user = userService.getUserByAccountName(principal.getName());
         EvaluateResponse response = evaluateService.getByUser(user);
+        if(response==null)
+        throw new ResourceNotFoundException("Cannot find evaluate of User with accountName: " + user.getAccountName());
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 

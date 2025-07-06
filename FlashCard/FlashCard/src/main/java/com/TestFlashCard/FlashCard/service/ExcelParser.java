@@ -34,15 +34,19 @@ public class ExcelParser {
                 Workbook workbook = new XSSFWorkbook(fis)) {
 
             Sheet sheet = workbook.getSheetAt(0);
-
+            int indexQuestion=1;
             for (Row row : sheet) {
                 if (row.getRowNum() == 0)
                     continue; // Skip header
 
                 ToeicQuestion question = new ToeicQuestion();
+                question.setIndexNumber(indexQuestion);
                 question.setPart(getCellValue(row.getCell(0)));
                 question.setDetail(getCellValue(row.getCell(1)));
                 question.setResult(getCellValue(row.getCell(2)));
+                question.setConversation(getCellValue(row.getCell(9)));
+
+                indexQuestion++;
 
                 // upload file ảnh và setImage
                 String imageFileName = getCellValue(row.getCell(3));
@@ -85,6 +89,8 @@ public class ExcelParser {
                         options.add(option);
                     }
                 }
+
+
 
                 question.setOptions(options);
                 questions.add(question);

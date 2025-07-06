@@ -7,6 +7,7 @@ import lombok.Data;
 
 @Data
 public class ExamReviewResponse {
+    private Integer reviewId;
     private Integer examID;
     private Integer userID;
     private String userName;

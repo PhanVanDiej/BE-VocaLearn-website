@@ -44,11 +44,13 @@ public class ToeicQuestionService {
 
         return new ToeicQuestionResponse(
                 question.getId(),
+                question.getIndexNumber(),
                 question.getPart(),
                 question.getDetail(),
                 question.getResult(),
                 question.getImage(),
                 question.getAudio(),
+                question.getConversation(),
                 options);
     }
 
