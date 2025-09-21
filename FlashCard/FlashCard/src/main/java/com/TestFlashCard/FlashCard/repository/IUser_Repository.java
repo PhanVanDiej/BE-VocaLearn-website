@@ -20,8 +20,8 @@ public interface IUser_Repository extends JpaRepository<User, Integer>, JpaSpeci
 
     public List<User> findAll();
 
-    Optional<User> findByIdAndIsDeleted(Integer id, EUserStatus isDeleted);
+    //Optional<User> findByIdAndIsDeleted(Integer id, boolean isDeleted);
 
-    Optional<User> findByAccountNameAndIsDeleted(String accountName, EUserStatus isDeleted);
+    //Optional<User> findByAccountNameAndIsDeleted(String accountName, boolean isDeleted);
 
 }

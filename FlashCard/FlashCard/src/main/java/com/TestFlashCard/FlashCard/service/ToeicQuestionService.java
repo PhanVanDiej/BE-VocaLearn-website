@@ -1,5 +1,6 @@
 package com.TestFlashCard.FlashCard.service;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,6 +23,8 @@ public class ToeicQuestionService {
     private final IToeicQuestion_Repository toeicQuestion_Repository;
     @Autowired
     private final IExam_Repository exam_Repository;
+    @Autowired
+    private MinIO_MediaService minIO_MediaService;
 
     public ToeicQuestionResponse getById(int questionID) {
         ToeicQuestion question = toeicQuestion_Repository.findById(questionID).orElseThrow(
@@ -33,7 +36,7 @@ public class ToeicQuestionService {
         Exam exam = exam_Repository.findById(examID).orElseThrow(
                 () -> new ResourceNotFoundException("Cannot find the Exam with id : " + examID));
 
-        List<ToeicQuestion> questions = toeicQuestion_Repository.findByExamId(examID);
+        List<ToeicQuestion> questions = toeicQuestion_Repository.findByExamId(exam.getId());
         return questions.stream().map(this::convertQuestionToResponse).toList();
     }
 
@@ -42,16 +45,19 @@ public class ToeicQuestionService {
                 .map(opt -> new ToeicQuestionResponse.OptionResponse(opt.getMark(), opt.getDetail()))
                 .collect(Collectors.toList());
 
+        String image = null;
+        if(question.getImage()!=null && !question.getImage().isEmpty())
+            image = minIO_MediaService.getPresignedURL(question.getImage(), Duration.ofMinutes(1));
         return new ToeicQuestionResponse(
                 question.getId(),
                 question.getIndexNumber(),
                 question.getPart(),
                 question.getDetail(),
                 question.getResult(),
-                question.getImage(),
+                image,
                 question.getAudio(),
                 question.getConversation(),
+                question.getClarify(),
                 options);
     }
-
 }

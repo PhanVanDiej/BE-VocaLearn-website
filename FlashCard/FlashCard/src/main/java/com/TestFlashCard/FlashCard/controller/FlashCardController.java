@@ -18,6 +18,7 @@ import com.TestFlashCard.FlashCard.request.FlashCardCreateRequest;
 import com.TestFlashCard.FlashCard.request.FlashCardTopicCreateRequest;
 import com.TestFlashCard.FlashCard.request.FlashCardTopicUpdateRequest;
 import com.TestFlashCard.FlashCard.request.FlashCardUpdateRequest;
+import com.TestFlashCard.FlashCard.response.ApiResponse;
 import com.TestFlashCard.FlashCard.response.ListFlashCardTopicResponse;
 import com.TestFlashCard.FlashCard.response.ListFlashCardsResponse;
 import com.TestFlashCard.FlashCard.service.FlashCardService;
@@ -39,34 +40,34 @@ public class FlashCardController {
     @GetMapping("/getTopicsByUser/{userID}")
     public ResponseEntity<?> getAllTopics(@PathVariable int userID) {
         List<ListFlashCardTopicResponse> topics = flashCardService.getFlashCardTopicsByUser(userID);
-        return new ResponseEntity<List<ListFlashCardTopicResponse>>(topics, HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(topics));
     }
 
     @GetMapping("/getFlashCardsByTopic/{topicID}")
     public ResponseEntity<?> getAllFlashCard(@PathVariable Integer topicID) {
         List<ListFlashCardsResponse> flashCards = flashCardService.getFlashCardsByTopic(topicID);
-        return new ResponseEntity<List<ListFlashCardsResponse>>(flashCards, HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(flashCards));
     }
 
     @GetMapping("/topic/{id}")
     public ResponseEntity<?> getFlashCardTopicById(@PathVariable Integer id) throws IOException {
-        return new ResponseEntity<>(flashCardService.getFlashCardTopicById(id), HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(flashCardService.getFlashCardTopicById(id)));
     }
 
     @GetMapping("/getTopicPopular")
     public ResponseEntity<?> getAllTopicPopular() throws IOException {
-        return new ResponseEntity<>(flashCardService.getFlashCardTopicByVisitCount(), HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(flashCardService.getFlashCardTopicByVisitCount()));
     }
 
     @PostMapping("/createFlashCard")
-    public ResponseEntity<?> createFlashCard(@RequestBody @Valid FlashCardCreateRequest request) {
+    public ResponseEntity<?> createFlashCard(@RequestBody @Valid FlashCardCreateRequest request) throws IOException{
         try {
             flashCardService.createFlashCard(request);
-            return ResponseEntity.ok().body("Create Flashcard successfull!");
+            return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
         } catch (ResourceNotFoundException ex) {
-            return new ResponseEntity<>("Error: " + ex.getMessage(), HttpStatus.NOT_FOUND);
-        } catch (Exception ex) {
-            return ResponseEntity.internalServerError().body("Error: " + ex.getMessage());
+            throw ex;
+        } catch (IOException ex) {
+            throw ex;
         }
     }
 
@@ -74,48 +75,48 @@ public class FlashCardController {
     public ResponseEntity<?> createFlashCardTopic(@RequestBody @Valid FlashCardTopicCreateRequest request,
             Principal principal) throws IOException {
         flashCardService.createFlashCardTopic(request, principal.getName());
-        return ResponseEntity.ok().body("Create FlashCard's topic successfull !");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @PutMapping("/updateTopic")
     public ResponseEntity<?> updateTopic(@RequestBody FlashCardTopicUpdateRequest request, Principal principal) {
         flashCardService.updateTopic(request, principal.getName());
-        return ResponseEntity.ok().body("Update topic with id: " + request.getId() + " successfully !");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @PutMapping("/updateFlashCard")
     public ResponseEntity<?> updateFlashCard(@RequestBody FlashCardUpdateRequest request) {
         flashCardService.updateFlashCard(request);
-        return ResponseEntity.ok().body("Update FlashCard with id: " + request.getId() + " successfully !");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @DeleteMapping("/deleteTopic/{id}")
     public ResponseEntity<?> deleteTopicById(@PathVariable int id) {
         flashCardService.deleteTopic(id);
-        return ResponseEntity.ok().body("Topic with id = " + id + " has been deleted successfully !");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @DeleteMapping("/deleteFlashCard/{id}")
     public ResponseEntity<?> deleteFlashCardById(@PathVariable int id) {
         flashCardService.deleteFlashCard(id);
-        return ResponseEntity.ok().body("FlashCard with id = " + id + " has been deleted successfully !");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @GetMapping("/id/{id}")
     public ResponseEntity<?> getFlashCardById(@PathVariable Integer id) {
-        return ResponseEntity.ok(flashCardService.getFlashCardById(id));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(flashCardService.getFlashCardById(id)));
     }
 
     @PostMapping("/savePublishTopic/{topicID}")
-    public ResponseEntity<?> savePublishTopic(@PathVariable Integer topicID,Principal principal) {
+    public ResponseEntity<?> savePublishTopic(@PathVariable Integer topicID,Principal principal)throws IOException {
         flashCardService.savePublishTopic(topicID, principal.getName());
-        return ResponseEntity.ok("Save new Flashcard Topic successfully");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
     
     @PutMapping("/raiseVisitCount/{id}")
-    public ResponseEntity<?> putMethodName(@PathVariable Integer id) {
+    public ResponseEntity<?> raiseVisitCount(@PathVariable Integer id) {
         flashCardService.updateVisitCountTopic(id);
-        return ResponseEntity.ok("Visit count + 1");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
 }

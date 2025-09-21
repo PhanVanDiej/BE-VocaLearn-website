@@ -1,6 +1,7 @@
 package com.TestFlashCard.FlashCard.service;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -26,10 +27,10 @@ public class EvaluateService {
     private final IEvaluate_Repository evaluate_Repository;
 
     @Autowired
-    private final MediaService mediaService;
+    private MinIO_MediaService minIO_MediaService;
 
-    @Autowired
-    private final DigitalOceanStorageService storageService;
+    // @Autowired
+    // private final DigitalOceanStorageService storageService;
 
     public void createEvaluate(EvaluateCreateRequest request, MultipartFile imagFile, User user) throws IOException {
 
@@ -39,8 +40,8 @@ public class EvaluateService {
         evaluate.setUser(user);
 
         if (imagFile != null) {
-            String imageUrl = mediaService.getImageUrl(imagFile);
-            evaluate.setImage(imageUrl);
+            String image = minIO_MediaService.uploadFile(imagFile);
+            evaluate.setImage(image);
         } else {
             evaluate.setImage(null);
         }
@@ -56,7 +57,7 @@ public class EvaluateService {
                 () -> new ResourceNotFoundException("Cannot find the evaluate with id: " + evaluateID));
 
         if (evaluate.getImage() != null)
-            storageService.deleteImage(evaluate.getImage());
+            minIO_MediaService.deleteFile(evaluate.getImage());
 
         evaluate_Repository.delete(evaluate);
     }
@@ -82,11 +83,14 @@ public class EvaluateService {
     }
 
     private EvaluateResponse convertToEvaluateResponse(Evaluate evaluate) {
+        String image = null;
+        if(evaluate.getImage()!=null && !evaluate.getImage().isEmpty())
+            image = minIO_MediaService.getPresignedURL(evaluate.getImage(), Duration.ofMinutes(1));
         return new EvaluateResponse(
                 evaluate.getId(),
                 evaluate.getContent(),
                 evaluate.getStar(),
-                evaluate.getImage(),
+                image,
                 evaluate.getCreateAt(),
                 evaluate.getUser().getFullName(),
                 evaluate.getUser().getEmail(),

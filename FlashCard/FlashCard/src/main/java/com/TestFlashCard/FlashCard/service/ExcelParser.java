@@ -24,8 +24,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ExcelParser {
 
+    // @Autowired
+    // private final MediaService mediaService;
     @Autowired
-    private final MediaService mediaService;
+    private MinIO_MediaService minIO_MediaService;
 
     public List<ToeicQuestion> parseQuestions(File excelFile, File mediaFolder) {
         List<ToeicQuestion> questions = new ArrayList<>();
@@ -45,6 +47,7 @@ public class ExcelParser {
                 question.setDetail(getCellValue(row.getCell(1)));
                 question.setResult(getCellValue(row.getCell(2)));
                 question.setConversation(getCellValue(row.getCell(9)));
+                question.setClarify(getCellValue(row.getCell(10)));
 
                 indexQuestion++;
 
@@ -53,7 +56,7 @@ public class ExcelParser {
                 if (imageFileName != null && !imageFileName.isBlank()) {
                     File imageFile = new File(mediaFolder, imageFileName);
                     if (imageFile.exists()) {
-                        String imageUrl = mediaService.getImageUrl(imageFile);
+                        String imageUrl = minIO_MediaService.uploadFile(imageFile);
                         question.setImage(imageUrl);
                     } else {
                         throw new FileNotFoundException("Image file not found: " + imageFile.getPath());
@@ -64,7 +67,7 @@ public class ExcelParser {
                 if (audioFileName != null && !audioFileName.isBlank()) {
                     File audioFile = new File(mediaFolder, audioFileName);
                     if (audioFile.exists()) {
-                        String audioUrl = mediaService.getAudioUrl(audioFile);
+                        String audioUrl = minIO_MediaService.uploadFile(mediaFolder);
                         question.setAudio(audioUrl);
                     } else {
                         throw new FileNotFoundException("Audio file not found: " + audioFile.getPath());
@@ -89,8 +92,6 @@ public class ExcelParser {
                         options.add(option);
                     }
                 }
-
-
 
                 question.setOptions(options);
                 questions.add(question);

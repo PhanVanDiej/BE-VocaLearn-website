@@ -2,7 +2,6 @@ package com.TestFlashCard.FlashCard.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -10,7 +9,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import org.hibernate.annotations.CreationTimestamp;
 
-import com.TestFlashCard.FlashCard.Enum.EUserStatus;
 import com.TestFlashCard.FlashCard.Enum.Role;
 
 @Data
@@ -18,7 +16,6 @@ import com.TestFlashCard.FlashCard.Enum.Role;
 @Table (name = "user")
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class User{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -52,9 +49,8 @@ public class User{
     @CreationTimestamp
     private LocalDateTime createAt;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "isDeleted", nullable = false, columnDefinition = "ENUM ('FALSE', 'TRUE') DEFAULT 'FALSE'")
-    private EUserStatus isDeleted;
+    @Column(name = "isDeleted", nullable = false)
+    private boolean isDeleted = false;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, columnDefinition = "ENUM('USER', 'ADMIN') DEFAULT 'USER'")

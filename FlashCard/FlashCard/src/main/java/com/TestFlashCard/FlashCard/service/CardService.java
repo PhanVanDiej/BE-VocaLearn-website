@@ -1,6 +1,7 @@
 package com.TestFlashCard.FlashCard.service;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -30,14 +31,17 @@ public class CardService {
     @Autowired
     private final ICard_Repository card_Repository;
 
-    @Autowired
-    private final DigitalOceanStorageService storageService;
+    // @Autowired
+    // private final DigitalOceanStorageService storageService;
 
     @Autowired
     private final IFlashCard_Repository flashCard_Repository;
 
+    // @Autowired
+    // private final MediaService mediaService;
+
     @Autowired
-    private final MediaService mediaService;
+    private MinIO_MediaService minIO_MediaService;
 
     private static final String TRANSLITERATION_API_URL = "https://api.dictionaryapi.dev/api/v2/entries/en/";
 
@@ -53,11 +57,14 @@ public class CardService {
 
     private CardsResponse convertToResponse(Card card) {
 
+        String imageUrl = null;
+        if(card.getImage()!=null && !card.getImage().isEmpty())
+            imageUrl = minIO_MediaService.getPresignedURL(card.getImage(), Duration.ofMinutes(1));
         return new CardsResponse(
                 card.getId(),
                 card.getTerminology(),
                 card.getDefinition(),
-                card.getImage(),
+                imageUrl,
                 card.getAudio(),
                 card.getPronounce(),
                 card.getLevel(),
@@ -110,13 +117,18 @@ public class CardService {
             FlashCard flashCard = flashCard_Repository.findById(cardDetail.getFlashCardID()).orElseThrow(
                     () -> new ResourceNotFoundException(
                             "Cannot find the flash card with id: " + cardDetail.getFlashCardID()));
+            
+            // Upload Image if not null
+            if(image!=null){
+                String uniqueName = minIO_MediaService.uploadFile(image);
+                card.setImage(uniqueName);
+            }
             card.setTerminology(cardDetail.getTerminology());
             card.setDefinition(cardDetail.getDefinition());
             card.setExample(cardDetail.getExample());
             card.setLevel(cardDetail.getLevel());
             card.setIsRemember(0);
             card.setPartOfSpeech(cardDetail.getPartOfSpeech());
-            card.setImage(mediaService.getImageUrl(image));
             card.setFlashCard(flashCard);
 
             card_Repository.save(card);
@@ -155,12 +167,12 @@ public class CardService {
     }
 
     @Transactional
-    public void changeImage(int cardID, String imageUrl) throws IOException, StorageException {
+    public void changeImage(int cardID, String imageFileName) throws IOException, StorageException {
         Card card = card_Repository.findById(cardID).orElseThrow(
                 () -> new ResourceNotFoundException("Cannot find the Card with id : " + cardID));
         if (card.getImage() != null && !card.getImage().isEmpty())
-            storageService.deleteImage(card.getImage());
-        card.setImage(imageUrl);
+            minIO_MediaService.deleteFile(card.getImage());
+        card.setImage(imageFileName);
         card_Repository.save(card);
     }
 
@@ -169,7 +181,7 @@ public class CardService {
         Card card = card_Repository.findById(cardID).orElseThrow(
                 () -> new ResourceNotFoundException("Cannot find the Card with id : " + cardID));
         if (card.getImage() != null && !card.getImage().isEmpty())
-            storageService.deleteImage(card.getImage());
+            minIO_MediaService.deleteFile(card.getImage());
         card.setImage(null);
         card_Repository.save(card);
     }
@@ -179,7 +191,7 @@ public class CardService {
         Card card = card_Repository.findById(cardID).orElseThrow(
                 () -> new ResourceNotFoundException("Cannot find the Card with id : " + cardID));
         if (card.getImage() != null && !card.getImage().isEmpty())
-            storageService.deleteImage(card.getImage());
+            minIO_MediaService.deleteFile(card.getImage());
         card_Repository.deleteById(cardID);
     }
 

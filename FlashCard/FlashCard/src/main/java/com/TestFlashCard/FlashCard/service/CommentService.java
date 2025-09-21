@@ -33,6 +33,8 @@ public class CommentService {
     private final ICommentReply_Repository commentReply_Repository;
     @Autowired
     private final IExam_Repository exam_Repository;
+    // @Autowired
+    // private MinIO_MediaService minIO_MediaService;
 
     @Transactional
     public void createComment(User user, CommentCreateRequest request) {

@@ -14,6 +14,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.TestFlashCard.FlashCard.exception.JsonAccessDeniedHandler;
+import com.TestFlashCard.FlashCard.exception.JsonAuthenticationEntryPoint;
 import com.TestFlashCard.FlashCard.security.JwtTokenFilter;
 
 import lombok.RequiredArgsConstructor;
@@ -59,6 +61,10 @@ public class securityConfig {
                         .requestMatchers("/api/exam/detail/**").permitAll()
 
                         .anyRequest().authenticated())
+                .exceptionHandling(exception -> exception
+                    .authenticationEntryPoint(new JsonAuthenticationEntryPoint())
+                    .accessDeniedHandler(new JsonAccessDeniedHandler())
+                )
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

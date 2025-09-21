@@ -1,7 +1,6 @@
 package com.TestFlashCard.FlashCard.controller;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,9 +15,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.TestFlashCard.FlashCard.request.CardCreateRequest;
 import com.TestFlashCard.FlashCard.request.CardUpdateRequest;
+import com.TestFlashCard.FlashCard.response.ApiResponse;
 import com.TestFlashCard.FlashCard.response.CardsResponse;
 import com.TestFlashCard.FlashCard.service.CardService;
-import com.TestFlashCard.FlashCard.service.MediaService;
+import com.TestFlashCard.FlashCard.service.MinIO_MediaService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -36,24 +36,23 @@ public class CardController {
 
     @Autowired
     private final CardService cardService;
-
-    @Autowired
-    private final MediaService mediaService;
     @Autowired
     private final ObjectMapper objectMapper;
+    @Autowired
+    private final MinIO_MediaService minIO_MediaService;
 
     @GetMapping("/detail/{cardID}")
     public ResponseEntity<?> getCardDetail(@PathVariable Integer cardID) throws IOException {
         if (cardID == null)
             throw new IOException("Missing card's ID for this request");
         CardsResponse response = cardService.getCardDetail(cardID);
-        return new ResponseEntity<CardsResponse>(response, HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
     @GetMapping("/getByFlashCard/{flashCardID}")
     public ResponseEntity<?> getByFlashCard(@PathVariable Integer flashCardID) {
         List<CardsResponse> responses = cardService.getFlashCardDetail(flashCardID);
-        return new ResponseEntity<>(responses, HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(responses));
     }
 
     @PostMapping(value = "/createCard", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -64,45 +63,48 @@ public class CardController {
         CardCreateRequest request = objectMapper.readValue(dataJson, CardCreateRequest.class);
 
         cardService.createCard(request, image);
-        return ResponseEntity.ok("Create new Card successfully!");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @PutMapping("/update/detail/{cardID}")
     public ResponseEntity<?> updateCard(@PathVariable("cardID") Integer id, @RequestBody CardUpdateRequest request) {
         cardService.updateCardDetail(request, id);
-        return ResponseEntity.ok("Updating card with id : " + id + " successfully !");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @PutMapping(value = "/update/image/{cardID}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> changeImage(@PathVariable Integer cardID, @RequestParam MultipartFile image)
             throws IOException {
-        String imageUrl = mediaService.getImageUrl(image);
-        cardService.changeImage(cardID, imageUrl);
-        return ResponseEntity.ok("Changing image successfully!");
+        if (image != null) {
+            String uniqueName = minIO_MediaService.uploadFile(image);
+            cardService.changeImage(cardID, uniqueName);
+        }
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @DeleteMapping("/delete/image/{cardID}")
     public ResponseEntity<?> deleteImage(@PathVariable Integer cardID) {
+        //Card card= cardService.getById(cardID);
         cardService.deleteImage(cardID);
-        return ResponseEntity.ok("Deleting image successfully!");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @DeleteMapping("/delete/card/{cardID}")
-    public ResponseEntity<?> deleteCard(@PathVariable Integer cardID){
+    public ResponseEntity<?> deleteCard(@PathVariable Integer cardID) {
         cardService.deleteCard(cardID);
-        return ResponseEntity.ok("Deleting card with id : " + cardID + " successfully !");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
-    @PostMapping("/createListCard")
-    public ResponseEntity<?> createListCards(@RequestParam List<MultipartFile> files) throws Exception {
-        List<String> imageUrls = new ArrayList<>();
-        return ResponseEntity.ok(null);
-    }
+    // @PostMapping("/createListCard")
+    // public ResponseEntity<?> createListCards(@RequestParam List<MultipartFile> files) throws Exception {
+    //     List<String> imageUrls = new ArrayList<>();
+    //     return ResponseEntity.ok(null);
+    // }
 
     @PutMapping("resetAll/{flashcardId}")
     public ResponseEntity<?> resetAllCards(@PathVariable Integer flashcardId) {
-        
+
         cardService.resetListCard(flashcardId);
-        return ResponseEntity.ok("Reset List cards success.");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 }

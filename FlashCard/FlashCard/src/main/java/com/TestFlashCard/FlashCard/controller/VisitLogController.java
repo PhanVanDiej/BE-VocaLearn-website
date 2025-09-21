@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.TestFlashCard.FlashCard.response.ApiResponse;
 import com.TestFlashCard.FlashCard.service.VisitLogService;
 
 import lombok.RequiredArgsConstructor;
@@ -26,7 +27,7 @@ public class VisitLogController {
     @PostMapping("/record")
     public ResponseEntity<?> record() {
         visitLogService.create();
-        return ResponseEntity.ok("Recorded new visit");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @GetMapping("/count")
@@ -45,6 +46,6 @@ public class VisitLogController {
         else
             response.put("numOfVisited", visitLogService.countAll());
 
-        return new ResponseEntity<Map<String, Long>>(response, HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 }

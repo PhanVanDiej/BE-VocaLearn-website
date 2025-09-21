@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.TestFlashCard.FlashCard.entity.BlogCategory;
 import com.TestFlashCard.FlashCard.request.BlogCategoryCreateRequest;
 import com.TestFlashCard.FlashCard.request.BlogCreateRequest;
+import com.TestFlashCard.FlashCard.response.ApiResponse;
 import com.TestFlashCard.FlashCard.response.BlogResponse;
 import com.TestFlashCard.FlashCard.service.BlogService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -42,38 +43,38 @@ public class BlogController {
     @GetMapping("/category/getAll")
     public ResponseEntity<?> getAllBlogCategory() throws IOException {
         List<BlogCategory> categories = blogService.getAllCategory();
-        return new ResponseEntity<>(categories, HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(categories));
     }
 
     @PostMapping("/category/create")
     public ResponseEntity<?> createBlogCategory(@RequestBody BlogCategoryCreateRequest request) throws IOException {
         blogService.createCategory(request);
-        return ResponseEntity.ok("Create new Blog Category successfully!");
+        return  ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @DeleteMapping("/category/delete/{id}")
     public ResponseEntity<?> deleteBlogCategory(@PathVariable Integer id) throws IOException {
         blogService.deleteCategory(id);
-        return ResponseEntity.ok("Delete Blog Category successfully!");
+        return  ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @PutMapping("/category/update/{id}")
     public ResponseEntity<?> updateBlogCategory(@PathVariable Integer id,
             @RequestBody BlogCategoryCreateRequest request) {
         blogService.updateCategory(request, id);
-        return ResponseEntity.ok("Update Blog Category with id: " + id + " successfully!");
+        return  ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @GetMapping("/getAll")
     public ResponseEntity<?> getAllBlog() throws IOException {
         List<BlogResponse> responses = blogService.getAllBlog();
-        return new ResponseEntity<>(responses, HttpStatus.OK);
+        return  ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(responses));
     }
 
     @GetMapping("/id/{id}")
     public ResponseEntity<?> getBlogById(@PathVariable Integer id) throws IOException {
         BlogResponse response = blogService.getBlogById(id);
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        return  ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
     @PostMapping(value = "/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -82,7 +83,7 @@ public class BlogController {
 
         BlogCreateRequest request = objectMapper.readValue(dataJson, BlogCreateRequest.class);
         blogService.createBlog(request, image);
-        return ResponseEntity.ok("Create new Blog successfully!");
+        return  ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @PutMapping(value = "update/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -94,23 +95,17 @@ public class BlogController {
                 || request.getTitle() == null)
             throw new BadRequestException("Cannot update the Blog with id: " + id + ". Fields must not be null!");
         blogService.updateBlog(request, image, id);
-        return ResponseEntity.ok("Update Blog with id: " + id + " successfully!");
+        return  ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<?> deleteBlog(@PathVariable Integer id) throws IOException {
         blogService.deleteBlog(id);
-        return ResponseEntity.ok("Delete Blog with id: " + id + " successfully!");
+        return  ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @GetMapping("/filter")
     public ResponseEntity<?> getByCategory(@RequestParam String category) throws IOException {
-        return new ResponseEntity<>(blogService.getByCategory(category), HttpStatus.OK);
+        return  ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(blogService.getByCategory(category)));
     }
-
-    @GetMapping("/test")
-    public ResponseEntity<String> test() {
-        return ResponseEntity.ok("Test OK");
-    }
-
 }

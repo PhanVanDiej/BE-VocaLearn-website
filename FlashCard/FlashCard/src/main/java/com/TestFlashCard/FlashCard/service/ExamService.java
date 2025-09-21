@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -44,7 +45,7 @@ public class ExamService {
     @Autowired
     private final ExcelParser excelParser;
     @Autowired
-    private final MediaService mediaService;
+    private MinIO_MediaService minIO_MediaService;
     @Autowired
     private final IComment_Repository comment_Repository;
     @Autowired
@@ -105,15 +106,19 @@ public class ExamService {
                 .map(opt -> new ToeicQuestionResponse.OptionResponse(opt.getMark(), opt.getDetail()))
                 .collect(Collectors.toList());
 
+        String image = null;
+        if(question.getImage()!=null && !question.getImage().isEmpty())
+            image= minIO_MediaService.getPresignedURL(question.getImage(), Duration.ofMinutes(1));
         return new ToeicQuestionResponse(
                 question.getId(),
                 question.getIndexNumber(),
                 question.getPart(),
                 question.getDetail(),
                 question.getResult(),
-                question.getImage(),
+                image,
                 question.getAudio(),
                 question.getConversation(),
+                question.getClarify(),
                 options);
     }
 
@@ -176,7 +181,7 @@ public class ExamService {
                 () -> new ResourceNotFoundException("Cannot find the Exam with id : " + examID));
         List<ToeicQuestion> questions = exam.getQuestions();
         for (ToeicQuestion question : questions) {
-            mediaService.deleteQuestionMedia(question);
+            minIO_MediaService.deleteQuestionMedia(question);
         }
         exam_Repository.delete(exam);
     }
@@ -192,7 +197,7 @@ public class ExamService {
         // Xóa file media
         List<ToeicQuestion> currenQuestions = exam.getQuestions();
         for (ToeicQuestion question : currenQuestions) {
-            mediaService.deleteQuestionMedia(question);
+            minIO_MediaService.deleteQuestionMedia(question);
         }
         exam.getQuestions().clear();
         // Extract file zip

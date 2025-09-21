@@ -35,6 +35,9 @@ import lombok.RequiredArgsConstructor;
 public class FlashCardService {
 
     @Autowired
+    private MinIO_MediaService minIO_MediaService;
+
+    @Autowired
     public final IFlashCard_Repository flashCard_Repository;
     @Autowired
     public final IFlashCardTopic_Repository flashCardTopic_Repository;
@@ -99,7 +102,7 @@ public class FlashCardService {
     }
 
     @Transactional
-    public void createFlashCard(FlashCardCreateRequest flashCardDetail) throws Exception {
+    public void createFlashCard(FlashCardCreateRequest flashCardDetail) throws IOException {
         FlashCardTopic topic = flashCardTopic_Repository.findById(flashCardDetail.getTopicID()).orElseThrow(
                 () -> new ResourceNotFoundException(
                         "Cannot find FlashCard's topic with id: " + flashCardDetail.getTopicID()));
@@ -207,7 +210,7 @@ public class FlashCardService {
     }
 
     @Transactional
-    public void savePublishTopic(int topicID, String accountName){
+    public void savePublishTopic(int topicID, String accountName) throws IOException{
         FlashCardTopic topic = flashCardTopic_Repository.findById(topicID).orElseThrow(
             ()-> new ResourceNotFoundException("Cannot find Flashcard topic with id: "+ topicID)
         );
@@ -242,7 +245,10 @@ public class FlashCardService {
                 newCard.setPartOfSpeech(card.getPartOfSpeech());
                 newCard.setPronounce(card.getPronounce());
                 newCard.setTerminology(card.getTerminology());
-                newCard.setImage(storageService.copyFile(card.getImage(), "image-copy.jpg"));
+
+                //Copy file MiniIO
+                minIO_MediaService.copyFile(card.getImage());
+                newCard.setImage(card.getImage());
 
                 card_Repository.save(newCard);
             }

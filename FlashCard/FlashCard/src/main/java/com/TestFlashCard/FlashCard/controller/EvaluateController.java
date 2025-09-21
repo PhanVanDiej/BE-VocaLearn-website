@@ -18,6 +18,7 @@ import com.TestFlashCard.FlashCard.entity.User;
 import com.TestFlashCard.FlashCard.exception.ResourceNotFoundException;
 import com.TestFlashCard.FlashCard.request.EvaluateCreateRequest;
 import com.TestFlashCard.FlashCard.request.EvaluateUpdateRequest;
+import com.TestFlashCard.FlashCard.response.ApiResponse;
 import com.TestFlashCard.FlashCard.response.EvaluateResponse;
 import com.TestFlashCard.FlashCard.service.EvaluateService;
 import com.TestFlashCard.FlashCard.service.UserService;
@@ -47,32 +48,29 @@ public class EvaluateController {
     public ResponseEntity<?> createEvaluate(@RequestPart String data,
             @RequestPart(required = false) MultipartFile image, Principal principal) throws IOException {
         User user = userService.getUserByAccountName(principal.getName());
-
         EvaluateCreateRequest request = objectMapper.readValue(data, EvaluateCreateRequest.class);
-
         evaluateService.createEvaluate(request, image, user);
-
-        return ResponseEntity.ok("Create new Evaluate successfully!");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @DeleteMapping("/delete/{evaluateID}")
     public ResponseEntity<?> deleteEvaluate(@PathVariable("evaluateID") Integer id) {
         evaluateService.deleteEvaluate(id);
-        return ResponseEntity.ok("Delete evaluate with id: " + id + "successfully!");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @GetMapping("/get")
     public ResponseEntity<?> getMethodName(@RequestParam(required = false) Integer star) throws IOException {
         List<EvaluateResponse> evaluates = star != null ? evaluateService.getEvaluatesByStar(star)
                 : evaluateService.getAllEvaluates();
-        return new ResponseEntity<List<EvaluateResponse>>(evaluates, HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(evaluates));
     }
 
     @PutMapping("/update/{id}")
     public ResponseEntity<?> updateEvaluate(@PathVariable Integer id, @RequestBody EvaluateUpdateRequest request)
             throws IOException {
         evaluateService.update(request.getAdminReply(), id);
-        return ResponseEntity.ok("Update evaluate successfully");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @GetMapping("/loadByUser")
@@ -82,7 +80,7 @@ public class EvaluateController {
         EvaluateResponse response = evaluateService.getByUser(user);
         if(response==null)
         throw new ResourceNotFoundException("Cannot find evaluate of User with accountName: " + user.getAccountName());
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
     // @PutMapping(value = "/updateByUser", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)

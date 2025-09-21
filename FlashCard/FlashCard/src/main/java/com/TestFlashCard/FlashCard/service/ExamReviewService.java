@@ -1,5 +1,6 @@
 package com.TestFlashCard.FlashCard.service;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +34,9 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class ExamReviewService {
+
+    @Autowired
+    private MinIO_MediaService minIO_MediaService;
     @Autowired
     private final IExamReview_Repository examReview_Repository;
     @Autowired
@@ -166,11 +170,13 @@ public class ExamReviewService {
         return questionReviews.stream().map(qr -> {
             QuestionReviewResponse qrr = new QuestionReviewResponse();
             ToeicQuestion question = qr.getToeicQuestion();
-
+            String image = null;
+            if(qrr.getImage()!=null && !qrr.getImage().isEmpty())
+                image = minIO_MediaService.getPresignedURL(qrr.getImage(), Duration.ofMinutes(1));
             qrr.setQuestionId(question.getId());
             qrr.setIndexNumber(question.getIndexNumber());
             qrr.setDetail(question.getDetail());
-            qrr.setImage(question.getImage());
+            qrr.setImage(image);
             qrr.setAudio(question.getAudio());
             qrr.setConversation(question.getConversation());
             qrr.setUserAnswer(qr.getUserAnswer());

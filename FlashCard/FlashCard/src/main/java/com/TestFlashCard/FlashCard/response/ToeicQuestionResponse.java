@@ -11,6 +11,7 @@ public record ToeicQuestionResponse(
     String image,
     String audio,
     String conversation,
+    String clarify,
     List<OptionResponse> options
 ) {
     public record OptionResponse(

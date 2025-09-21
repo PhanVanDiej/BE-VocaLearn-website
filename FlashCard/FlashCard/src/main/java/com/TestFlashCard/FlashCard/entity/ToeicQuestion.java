@@ -27,6 +27,9 @@ public class ToeicQuestion {
     @Column(nullable = false, length = 1)
     private String result;
 
+    @Column(columnDefinition = "TEXT", nullable = true)
+    private String clarify;
+
     @Column(length = 255)
     private String image;
 

@@ -1,21 +1,22 @@
 package com.TestFlashCard.FlashCard.service;
 
+import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.TestFlashCard.FlashCard.Enum.EUserStatus;
 import com.TestFlashCard.FlashCard.Enum.Role;
 import com.TestFlashCard.FlashCard.JpaSpec.UserSpecification;
 import com.TestFlashCard.FlashCard.entity.User;
 import com.TestFlashCard.FlashCard.exception.ResourceNotFoundException;
 import com.TestFlashCard.FlashCard.repository.IUser_Repository;
+import com.TestFlashCard.FlashCard.response.UserResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -30,14 +31,13 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    public ResponseEntity<?> createUser(User user) {
-        try {
-            user.setPassWord(passwordEncoder.encode(user.getPassWord()));
-            userRepository.save(user);
-            return ResponseEntity.ok("Create user successfully");
-        } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+    @Autowired
+    private MinIO_MediaService minIO_MediaService;
+
+    public ResponseEntity<?> createUser(User user) throws IOException{
+        user.setPassWord(passwordEncoder.encode(user.getPassWord()));
+        userRepository.save(user);
+        return ResponseEntity.ok("Create user successfully");
     }
 
     public boolean checkExistedAccountName(String accountName) {
@@ -48,27 +48,26 @@ public class UserService {
         return userRepository.findByEmail(email) != null;
     }
 
-    public ResponseEntity<?> updateUser(User user) {
+    public void updateUser(User user) {
         try {
             userRepository.save(user);
-            return new ResponseEntity<>("Update success User with id: " + user.getId(), HttpStatus.OK);
         } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            throw e;
         }
     }
 
     public void deleteUser(int id) {
         User user = userRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Cannot find user with id : " + id));
-
-        user.setIsDeleted(EUserStatus.TRUE);
+        user.setDeleted(true);
         userRepository.save(user);
     }
 
-    public List<User> getAllUsers() {
+    public List<UserResponse> getAllUsers() {
         Specification<User> specification = Specification
-                .where(UserSpecification.hasStatus(EUserStatus.FALSE).and(UserSpecification.hasRole(Role.USER)));
-        return userRepository.findAll(specification);
+                .where(UserSpecification.hasStatus(false).and(UserSpecification.hasRole(Role.USER)));
+        List<User> users = userRepository.findAll(specification);
+        return users.stream().map(this::convertToResponse).toList();
     }
 
     public User getUserByAccountName(String accountName) throws UsernameNotFoundException {
@@ -86,5 +85,24 @@ public class UserService {
 
     public boolean checkPassword(String rawPassword, String encodedPassword) {
         return passwordEncoder.matches(rawPassword, encodedPassword);
+    }
+
+    public UserResponse convertToResponse(User user){
+        String avatar = null;
+        if (user.getAvatar() != null && !user.getAvatar().isEmpty()) {
+            avatar = minIO_MediaService.getPresignedURL(user.getAvatar(), Duration.ofDays(1));
+        }
+        UserResponse response = new UserResponse();
+        response.setAccountName(user.getAccountName());
+        response.setAddress(user.getAddress());
+        response.setBirthday(user.getBirthday());
+        response.setAvatar(avatar);
+        response.setCreateAt(user.getCreateAt());
+        response.setEmail(user.getEmail());
+        response.setFullName(user.getFullName());
+        response.setId(user.getId());
+        response.setPhoneNumber(user.getPhoneNumber());
+        response.setRole(user.getRole());
+        return response;
     }
 }

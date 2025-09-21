@@ -6,7 +6,5 @@ import lombok.Data;
 @Data
 public class ExamTypeCreateRequest {
     @NotNull
-    private int id;
-    @NotNull
     private String type;
 }

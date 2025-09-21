@@ -13,7 +13,4 @@ public class BlogCategory {
 
     @Column(name = "title", nullable = false)
     private String title;
-
-    @Column(name = "isDeleted", nullable = false)
-    private boolean isDeleted = false;
 }

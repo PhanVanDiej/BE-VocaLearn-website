@@ -1,6 +1,7 @@
 package com.TestFlashCard.FlashCard.service;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 
 import org.apache.coyote.BadRequestException;
@@ -26,13 +27,15 @@ import lombok.RequiredArgsConstructor;
 public class BlogService {
 
     @Autowired
+    private MinIO_MediaService minIO_MediaService;
+    @Autowired
     private final IBlogCategory_Repository blogCategory_Repository;
     @Autowired
     private final IBlog_Repository blog_Repository;
-    @Autowired
-    private final MediaService mediaService;
-    @Autowired
-    private final DigitalOceanStorageService storageService;
+    // @Autowired
+    // private final MediaService mediaService;
+    // @Autowired
+    // private final DigitalOceanStorageService storageService;
 
     @Transactional
     public void createCategory(BlogCategoryCreateRequest request) throws IOException {
@@ -102,7 +105,7 @@ public class BlogService {
             blog.setAuthor("Admin");
 
         if (image != null) {
-            blog.setImage(mediaService.getImageUrl(image));
+            blog.setImage(minIO_MediaService.uploadFile(image));
         }
 
         blog_Repository.save(blog);
@@ -117,8 +120,8 @@ public class BlogService {
                 () -> new ResourceNotFoundException("Cannot find the Blog with id: " + id));
 
         if (blog.getImage() != null) {
-            storageService.deleteImage(blog.getImage());
-            blog.setImage(mediaService.getImageUrl(image));
+            minIO_MediaService.deleteFile(blog.getImage());
+            blog.setImage(minIO_MediaService.uploadFile(image));
         }
         blog.setTitle(request.getTitle());
         blog.setCategory(category);
@@ -133,17 +136,20 @@ public class BlogService {
         Blog blog = blog_Repository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Cannot find the Blog with id: " + id));
         if (blog.getImage() != null)
-            storageService.deleteImage(blog.getImage());
+            minIO_MediaService.deleteFile(blog.getImage());
         blog_Repository.delete(blog);
     }
 
     public BlogResponse convertToBlogResponse(Blog blog) {
+        String avatar = null;
+        if(blog.getImage()!=null & !blog.getImage().isEmpty())
+            avatar = minIO_MediaService.getPresignedURL(avatar, Duration.ofMinutes(1));
         return new BlogResponse(
                 blog.getId(),
                 blog.getTitle(),
                 blog.getCategory().getTitle(),
                 blog.getShortDetail(),
-                blog.getImage(),
+                avatar,
                 blog.getDetail(),
                 blog.getAuthor(),
                 blog.getCreateAt());

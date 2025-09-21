@@ -11,11 +11,8 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
-import com.TestFlashCard.FlashCard.entity.ToeicQuestion;
 import com.TestFlashCard.FlashCard.exception.InvalidImageException;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -168,14 +165,5 @@ public class MediaService {
             case "m4a" -> "audio/mp4";
             default -> null;
         };
-    }
-
-    @Transactional
-    public void deleteQuestionMedia(ToeicQuestion question) {
-        if (question.getImage() != null)
-            storageService.deleteImage(question.getImage());
-        if (question.getAudio() != null)
-            storageService.deleteAudio(question.getAudio());
-        return;
     }
 }

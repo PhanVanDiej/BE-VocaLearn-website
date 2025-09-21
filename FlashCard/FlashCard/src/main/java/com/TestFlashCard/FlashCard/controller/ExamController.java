@@ -27,6 +27,7 @@ import com.TestFlashCard.FlashCard.request.ExamSubmitRequest;
 import com.TestFlashCard.FlashCard.request.ExamTypeCreateRequest;
 import com.TestFlashCard.FlashCard.request.ExamTypeUpdateRequest;
 import com.TestFlashCard.FlashCard.request.ExamUpdateRequest;
+import com.TestFlashCard.FlashCard.response.ApiResponse;
 import com.TestFlashCard.FlashCard.response.CommentResponse;
 import com.TestFlashCard.FlashCard.response.ExamInformationResponse;
 import com.TestFlashCard.FlashCard.response.ExamReviewResponse;
@@ -75,36 +76,36 @@ public class ExamController {
             @RequestParam(required = false) String title) {
 
         List<ExamInformationResponse> exams = examService.getByFilter(year, type, collection, title);
-        return ResponseEntity.ok(exams);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(exams));
     }
 
     @GetMapping("/getByCreateAt")
     public ResponseEntity<?> getByCreateAt() {
         List<ExamInformationResponse> response = examService.getByCreatAt();
-        return new ResponseEntity<List<ExamInformationResponse>>(response, HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
     @GetMapping("/detail/{examID}")
     public ResponseEntity<?> getById(@PathVariable Integer examID) throws IOException {
-        return ResponseEntity.ok(examService.getByID(examID));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(examService.getByID(examID)));
     }
 
     @PostMapping("/create")
     public ResponseEntity<?> createExam(@RequestBody @Valid ExamCreateRequest request) throws IOException {
-        return ResponseEntity.ok(examService.create(request));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(examService.create(request)));
     }
 
     @PutMapping("/update/{examID}")
     public ResponseEntity<?> updateExam(@PathVariable Integer examID, @RequestBody ExamUpdateRequest request)
             throws IOException {
         examService.updateExam(request, examID);
-        return ResponseEntity.ok("Update Exam with id : " + examID + " successfully!");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @DeleteMapping("/delete/{examID}")
     public ResponseEntity<?> deleteExamById(@PathVariable Integer examID) {
         examService.DeleteById(examID);
-        return ResponseEntity.ok("Delete Exam with id : " + examID + " successfully!");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @PostMapping("/importQuestions")
@@ -112,7 +113,7 @@ public class ExamController {
             throws IOException {
         try {
             examService.importQuestions(file, examID);
-            return ResponseEntity.ok().body("Import successfully questions for exam with id : " + examID);
+            return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
         } catch (Exception exception) {
             throw new IOException(exception.getMessage());
         }
@@ -125,13 +126,13 @@ public class ExamController {
         User user = userService.getUserByAccountName(accountName);
 
         ExamReviewResponse response = examReviewService.submitExam(request, user);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
     @GetMapping("/comments/{examID}")
-    public ResponseEntity<List<CommentResponse>> getCommentsByExam(@PathVariable Integer examID) {
+    public ResponseEntity<?> getCommentsByExam(@PathVariable Integer examID) {
         List<CommentResponse> responses = commentService.getCommentsByExamId(examID);
-        return ResponseEntity.ok(responses);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(responses));
     }
 
     @PostMapping("/comment/create")
@@ -139,7 +140,7 @@ public class ExamController {
         String accountName = principal.getName();
         User user = userService.getUserByAccountName(accountName);
         commentService.createComment(user, request);
-        return ResponseEntity.ok("Comment created!");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @PostMapping("/reply-comment/create")
@@ -149,57 +150,57 @@ public class ExamController {
 
         commentService.createReply(user, request);
 
-        return ResponseEntity.ok("Reply created successfully.");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @DeleteMapping("/comment/delete/{commentID}")
     public ResponseEntity<?> deleteComment(@PathVariable Integer commentID, Principal principal) {
         User user = userService.getUserByAccountName(principal.getName());
         commentService.deleteCommentById(commentID, user);
-        return ResponseEntity.ok("Delete Comment with id :" + commentID + " successfully!");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @DeleteMapping("/reply-comment/delete/{commentReplyID}")
     public ResponseEntity<?> deleteCommentReply(@PathVariable Integer commentReplyID, Principal principal) {
         User user = userService.getUserByAccountName(principal.getName());
         commentService.deleteReplyById(commentReplyID, user);
-        return ResponseEntity.ok("Delete Comment with id :" + commentReplyID + " successfully!");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @PutMapping("comment/update/{id}")
     public ResponseEntity<?> updateComment(@PathVariable Integer id, @RequestBody CommentUpdateRequest request) {
         commentService.updateComment(id, request);
         
-        return ResponseEntity.ok("Update comment with id: " + id +" successfully");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
     @PutMapping("reply-comment/update/{id}")
     public ResponseEntity<?> updateReplyComment(@PathVariable Integer id, @RequestBody CommentUpdateRequest request) {
         commentService.updateCommentReply(id, request);
-        return ResponseEntity.ok("Update reply-comment with id: " + id +" successfully");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @GetMapping("/type/getAll")
     public ResponseEntity<?> getAllExamTypes() throws IOException {
         List<ExamType> examTypes = examTypeService.getAllExamTypes();
-        return new ResponseEntity<List<ExamType>>(examTypes, HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(examTypes));
     }
 
     @GetMapping("/type/id/{id}")
     public ResponseEntity<?> getTypeById(@PathVariable Integer id) throws IOException {
         ExamType examType = examTypeService.getDetailById(id);
-        return new ResponseEntity<ExamType>(examType, HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(examType));
     }
 
     @GetMapping("/type/name/{type}")
     public ResponseEntity<?> getTypeByName(@PathVariable String type) throws IOException {
         ExamType examType = examTypeService.getDetailByType(type);
-        return new ResponseEntity<ExamType>(examType, HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(examType));
     }
 
     @PostMapping("/type/create")
     public ResponseEntity<?> createExamType(@RequestBody ExamTypeCreateRequest request) throws IOException {
         examTypeService.create(request);
-        return ResponseEntity.ok("Create new ExamType successfully");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
     
 
@@ -207,49 +208,49 @@ public class ExamController {
     public ResponseEntity<?> updateExamType(@PathVariable Integer id, @RequestBody ExamTypeUpdateRequest request)
             throws IOException {
         examTypeService.update(request, id);
-        return ResponseEntity.ok("Update ExamType with id : " + id + " successfully");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @DeleteMapping("/type/delete/{id}")
     public ResponseEntity<?> deleteExamType(@PathVariable Integer id) throws IOException {
         examTypeService.softDelete(id);
-        return ResponseEntity.ok("Delete ExamType with id: " + id + " successfully!");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
 
     @GetMapping("/collection/getAll")
     public ResponseEntity<?> getAllExamCollections() throws IOException{
         List<ExamCollection> collections = examCollectionService.getAllExamCollection();
-        return new ResponseEntity<>(collections,HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(collections));
     }
 
     @GetMapping("/collection/id/{id}")
     public ResponseEntity<?> getExamCollectionById(@PathVariable Integer id) throws IOException{
         ExamCollection examCollection=examCollectionService.getDetailById(id);
-        return new ResponseEntity<>(examCollection,HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(examCollection));
     }
 
     @GetMapping("/collection/name/{collection}")
     public ResponseEntity<?> getExamCollectionByName(@PathVariable String collection) throws IOException{
         ExamCollection examCollection=examCollectionService.getDetailByCollection(collection);
-        return new ResponseEntity<>(examCollection,HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(examCollection));
     }
 
     @PostMapping("/collection/create")
     public ResponseEntity<?> createExamCollection(@RequestBody ExamCollectionCreateRequest request) {
         examCollectionService.create(request);
-        return ResponseEntity.ok("Create new ExamCollection successfully!");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
     
     @PutMapping("/collection/update/{id}")
     public ResponseEntity<?> updateExamCollection(@PathVariable Integer id, @RequestBody ExamCollectionUpdateRequest request) throws IOException {
         examCollectionService.update(request, id);
-        return ResponseEntity.ok("Update ExamCollection with id: " + id + " successfully!");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
     
     @DeleteMapping("/collection/delete/{id}")
     public ResponseEntity<?> deleteExamCollection(@PathVariable Integer id) throws IOException{
         examCollectionService.Delete(id);
-        return ResponseEntity.ok("Delete ExamCOllection with id: " + id +" successfully!");
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
     }
     
     @GetMapping("/result/getAllByExam/{examId}")
@@ -259,12 +260,11 @@ public class ExamController {
             ()-> new ResourceNotFoundException("Cannot find the Exam with id: " + examId)
         );
         List<ExamReviewResponse> responses = examReviewService.getAllExamResultByUser(user, exam);
-        return ResponseEntity.ok(responses);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(responses));
     }
     @GetMapping("/result/id/{id}")
     public ResponseEntity<?> getReviewById(@PathVariable Integer id) {
         ExamReviewResponse response = examReviewService.getById(id);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
-    
 }
