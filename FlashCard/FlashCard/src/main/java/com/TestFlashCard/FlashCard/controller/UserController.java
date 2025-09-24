@@ -126,7 +126,7 @@ public class UserController {
                throw new BadRequestException("User's Role cannot be null");
           }
           newUser.setRole(request.getRole());
-          return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.of(HttpStatus.OK.value(), "Create user successfully", null));
+          return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.of(HttpStatus.OK.value(), "Success", "User created successfully"));
      }
 
      @PostMapping("/register")
@@ -147,7 +147,8 @@ public class UserController {
           newUser.setPhoneNumber(request.getPhoneNumber());
           newUser.setRole(Role.USER);
 
-          return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.of(HttpStatus.OK.value(), "Create user successfully", null));
+          userService.createUser(newUser);
+          return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.of(HttpStatus.OK.value(), "Success", "User registered successfully"));
      }
 
      @PostMapping("/login")
@@ -234,7 +235,7 @@ public class UserController {
 
           userService.updateUser(user);
 
-          return ResponseEntity.status(HttpStatus.OK).body(null);
+          return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Profile has been updated successfully"));
      }
 
      // Admin update
@@ -273,7 +274,7 @@ public class UserController {
                user.setAvatar(mediaService.getImageUrl(avatar));
           }
           userService.updateUser(user);
-          return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+          return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("User has been updated successfully"));
      }
 
      @GetMapping("/getUserByFilter")
@@ -300,7 +301,7 @@ public class UserController {
      @DeleteMapping("/delete/{id}")
      public ResponseEntity<?> deleteUserById(@PathVariable Integer id) throws Exception {
           userService.deleteUser(id);
-          return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+          return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("User has been deleted successfully"));
      }
 
      @PostMapping("/forgot-password")
@@ -333,7 +334,7 @@ public class UserController {
                          "Yêu cầu đổi mật khẩu - Vocabulary English FlashCard account",
                          "Mật khẩu mới cho tài khoản " + user.getAccountName() + ": " + token +
                                    "\n\nĐây chỉ là mật khẩu tạm thời.\nĐể đảm bảo bảo mật, vui lòng cập nhật mật khẩu của bạn.");
-               return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+               return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Reset code has been sent to user's email"));
           } catch (Exception exception) {
                throw new IOException("Intenal Server Error: " + exception.getMessage());
           }
@@ -353,7 +354,7 @@ public class UserController {
           latest.setUsed(true);
           passwordResetToken_Repository.save(latest);
 
-          return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+          return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Verify code successfully"));
      }
 
      @PostMapping("/reset-password")
@@ -368,6 +369,6 @@ public class UserController {
           user.setPassWord(passwordEncoder.encode(request.getNewPassword()));
           user_Repository.save(user);
 
-          return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+          return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Password has been updated successfully"));
      }
 }

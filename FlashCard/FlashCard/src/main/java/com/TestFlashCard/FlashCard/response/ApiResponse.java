@@ -1,5 +1,8 @@
 package com.TestFlashCard.FlashCard.response;
 
+import java.util.Collections;
+import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -21,6 +24,9 @@ public class ApiResponse<T> {
     }
     public static <T> ApiResponse<T> error(int status, String message) {
         return new ApiResponse<>(status, message, null);
+    }
+    public static ApiResponse<Map<String, String>> success(String detail) {
+        return new ApiResponse<>(200, "Success", Collections.singletonMap("detail", detail));
     }
 
     public int getStatus() { return status; }

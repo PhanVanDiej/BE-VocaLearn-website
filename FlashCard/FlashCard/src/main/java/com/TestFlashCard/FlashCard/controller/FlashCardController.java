@@ -63,7 +63,7 @@ public class FlashCardController {
     public ResponseEntity<?> createFlashCard(@RequestBody @Valid FlashCardCreateRequest request) throws IOException{
         try {
             flashCardService.createFlashCard(request);
-            return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+            return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("FlashCard created successfully"));
         } catch (ResourceNotFoundException ex) {
             throw ex;
         } catch (IOException ex) {
@@ -75,31 +75,31 @@ public class FlashCardController {
     public ResponseEntity<?> createFlashCardTopic(@RequestBody @Valid FlashCardTopicCreateRequest request,
             Principal principal) throws IOException {
         flashCardService.createFlashCardTopic(request, principal.getName());
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Topic created successfully"));
     }
 
     @PutMapping("/updateTopic")
     public ResponseEntity<?> updateTopic(@RequestBody FlashCardTopicUpdateRequest request, Principal principal) {
         flashCardService.updateTopic(request, principal.getName());
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Topcic updated successfully"));
     }
 
     @PutMapping("/updateFlashCard")
     public ResponseEntity<?> updateFlashCard(@RequestBody FlashCardUpdateRequest request) {
         flashCardService.updateFlashCard(request);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Topic updated successfully"));
     }
 
     @DeleteMapping("/deleteTopic/{id}")
     public ResponseEntity<?> deleteTopicById(@PathVariable int id) {
         flashCardService.deleteTopic(id);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Topic deleted successfully"));
     }
 
     @DeleteMapping("/deleteFlashCard/{id}")
     public ResponseEntity<?> deleteFlashCardById(@PathVariable int id) {
         flashCardService.deleteFlashCard(id);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("FlashCard deleted successfully"));
     }
 
     @GetMapping("/id/{id}")
@@ -110,13 +110,13 @@ public class FlashCardController {
     @PostMapping("/savePublishTopic/{topicID}")
     public ResponseEntity<?> savePublishTopic(@PathVariable Integer topicID,Principal principal)throws IOException {
         flashCardService.savePublishTopic(topicID, principal.getName());
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Topic saved successfully"));
     }
     
     @PutMapping("/raiseVisitCount/{id}")
     public ResponseEntity<?> raiseVisitCount(@PathVariable Integer id) {
         flashCardService.updateVisitCountTopic(id);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Success"));
     }
 
 }

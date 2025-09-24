@@ -50,28 +50,6 @@ public class MinIO_MediaService {
             String contentType = file.getContentType();
             String fileExtension = getFileExtension(file.getOriginalFilename());
 
-            // Xử lý trường hợp application/octet-stream dựa vào extension
-            /*if (contentType != null && contentType.equals("application/octet-stream")
-                    && isValidImageExtension(fileExtension)) {
-                switch (fileExtension) {
-                    case "jpg":
-                        contentType = "image/jpg";
-                        break;
-                    case "jpeg":
-                        contentType = "image/jpeg";
-                        break;
-                    case "png":
-                        contentType = "image/png";
-                        break;
-                    case "gif":
-                        contentType = "image/gif";
-                        break;
-                    case "webp":
-                        contentType = "image/webp";
-                        break;
-                }
-            }*/
-
             contentType = normalizeContentType(contentType, fileExtension);
 
             // Kiểm tra content-type sau khi đã xử lý

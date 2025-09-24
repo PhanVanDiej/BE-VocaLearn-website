@@ -105,6 +105,7 @@ public class EvaluateService {
 
     public EvaluateResponse getByUser(User user) {
         Evaluate evaluate = evaluate_Repository.findByUser(user);
+        if(evaluate==null) return null;
         return convertToEvaluateResponse(evaluate);
     }
 

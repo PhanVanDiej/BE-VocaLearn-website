@@ -1,6 +1,7 @@
 package com.TestFlashCard.FlashCard.controller;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.security.Principal;
 import java.util.List;
 
@@ -99,13 +100,13 @@ public class ExamController {
     public ResponseEntity<?> updateExam(@PathVariable Integer examID, @RequestBody ExamUpdateRequest request)
             throws IOException {
         examService.updateExam(request, examID);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Exam updated successfully"));
     }
 
     @DeleteMapping("/delete/{examID}")
     public ResponseEntity<?> deleteExamById(@PathVariable Integer examID) {
         examService.DeleteById(examID);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Exam deleted successfully"));
     }
 
     @PostMapping("/importQuestions")
@@ -113,7 +114,7 @@ public class ExamController {
             throws IOException {
         try {
             examService.importQuestions(file, examID);
-            return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+            return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Questions imported successfully"));
         } catch (Exception exception) {
             throw new IOException(exception.getMessage());
         }
@@ -140,7 +141,7 @@ public class ExamController {
         String accountName = principal.getName();
         User user = userService.getUserByAccountName(accountName);
         commentService.createComment(user, request);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Comment posted successfully"));
     }
 
     @PostMapping("/reply-comment/create")
@@ -150,33 +151,33 @@ public class ExamController {
 
         commentService.createReply(user, request);
 
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Reply posted successfully"));
     }
 
     @DeleteMapping("/comment/delete/{commentID}")
     public ResponseEntity<?> deleteComment(@PathVariable Integer commentID, Principal principal) {
         User user = userService.getUserByAccountName(principal.getName());
         commentService.deleteCommentById(commentID, user);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Comment deleted successfully"));
     }
 
     @DeleteMapping("/reply-comment/delete/{commentReplyID}")
     public ResponseEntity<?> deleteCommentReply(@PathVariable Integer commentReplyID, Principal principal) {
         User user = userService.getUserByAccountName(principal.getName());
         commentService.deleteReplyById(commentReplyID, user);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Reply deleted successfully"));
     }
 
     @PutMapping("comment/update/{id}")
     public ResponseEntity<?> updateComment(@PathVariable Integer id, @RequestBody CommentUpdateRequest request) {
         commentService.updateComment(id, request);
         
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Comment updated successfully"));
     }
     @PutMapping("reply-comment/update/{id}")
     public ResponseEntity<?> updateReplyComment(@PathVariable Integer id, @RequestBody CommentUpdateRequest request) {
         commentService.updateCommentReply(id, request);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Reply updated successfully"));
     }
 
     @GetMapping("/type/getAll")
@@ -200,7 +201,7 @@ public class ExamController {
     @PostMapping("/type/create")
     public ResponseEntity<?> createExamType(@RequestBody ExamTypeCreateRequest request) throws IOException {
         examTypeService.create(request);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Type created successfully"));
     }
     
 
@@ -208,13 +209,13 @@ public class ExamController {
     public ResponseEntity<?> updateExamType(@PathVariable Integer id, @RequestBody ExamTypeUpdateRequest request)
             throws IOException {
         examTypeService.update(request, id);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Type updated successfully"));
     }
 
     @DeleteMapping("/type/delete/{id}")
     public ResponseEntity<?> deleteExamType(@PathVariable Integer id) throws IOException {
         examTypeService.softDelete(id);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Type deleted successfully"));
     }
 
     @GetMapping("/collection/getAll")
@@ -238,19 +239,19 @@ public class ExamController {
     @PostMapping("/collection/create")
     public ResponseEntity<?> createExamCollection(@RequestBody ExamCollectionCreateRequest request) {
         examCollectionService.create(request);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Collection created successfully"));
     }
     
     @PutMapping("/collection/update/{id}")
     public ResponseEntity<?> updateExamCollection(@PathVariable Integer id, @RequestBody ExamCollectionUpdateRequest request) throws IOException {
         examCollectionService.update(request, id);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Collection updated successfully"));
     }
     
     @DeleteMapping("/collection/delete/{id}")
     public ResponseEntity<?> deleteExamCollection(@PathVariable Integer id) throws IOException{
         examCollectionService.Delete(id);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Collection deleted successfully"));
     }
     
     @GetMapping("/result/getAllByExam/{examId}")

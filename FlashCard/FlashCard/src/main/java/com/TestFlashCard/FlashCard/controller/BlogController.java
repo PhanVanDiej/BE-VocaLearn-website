@@ -49,20 +49,21 @@ public class BlogController {
     @PostMapping("/category/create")
     public ResponseEntity<?> createBlogCategory(@RequestBody BlogCategoryCreateRequest request) throws IOException {
         blogService.createCategory(request);
-        return  ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return  ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Created a new Blog Category: " + request.getTitle()));
     }
 
     @DeleteMapping("/category/delete/{id}")
     public ResponseEntity<?> deleteBlogCategory(@PathVariable Integer id) throws IOException {
+        BlogResponse blog = blogService.getBlogById(id);
         blogService.deleteCategory(id);
-        return  ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return  ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Deleted Blog Category: " + blog.title()));
     }
 
     @PutMapping("/category/update/{id}")
     public ResponseEntity<?> updateBlogCategory(@PathVariable Integer id,
             @RequestBody BlogCategoryCreateRequest request) {
         blogService.updateCategory(request, id);
-        return  ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return  ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Blog Category has been updated!"));
     }
 
     @GetMapping("/getAll")
@@ -83,7 +84,7 @@ public class BlogController {
 
         BlogCreateRequest request = objectMapper.readValue(dataJson, BlogCreateRequest.class);
         blogService.createBlog(request, image);
-        return  ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return  ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Created a new Blog: " + request.getTitle()));
     }
 
     @PutMapping(value = "update/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -95,13 +96,14 @@ public class BlogController {
                 || request.getTitle() == null)
             throw new BadRequestException("Cannot update the Blog with id: " + id + ". Fields must not be null!");
         blogService.updateBlog(request, image, id);
-        return  ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return  ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Blog has been updated"));
     }
 
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<?> deleteBlog(@PathVariable Integer id) throws IOException {
+        BlogResponse blog = blogService.getBlogById(id);
         blogService.deleteBlog(id);
-        return  ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return  ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Deleted Blog: " + blog.title()));
     }
 
     @GetMapping("/filter")

@@ -107,7 +107,6 @@ public class BlogService {
         if (image != null) {
             blog.setImage(minIO_MediaService.uploadFile(image));
         }
-
         blog_Repository.save(blog);
     }
 
@@ -119,7 +118,8 @@ public class BlogService {
         Blog blog = blog_Repository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Cannot find the Blog with id: " + id));
 
-        if (blog.getImage() != null) {
+        if (image != null) {
+            if(blog.getImage() != null)
             minIO_MediaService.deleteFile(blog.getImage());
             blog.setImage(minIO_MediaService.uploadFile(image));
         }
@@ -142,8 +142,8 @@ public class BlogService {
 
     public BlogResponse convertToBlogResponse(Blog blog) {
         String avatar = null;
-        if(blog.getImage()!=null & !blog.getImage().isEmpty())
-            avatar = minIO_MediaService.getPresignedURL(avatar, Duration.ofMinutes(1));
+        if(blog.getImage()!=null && !blog.getImage().isEmpty())
+            avatar = minIO_MediaService.getPresignedURL(blog.getImage(), Duration.ofMinutes(1));
         return new BlogResponse(
                 blog.getId(),
                 blog.getTitle(),

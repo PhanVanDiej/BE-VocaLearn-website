@@ -63,13 +63,13 @@ public class CardController {
         CardCreateRequest request = objectMapper.readValue(dataJson, CardCreateRequest.class);
 
         cardService.createCard(request, image);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Created a new Card: " + request.getTerminology()));
     }
 
     @PutMapping("/update/detail/{cardID}")
     public ResponseEntity<?> updateCard(@PathVariable("cardID") Integer id, @RequestBody CardUpdateRequest request) {
         cardService.updateCardDetail(request, id);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Card detail has been updated!"));
     }
 
     @PutMapping(value = "/update/image/{cardID}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -79,20 +79,21 @@ public class CardController {
             String uniqueName = minIO_MediaService.uploadFile(image);
             cardService.changeImage(cardID, uniqueName);
         }
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Card image has been updated!"));
     }
 
     @DeleteMapping("/delete/image/{cardID}")
     public ResponseEntity<?> deleteImage(@PathVariable Integer cardID) {
-        //Card card= cardService.getById(cardID);
+        CardsResponse card = cardService.getCardDetail(cardID);
         cardService.deleteImage(cardID);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Deleted Card: " + card.definition()));
     }
 
     @DeleteMapping("/delete/card/{cardID}")
     public ResponseEntity<?> deleteCard(@PathVariable Integer cardID) {
+        CardsResponse card = cardService.getCardDetail(cardID);
         cardService.deleteCard(cardID);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Deleted Card: " + card.terminology()));
     }
 
     // @PostMapping("/createListCard")
@@ -103,8 +104,7 @@ public class CardController {
 
     @PutMapping("resetAll/{flashcardId}")
     public ResponseEntity<?> resetAllCards(@PathVariable Integer flashcardId) {
-
         cardService.resetListCard(flashcardId);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("All Cards in this FlashCard has been reset."));
     }
 }

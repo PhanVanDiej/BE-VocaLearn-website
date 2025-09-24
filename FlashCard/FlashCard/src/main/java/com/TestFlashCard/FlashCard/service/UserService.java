@@ -6,7 +6,6 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -34,10 +33,9 @@ public class UserService {
     @Autowired
     private MinIO_MediaService minIO_MediaService;
 
-    public ResponseEntity<?> createUser(User user) throws IOException{
+    public void createUser(User user) throws IOException{
         user.setPassWord(passwordEncoder.encode(user.getPassWord()));
         userRepository.save(user);
-        return ResponseEntity.ok("Create user successfully");
     }
 
     public boolean checkExistedAccountName(String accountName) {

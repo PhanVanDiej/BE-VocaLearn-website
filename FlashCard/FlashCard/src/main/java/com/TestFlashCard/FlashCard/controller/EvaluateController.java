@@ -50,13 +50,13 @@ public class EvaluateController {
         User user = userService.getUserByAccountName(principal.getName());
         EvaluateCreateRequest request = objectMapper.readValue(data, EvaluateCreateRequest.class);
         evaluateService.createEvaluate(request, image, user);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Created a new Evaluate!"));
     }
 
     @DeleteMapping("/delete/{evaluateID}")
     public ResponseEntity<?> deleteEvaluate(@PathVariable("evaluateID") Integer id) {
         evaluateService.deleteEvaluate(id);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Deleted Evaluate!"));
     }
 
     @GetMapping("/get")
@@ -70,16 +70,13 @@ public class EvaluateController {
     public ResponseEntity<?> updateEvaluate(@PathVariable Integer id, @RequestBody EvaluateUpdateRequest request)
             throws IOException {
         evaluateService.update(request.getAdminReply(), id);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Evaluate has been updated!"));
     }
 
     @GetMapping("/loadByUser")
     public ResponseEntity<?> getByUser(Principal principal) throws IOException{
-        System.out.println(">> Check Principal: " + principal);
         User user = userService.getUserByAccountName(principal.getName());
         EvaluateResponse response = evaluateService.getByUser(user);
-        if(response==null)
-        throw new ResourceNotFoundException("Cannot find evaluate of User with accountName: " + user.getAccountName());
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
