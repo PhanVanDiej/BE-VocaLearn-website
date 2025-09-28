@@ -17,6 +17,9 @@ public class Card {
     @Column(name = "terminology", nullable = false, length = 255)
     private String terminology;
 
+    @Column(name = "hint", nullable = false,columnDefinition = "TEXT")
+    private String hint;
+
     @Column(name = "definition", columnDefinition = "TEXT")
     private String definition;
 

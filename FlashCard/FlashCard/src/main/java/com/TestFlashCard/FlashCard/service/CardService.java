@@ -2,10 +2,17 @@ package com.TestFlashCard.FlashCard.service;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
+import com.TestFlashCard.FlashCard.response.CardChoiceRespoinse;
+import com.TestFlashCard.FlashCard.response.FlashCardNomalResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,6 +34,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CardService {
     @Autowired
     private final ICard_Repository card_Repository;
@@ -45,9 +53,50 @@ public class CardService {
 
     private static final String TRANSLITERATION_API_URL = "https://api.dictionaryapi.dev/api/v2/entries/en/";
 
-    public List<CardsResponse> getFlashCardDetail(int flashCardID) {
-        return card_Repository.findByFlashCardId(flashCardID).stream().map(this::convertToResponse).toList();
+    public FlashCardNomalResponse getFlashCardDetail(int flashCardID) {
+        List<CardsResponse> listCardResponse = card_Repository.findByFlashCardId(flashCardID)
+                .stream()
+                .map(this::convertToResponse)
+                .toList();
+
+        List<CardChoiceRespoinse> listCardChoice = new ArrayList<>();
+
+        for (CardsResponse cardResponse : listCardResponse) {
+            // Lấy đáp án đúng
+            String correctAnswer = cardResponse.definition();
+
+            // Lấy 3 đáp án sai random
+            List<String> wrongAnswers = listCardResponse.stream()
+                    .map(CardsResponse::definition)
+                    .filter(term -> !term.equals(correctAnswer)) // loại bỏ đáp án đúng
+                    .collect(Collectors.toList());
+
+            Collections.shuffle(wrongAnswers); // trộn ngẫu nhiên
+            List<String> options = new ArrayList<>();
+            options.add(correctAnswer);
+            options.addAll(wrongAnswers.stream().limit(3).toList());
+
+
+            // Nếu không đủ 4 đáp án → thêm placeholder cho đủ
+            while (options.size() < 4) {
+                options.add("N/A"); // Hoặc thêm một giá trị mặc định khác
+            }
+            // Trộn đáp án cuối cùng (để không phải lúc nào đáp án đúng cũng ở đầu)
+            Collections.shuffle(options);
+
+            // Tạo đối tượng CardChoiceRespoinse
+            CardChoiceRespoinse card = new CardChoiceRespoinse( cardResponse.terminology(), cardResponse.hint(),
+                    options.get(0),
+                    options.get(1),
+                    options.get(2),
+                    options.get(3),
+                    correctAnswer      );
+            listCardChoice.add(card);
+        }
+
+        return new FlashCardNomalResponse(listCardResponse, listCardChoice);
     }
+
 
     public CardsResponse getCardDetail(int cardID) {
         Card card = card_Repository.findById(cardID).orElseThrow(
@@ -56,10 +105,18 @@ public class CardService {
     }
 
     private CardsResponse convertToResponse(Card card) {
-
         String imageUrl = null;
-        if(card.getImage()!=null && !card.getImage().isEmpty())
+        if (card.getImage() != null && !card.getImage().isEmpty()) {
             imageUrl = minIO_MediaService.getPresignedURL(card.getImage(), Duration.ofMinutes(1));
+        }
+
+        List<String> examples = card.getExample() != null && !card.getExample().isBlank()
+                ? Arrays.stream(card.getExample().split("\\+")).toList()
+                : Collections.emptyList();
+        List<String> hints = card.getHint() != null && !card.getHint().isBlank()
+                ? Arrays.stream(card.getHint().split("\\+")).toList()
+                : Collections.emptyList();
+
         return new CardsResponse(
                 card.getId(),
                 card.getTerminology(),
@@ -70,8 +127,12 @@ public class CardService {
                 card.getLevel(),
                 card.getIsRemember(),
                 card.getPartOfSpeech(),
-                card.getExample());
+                examples,
+                hints
+
+        );
     }
+
 
     @Transactional
     public void createCard(CardCreateRequest cardDetail, MultipartFile image) throws IOException {
@@ -80,63 +141,115 @@ public class CardService {
             throw new ResourceExistedException("The terminology is existed!");
 
         RestTemplate restTemplate = new RestTemplate();
+
         try {
             Card card = new Card();
 
-            if (cardDetail.getPronounce() == null || cardDetail.getPronounce().isBlank()
-                    || cardDetail.getPronounce().isEmpty()) {
-                List<Map<String, Object>> response = restTemplate
-                        .getForObject(TRANSLITERATION_API_URL + cardDetail.getTerminology(), List.class);
+            // Nếu client không cung cấp pronounce thì gọi API
+            if (cardDetail.getPronounce() == null || cardDetail.getPronounce().isBlank()) {
+                String apiUrl = TRANSLITERATION_API_URL + cardDetail.getTerminology();
+
+                HttpHeaders headers = new HttpHeaders();
+                headers.set("Accept", "application/json");
+                headers.set("User-Agent", "Mozilla/5.0");
+
+                HttpEntity<String> entity = new HttpEntity<>(headers);
+
+                ResponseEntity<List> responseEntity = restTemplate.exchange(
+                        apiUrl,
+                        HttpMethod.GET,
+                        entity,
+                        List.class
+                );
+
+                List<Map<String, Object>> response = responseEntity.getBody();
+
                 if (response != null && !response.isEmpty()) {
-                    Map<String, Object> firstEntry = response.get(0);
-                    List<Map<String, Object>> phonetics = (List<Map<String, Object>>) firstEntry.get("phonetics");
+                    Map<String, String> hintMap = new LinkedHashMap<>();     // partOfSpeech → hint
+                    Map<String, String> exampleMap = new LinkedHashMap<>();  // partOfSpeech → example
 
-                    if (phonetics != null && !phonetics.isEmpty()) {
-                        String phoneticText = null;
-                        String audioUrl = null;
-                        for (Map<String, Object> ph : phonetics) {
-                            // Lấy phiên âm đầu tiên (ưu tiên có text)
-                            if (phoneticText == null && ph.get("text") != null && !((String)ph.get("text")).isBlank()) {
-                                phoneticText = (String) ph.get("text");
+                    // Duyệt toàn bộ response
+                    for (Map<String, Object> entry : response) {
+                        List<Map<String, Object>> meanings = (List<Map<String, Object>>) entry.get("meanings");
+                        if (meanings == null) continue;
+
+                        for (Map<String, Object> meaning : meanings) {
+                            Object posObj = meaning.get("partOfSpeech");
+                            if (!(posObj instanceof String) || ((String) posObj).isBlank()) continue;
+
+                            String partOfSpeech = (String) posObj;
+
+                            // Nếu đã có definition cho partOfSpeech này thì bỏ qua
+                            if (hintMap.containsKey(partOfSpeech)) continue;
+
+                            List<Map<String, Object>> definitions = (List<Map<String, Object>>) meaning.get("definitions");
+                            if (definitions != null && !definitions.isEmpty()) {
+                                for (Map<String, Object> def : definitions) {
+                                    String defStr = def.get("definition") instanceof String ? (String) def.get("definition") : null;
+                                    String exStr = def.get("example") instanceof String ? (String) def.get("example") : null;
+
+                                    // Chỉ lấy khi cả definition và example đều tồn tại và không trống
+                                    if (defStr != null && !defStr.isBlank() && exStr != null && !exStr.isBlank()) {
+                                        hintMap.put(partOfSpeech, defStr);
+                                        exampleMap.put(partOfSpeech, exStr);
+                                        break; // Dừng ngay khi tìm được object thỏa điều kiện
+                                    }
+                                }
                             }
-                            // Lấy audio đầu tiên khác rỗng
-                            if (audioUrl == null && ph.get("audio") != null && !((String)ph.get("audio")).isBlank()) {
-                                audioUrl = (String) ph.get("audio");
-                            }
-                            // Nếu đã tìm được cả hai, có thể break luôn cho nhanh
-                            if (phoneticText != null && audioUrl != null) break;
                         }
-                        card.setPronounce(phoneticText != null ? phoneticText : "Không thể phiên âm");
-                        card.setAudio(audioUrl); // Có thể là null nếu không tìm thấy audio
                     }
-                } else
-                    card.setPronounce("(Không thể phiên âm)");
-            } else
-                card.setPronounce(cardDetail.getPronounce());
 
+                    // Gộp dữ liệu thành chuỗi
+                    if (!hintMap.isEmpty()) {
+                        card.setHint(String.join("+", hintMap.values()));
+                        card.setPartOfSpeech(String.join(", ", hintMap.keySet()));
+                    }
+                    if (!exampleMap.isEmpty()) {
+                        card.setExample(String.join("+", exampleMap.values()));
+                    }
+                } else {
+                    card.setPronounce("(Không thể phiên âm)");
+                }
+            } else {
+                card.setPronounce(cardDetail.getPronounce());
+            }
+
+            // Lấy flashcard, upload ảnh nếu có, và set các trường còn lại
             FlashCard flashCard = flashCard_Repository.findById(cardDetail.getFlashCardID()).orElseThrow(
                     () -> new ResourceNotFoundException(
                             "Cannot find the flash card with id: " + cardDetail.getFlashCardID()));
-            
-            // Upload Image if not null
-            if(image!=null){
+
+            if (image != null) {
                 String uniqueName = minIO_MediaService.uploadFile(image);
                 card.setImage(uniqueName);
             }
+
             card.setTerminology(cardDetail.getTerminology());
             card.setDefinition(cardDetail.getDefinition());
-            card.setExample(cardDetail.getExample());
+
+            if (cardDetail.getExample() != null && !cardDetail.getExample().isBlank()) {
+                card.setExample(cardDetail.getExample());
+            }
+            if (cardDetail.getPartOfSpeech() != null && !cardDetail.getPartOfSpeech().isBlank()) {
+                card.setPartOfSpeech(cardDetail.getPartOfSpeech());
+            }
+
             card.setLevel(cardDetail.getLevel());
             card.setIsRemember(0);
-            card.setPartOfSpeech(cardDetail.getPartOfSpeech());
             card.setFlashCard(flashCard);
 
             card_Repository.save(card);
-        } catch (Exception exception) {
-            throw new IOException("Error when create a new card: "+ exception.getMessage());
-        }
 
+            log.info("Card created successfully: {}", card.getTerminology());
+
+        } catch (Exception exception) {
+            log.error("Error occurred while creating flash card", exception);
+        }
     }
+
+
+
+
 
     public boolean checkDuplicatedTerminology(String terminology, int flashCardID, String partOfSpeech) {
         Card card = card_Repository.findByTerminologyIgnoreCaseAndFlashCardIdAndPartOfSpeech(terminology, flashCardID,
@@ -209,4 +322,5 @@ public class CardService {
         flashCard.setReviewDate(null);
         flashCard_Repository.save(flashCard);
     }
+
 }

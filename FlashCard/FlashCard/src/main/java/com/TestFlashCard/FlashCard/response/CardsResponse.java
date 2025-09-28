@@ -1,8 +1,14 @@
 package com.TestFlashCard.FlashCard.response;
 
+import lombok.Getter;
+
+import java.util.List;
+
+
 public record CardsResponse(
     int id,
     String terminology,
+
     String definition,
     String image,
     String audio,
@@ -10,5 +16,6 @@ public record CardsResponse(
     int level,
     int isRemember,
     String partOfSpeech,
-    String example
+    List<String> example,
+    List<String> hint
 ){}

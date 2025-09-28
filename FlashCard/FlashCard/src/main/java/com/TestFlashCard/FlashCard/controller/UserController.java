@@ -126,6 +126,7 @@ public class UserController {
                throw new BadRequestException("User's Role cannot be null");
           }
           newUser.setRole(request.getRole());
+          userService.createUser(newUser);
           return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.of(HttpStatus.OK.value(), "Success", "User created successfully"));
      }
 

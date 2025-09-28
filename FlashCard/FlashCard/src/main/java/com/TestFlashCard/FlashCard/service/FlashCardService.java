@@ -181,7 +181,7 @@ public class FlashCardService {
 
         List<FlashCard> flashCards = flashCard_Repository.findByTopicId(id);
         for (FlashCard flashCard : flashCards) {
-            List<CardsResponse> cards = cardService.getFlashCardDetail(flashCard.getId());
+            List<CardsResponse> cards = cardService.getFlashCardDetail(flashCard.getId()).getListCardResponse();
             for (CardsResponse card : cards) {
                 if (card.image() != null)
                     storageService.deleteImage(card.image());

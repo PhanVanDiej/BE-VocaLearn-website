@@ -3,6 +3,7 @@ package com.TestFlashCard.FlashCard.controller;
 import java.io.IOException;
 import java.util.List;
 
+import com.TestFlashCard.FlashCard.response.FlashCardNomalResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -51,7 +52,7 @@ public class CardController {
 
     @GetMapping("/getByFlashCard/{flashCardID}")
     public ResponseEntity<?> getByFlashCard(@PathVariable Integer flashCardID) {
-        List<CardsResponse> responses = cardService.getFlashCardDetail(flashCardID);
+        FlashCardNomalResponse responses = cardService.getFlashCardDetail(flashCardID);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(responses));
     }
 
