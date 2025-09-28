@@ -24,6 +24,8 @@ import com.TestFlashCard.FlashCard.response.ApiResponse;
 import com.TestFlashCard.FlashCard.service.MinIO_MediaService;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -36,10 +38,20 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Map<String, Object>>> handleAllExceptions(Exception ex) {
-        logger.error("Unhandled exception", ex);
-        Map<String, Object> data = Map.of("detail", ex.getMessage());
-        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", data);
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleAllExceptions(Exception ex, HttpServletRequest req) {
+        String message = ex.getMessage();
+        String fallback = ex.getClass().getSimpleName();
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("error", fallback);
+        if (message != null && !message.isBlank()) {
+            data.put("detail", message);
+        }
+        data.put("path", req.getRequestURI());
+
+        // Thêm overload error có data (nếu chưa có)
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.of(500, "Internal Server Error", data.isEmpty() ? null : data));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -137,5 +149,13 @@ public class GlobalExceptionHandler {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("detail", exception.getMessage());
         return build(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", data);
+    }
+
+    @ExceptionHandler(TokenAuthenticationException.class)
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleTokenAuthenticationException(
+            TokenAuthenticationException exception) {
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("detail", exception.getMessage());
+        return build(HttpStatus.UNAUTHORIZED, exception.getErrorCode(), data);
     }
 }

@@ -31,6 +31,9 @@ public class ExamReview {
     private Integer duration;
 
     @Column(nullable = false)
+    private String selectedPart;
+
+    @Column(nullable = false)
     private Integer result;
 
     @Column

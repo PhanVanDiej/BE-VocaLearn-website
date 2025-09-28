@@ -8,5 +8,4 @@ public class FlashCardApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(FlashCardApplication.class, args);
 	}
-
 }

@@ -127,6 +127,8 @@ public class ExamController {
         User user = userService.getUserByAccountName(accountName);
 
         ExamReviewResponse response = examReviewService.submitExam(request, user);
+        
+        System.out.println("====================" + request.getSelectedPart());
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 

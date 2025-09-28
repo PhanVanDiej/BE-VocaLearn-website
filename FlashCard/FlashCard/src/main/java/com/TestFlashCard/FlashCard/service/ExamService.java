@@ -214,7 +214,7 @@ public class ExamService {
         for (ToeicQuestion q : questions) {
             q.setExam(exam);
         }
-        exam.getQuestions().addAll(questions); // hoặc ghi đè, tuỳ mục đích
+        exam.getQuestions().addAll(questions);
 
         exam_Repository.save(exam);
         FileSystemUtils.deleteRecursively(tempDir);

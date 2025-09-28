@@ -1,5 +1,6 @@
 package com.TestFlashCard.FlashCard.repository;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,4 +14,5 @@ public interface IToeicQuestion_Repository extends JpaRepository<ToeicQuestion,I
     int countQuestionsByExamId(int examID);
     List<ToeicQuestion> findByExamId(int examID);
     List<ToeicQuestion> findAllByExam(Exam exam);
+    List<ToeicQuestion> findAllByExamAndPartIn(Exam exam, Collection<String> parts);
 }

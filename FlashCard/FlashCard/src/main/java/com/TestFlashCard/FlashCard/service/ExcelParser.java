@@ -67,7 +67,7 @@ public class ExcelParser {
                 if (audioFileName != null && !audioFileName.isBlank()) {
                     File audioFile = new File(mediaFolder, audioFileName);
                     if (audioFile.exists()) {
-                        String audioUrl = minIO_MediaService.uploadFile(mediaFolder);
+                        String audioUrl = minIO_MediaService.uploadFile(audioFile);
                         question.setAudio(audioUrl);
                     } else {
                         throw new FileNotFoundException("Audio file not found: " + audioFile.getPath());

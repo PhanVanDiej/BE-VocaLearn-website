@@ -13,6 +13,7 @@ public class ExamReviewResponse {
     private String userName;
     private String examTitle;
     private String examCollection;
+    private String selectedPart;
     private Integer totalQuestions;
     private Integer correctAnswers;
     private Integer incorrectAnswers;

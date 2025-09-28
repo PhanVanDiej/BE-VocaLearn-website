@@ -20,7 +20,7 @@ public class Blog {
     @JoinColumn(name = "category_id", nullable = false)
     private BlogCategory category;
 
-    @Column(name = "short_detail", nullable = false)
+    @Column(name = "short_detail", nullable = false, columnDefinition = "TEXT")
     private String shortDetail;
 
     @Column(name = "image")

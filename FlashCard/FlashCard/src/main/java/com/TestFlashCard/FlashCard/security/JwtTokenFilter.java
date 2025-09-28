@@ -13,8 +13,10 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.TestFlashCard.FlashCard.Enum.TokenError;
+import com.TestFlashCard.FlashCard.exception.TokenAuthenticationException;
 import com.TestFlashCard.FlashCard.service.CustomUserDetailsService;
 
+import ch.qos.logback.core.subst.Token;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -73,30 +75,19 @@ public class JwtTokenFilter extends OncePerRequestFilter {
         if ("OPTIONS".equalsIgnoreCase(request.getMethod()) || isPublicEndpoint(path))  {
             filterChain.doFilter(request, response);
             System.out.println(">> [FILTER] Path Pass Auth: " + request.getServletPath());
+            //System.out.println("Token bi het han roi nhe !");
             return;
         }
 
         try {
             String token = getTokenFromRequest(request);
             if (token == null) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json");
-                response.getWriter().write(String.format(
-                        "{\"error\": \"%s\", \"message\": \"%s\"}",
-                        TokenError.NULL.getCode(),
-                        TokenError.NULL.getMessage()));
-                return;
+                throw new TokenAuthenticationException("Token is null", "TOKEN_MISSING");
             }
 
             TokenValidationResult tokenValidationResult = tokenProvider.validateToken(token);
             if (!tokenValidationResult.isValid()) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json");
-                response.getWriter().write(String.format(
-                        "{\"error\": \"%s\", \"message\": \"%s\"}",
-                        tokenValidationResult.getErrorCode(),
-                        tokenValidationResult.getMessage()));
-                return;
+                throw new TokenAuthenticationException("Token validation failed!", tokenValidationResult.getErrorCode());
             }
 
             int userId = tokenProvider.getUserIdFromToken(token);
@@ -106,7 +97,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);
             //
-            System.out.println(">> Authorities: " + userDetails.getAuthorities());
+            //System.out.println(">> Authorities: " + userDetails.getAuthorities());
 
             // ✅ Sau khi xử lý thành công → tiếp tục filter
             filterChain.doFilter(request, response);
@@ -114,9 +105,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
         } catch (Exception ex) {
             // ✅ Tránh tiếp tục xử lý sau khi đã set lỗi
             ex.printStackTrace();
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\": \"UNKNOWN\", \"message\": \"Unknown error occurred.\"}");
+            throw new IOException("Could not set user authentication in security context");
         }
     }
 

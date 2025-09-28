@@ -9,6 +9,7 @@ import lombok.Data;
 public class ExamSubmitRequest {
     @NotNull
     private Integer examID;
+    private String selectedPart;
     private Integer duration;
     private List<ToeicQuestionRecord> answers;
 }

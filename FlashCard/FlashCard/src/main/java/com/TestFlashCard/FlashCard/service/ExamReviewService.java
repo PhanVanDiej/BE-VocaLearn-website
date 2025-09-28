@@ -2,7 +2,7 @@ package com.TestFlashCard.FlashCard.service;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -69,11 +69,22 @@ public class ExamReviewService {
         int incorrectCount = 0;
         List<QuestionReview> questionReviews = new ArrayList<>();
 
-        List<ToeicQuestion> allQuestions = toeicQuestion_Repository.findAllByExam(exam);
-        Map<Integer, Character> answerMap = request.getAnswers() != null
-                ? request.getAnswers().stream()
-                        .collect(Collectors.toMap(ToeicQuestionRecord::getQuestionId, ToeicQuestionRecord::getAnswer))
-                : new HashMap<>();
+        Set<String> selected = Arrays.stream(request.getSelectedPart().split(","))
+                .map(String::trim).filter(s -> !s.isEmpty())
+                .collect(Collectors.toSet());
+
+        List<ToeicQuestion> allQuestions = toeicQuestion_Repository.findAllByExamAndPartIn(exam, selected);
+
+        Map<Integer, Character> answerMap = new java.util.HashMap<>();
+        for (ToeicQuestionRecord a : request.getAnswers()) {
+            if (a == null)
+                continue;
+            Integer qid = a.getQuestionId();
+            Character ans = a.getAnswer();
+            if (qid == null || ans == null)
+                continue; // bài trống sẽ đi qua đây
+            answerMap.putIfAbsent(qid, ans);
+        }
 
         for (ToeicQuestion question : allQuestions) {
             QuestionReview qr = new QuestionReview();
@@ -98,7 +109,7 @@ public class ExamReviewService {
         examReview.setQuestionReviews(questionReviews);
         examReview.setIncorrect(incorrectCount);
         examReview.setResult(correctCount);
-
+        examReview.setSelectedPart(request.getSelectedPart());
         // Lưu vào DB (cascade sẽ lưu luôn QuestionReview)
         examReview_Repository.save(examReview);
         exam_Repository.save(exam);
@@ -159,6 +170,7 @@ public class ExamReviewService {
         response.setIncorrectAnswers(review.getIncorrect());
         response.setNullAnswers(review.getQuestionReviews().size() - review.getResult() - review.getIncorrect());
         response.setTotalQuestions(review.getQuestionReviews().size());
+        response.setSelectedPart(review.getSelectedPart());
         response.setCreatedAt(review.getCreateAt());
         response.setSection(getPartSummaryFromReview(review.getQuestionReviews()));
         response.setQuestionReviews(convertToQuestionsResponse(review.getQuestionReviews()));
@@ -171,13 +183,16 @@ public class ExamReviewService {
             QuestionReviewResponse qrr = new QuestionReviewResponse();
             ToeicQuestion question = qr.getToeicQuestion();
             String image = null;
-            if(qrr.getImage()!=null && !qrr.getImage().isEmpty())
-                image = minIO_MediaService.getPresignedURL(qrr.getImage(), Duration.ofMinutes(1));
+            String audio = null;
+            if (question.getImage() != null && !question.getImage().isEmpty())
+                image = minIO_MediaService.getPresignedURL(question.getImage(), Duration.ofMinutes(1));
+            if (question.getAudio() != null && !question.getAudio().isEmpty())
+                audio = minIO_MediaService.getPresignedURL(question.getAudio(), Duration.ofMinutes(1));
             qrr.setQuestionId(question.getId());
             qrr.setIndexNumber(question.getIndexNumber());
             qrr.setDetail(question.getDetail());
             qrr.setImage(image);
-            qrr.setAudio(question.getAudio());
+            qrr.setAudio(audio);
             qrr.setConversation(question.getConversation());
             qrr.setUserAnswer(qr.getUserAnswer());
             qrr.setCorrectAnswer(question.getResult());
