@@ -3,15 +3,15 @@ package com.TestFlashCard.FlashCard.controller;
 import java.io.IOException;
 import java.util.List;
 
+import com.TestFlashCard.FlashCard.exception.ResourceNotFoundException;
+import com.TestFlashCard.FlashCard.response.CardFillResponse;
 import com.TestFlashCard.FlashCard.response.FlashCardNomalResponse;
+import com.TestFlashCard.FlashCard.service.DictionaryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.TestFlashCard.FlashCard.request.CardCreateRequest;
@@ -24,12 +24,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-
 @RestController
 @RequestMapping("/api/card")
 @RequiredArgsConstructor
@@ -41,6 +35,8 @@ public class CardController {
     private final ObjectMapper objectMapper;
     @Autowired
     private final MinIO_MediaService minIO_MediaService;
+    @Autowired
+    private final DictionaryService dictionaryService;
 
     @GetMapping("/detail/{cardID}")
     public ResponseEntity<?> getCardDetail(@PathVariable Integer cardID) throws IOException {
@@ -57,15 +53,37 @@ public class CardController {
     }
 
     @PostMapping(value = "/createCard", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> createCard(@RequestParam(required = false) MultipartFile image,
-            @RequestParam("data") String dataJson) throws IOException {
+    public ResponseEntity<?> createCard(@RequestPart(required = false) MultipartFile image,
+                                        @RequestParam("data") String dataJson) throws IOException {
 
-        // Transform string to json object
-        CardCreateRequest request = objectMapper.readValue(dataJson, CardCreateRequest.class);
+        try {
+            // Transform string to json object
+            CardCreateRequest request = objectMapper.readValue(dataJson, CardCreateRequest.class);
 
-        cardService.createCard(request, image);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Created a new Card: " + request.getTerminology()));
+            cardService.createCard(request, image);
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(ApiResponse.success("Created a new Card: " + request.getTerminology()));
+        } catch (Exception exception) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), "Create a new Card failed. Exception = " + exception.getMessage()));
+        }
     }
+
+    @GetMapping("/fill")
+    public ResponseEntity<?> fillCardData(@RequestParam String word) {
+        try {
+            CardFillResponse data = dictionaryService.fetchWordData(word);
+            return ResponseEntity.ok(ApiResponse.success(data));
+        } catch (ResourceNotFoundException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), "Word not found: " + word));
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(),"Error while fetching word data. Exception = " + ex.getMessage()));
+        }
+    }
+
+
 
     @PutMapping("/update/detail/{cardID}")
     public ResponseEntity<?> updateCard(@PathVariable("cardID") Integer id, @RequestBody CardUpdateRequest request) {

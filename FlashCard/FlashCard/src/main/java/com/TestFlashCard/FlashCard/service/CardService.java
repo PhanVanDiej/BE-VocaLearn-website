@@ -133,120 +133,65 @@ public class CardService {
         );
     }
 
-
     @Transactional
     public void createCard(CardCreateRequest cardDetail, MultipartFile image) throws IOException {
-        if (checkDuplicatedTerminology(cardDetail.getTerminology(), cardDetail.getFlashCardID(),
-                cardDetail.getPartOfSpeech()))
-            throw new ResourceExistedException("The terminology is existed!");
-
-        RestTemplate restTemplate = new RestTemplate();
-
         try {
             Card card = new Card();
 
-            // Nếu client không cung cấp pronounce thì gọi API
-            if (cardDetail.getPronounce() == null || cardDetail.getPronounce().isBlank()) {
-                String apiUrl = TRANSLITERATION_API_URL + cardDetail.getTerminology();
-
-                HttpHeaders headers = new HttpHeaders();
-                headers.set("Accept", "application/json");
-                headers.set("User-Agent", "Mozilla/5.0");
-
-                HttpEntity<String> entity = new HttpEntity<>(headers);
-
-                ResponseEntity<List> responseEntity = restTemplate.exchange(
-                        apiUrl,
-                        HttpMethod.GET,
-                        entity,
-                        List.class
-                );
-
-                List<Map<String, Object>> response = responseEntity.getBody();
-
-                if (response != null && !response.isEmpty()) {
-                    Map<String, String> hintMap = new LinkedHashMap<>();     // partOfSpeech → hint
-                    Map<String, String> exampleMap = new LinkedHashMap<>();  // partOfSpeech → example
-
-                    // Duyệt toàn bộ response
-                    for (Map<String, Object> entry : response) {
-                        List<Map<String, Object>> meanings = (List<Map<String, Object>>) entry.get("meanings");
-                        if (meanings == null) continue;
-
-                        for (Map<String, Object> meaning : meanings) {
-                            Object posObj = meaning.get("partOfSpeech");
-                            if (!(posObj instanceof String) || ((String) posObj).isBlank()) continue;
-
-                            String partOfSpeech = (String) posObj;
-
-                            // Nếu đã có definition cho partOfSpeech này thì bỏ qua
-                            if (hintMap.containsKey(partOfSpeech)) continue;
-
-                            List<Map<String, Object>> definitions = (List<Map<String, Object>>) meaning.get("definitions");
-                            if (definitions != null && !definitions.isEmpty()) {
-                                for (Map<String, Object> def : definitions) {
-                                    String defStr = def.get("definition") instanceof String ? (String) def.get("definition") : null;
-                                    String exStr = def.get("example") instanceof String ? (String) def.get("example") : null;
-
-                                    // Chỉ lấy khi cả definition và example đều tồn tại và không trống
-                                    if (defStr != null && !defStr.isBlank() && exStr != null && !exStr.isBlank()) {
-                                        hintMap.put(partOfSpeech, defStr);
-                                        exampleMap.put(partOfSpeech, exStr);
-                                        break; // Dừng ngay khi tìm được object thỏa điều kiện
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Gộp dữ liệu thành chuỗi
-                    if (!hintMap.isEmpty()) {
-                        card.setHint(String.join("+", hintMap.values()));
-                        card.setPartOfSpeech(String.join(", ", hintMap.keySet()));
-                    }
-                    if (!exampleMap.isEmpty()) {
-                        card.setExample(String.join("+", exampleMap.values()));
-                    }
-                } else {
-                    card.setPronounce("(Không thể phiên âm)");
-                }
-            } else {
-                card.setPronounce(cardDetail.getPronounce());
-            }
-
-            // Lấy flashcard, upload ảnh nếu có, và set các trường còn lại
+            // Lấy flashcard
             FlashCard flashCard = flashCard_Repository.findById(cardDetail.getFlashCardID()).orElseThrow(
-                    () -> new ResourceNotFoundException(
-                            "Cannot find the flash card with id: " + cardDetail.getFlashCardID()));
+                    () -> new ResourceNotFoundException("Cannot find the flash card with id: " + cardDetail.getFlashCardID())
+            );
 
-            if (image != null) {
+            // Upload ảnh nếu có
+            if (image != null && !image.isEmpty()) {
                 String uniqueName = minIO_MediaService.uploadFile(image);
                 card.setImage(uniqueName);
             }
 
+            // Gán dữ liệu từ client (client đã fill hoặc chỉnh sửa từ API /fill)
             card.setTerminology(cardDetail.getTerminology());
             card.setDefinition(cardDetail.getDefinition());
+            card.setPronounce(
+                    (cardDetail.getPronounce() != null && !cardDetail.getPronounce().isBlank())
+                            ? cardDetail.getPronounce()
+                            : "(Không thể phiên âm)"
+            );
+            card.setAudio(cardDetail.getAudio());
+            card.setPartOfSpeech(
+                    (cardDetail.getPartOfSpeech() != null && !cardDetail.getPartOfSpeech().isBlank())
+                            ? cardDetail.getPartOfSpeech()
+                            : "unknown"
+            );
+            card.setExample(
+                    (cardDetail.getExample() != null && !cardDetail.getExample().isEmpty())
+                            ? String.join(" | ", cardDetail.getExample())
+                            : "(no example)"
+            );
 
-            if (cardDetail.getExample() != null && !cardDetail.getExample().isBlank()) {
-                card.setExample(cardDetail.getExample());
-            }
-            if (cardDetail.getPartOfSpeech() != null && !cardDetail.getPartOfSpeech().isBlank()) {
-                card.setPartOfSpeech(cardDetail.getPartOfSpeech());
-            }
-
+            card.setHint(
+                    (cardDetail.getHint() != null && !cardDetail.getHint().isEmpty())
+                            ? String.join(" | ", cardDetail.getHint())
+                            : ""
+            );
             card.setLevel(cardDetail.getLevel());
             card.setIsRemember(0);
             card.setFlashCard(flashCard);
 
-            card_Repository.save(card);
+            // Check duplicate
+            if (checkDuplicatedTerminology(card.getTerminology(), card.getFlashCard().getId(),
+                    card.getPartOfSpeech())) {
+                throw new ResourceExistedException("The terminology is existed!");
+            }
 
+            card_Repository.save(card);
             log.info("Card created successfully: {}", card.getTerminology());
 
         } catch (Exception exception) {
-            log.error("Error occurred while creating flash card", exception);
+            log.error("Error occurred while creating flash card: " + exception.getMessage(), exception);
+            throw exception; // hoặc return error response tùy nhu cầu
         }
     }
-
 
 
 

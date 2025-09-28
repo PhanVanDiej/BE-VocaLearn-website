@@ -8,7 +8,6 @@ import java.util.List;
 public record CardsResponse(
     int id,
     String terminology,
-
     String definition,
     String image,
     String audio,
