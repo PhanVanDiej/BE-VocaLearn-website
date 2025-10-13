@@ -118,5 +118,4 @@ public class FlashCardController {
         flashCardService.updateVisitCountTopic(id);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Success"));
     }
-
 }

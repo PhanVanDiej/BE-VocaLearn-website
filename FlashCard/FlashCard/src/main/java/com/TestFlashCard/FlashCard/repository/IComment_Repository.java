@@ -9,8 +9,6 @@ import com.TestFlashCard.FlashCard.entity.Comment;
 
 @Repository
 public interface IComment_Repository extends JpaRepository<Comment,Integer>{
-
     List<Comment> findByExamIdOrderByCreateAtDesc(Integer examId);
     int countByExamId(Integer examId);
-
 }

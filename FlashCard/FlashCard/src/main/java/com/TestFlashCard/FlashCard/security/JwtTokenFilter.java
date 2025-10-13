@@ -12,11 +12,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.TestFlashCard.FlashCard.Enum.TokenError;
 import com.TestFlashCard.FlashCard.exception.TokenAuthenticationException;
 import com.TestFlashCard.FlashCard.service.CustomUserDetailsService;
-
-import ch.qos.logback.core.subst.Token;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
