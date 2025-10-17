@@ -111,10 +111,10 @@ public class CardService {
         }
 
         List<String> examples = card.getExample() != null && !card.getExample().isBlank()
-                ? Arrays.stream(card.getExample().split("\\+")).toList()
+                ? Arrays.stream(card.getExample().split("\\\n")).toList()
                 : Collections.emptyList();
         List<String> hints = card.getHint() != null && !card.getHint().isBlank()
-                ? Arrays.stream(card.getHint().split("\\+")).toList()
+                ? Arrays.stream(card.getHint().split("\\\n")).toList()
                 : Collections.emptyList();
 
         return new CardsResponse(
@@ -221,6 +221,9 @@ public class CardService {
             card.setTerminology(request.getTerminology());
         if(request.getIsRemember()!=null)
             card.setIsRemember(request.getIsRemember());
+        if(request.getHint()!=null){
+            card.setHint(request.getHint());
+        }
         card_Repository.save(card);
     }
 

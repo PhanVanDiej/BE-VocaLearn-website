@@ -15,6 +15,9 @@ public class ApiResponse<T> {
     public ApiResponse(int status, String message, T data) {
         this.status = status; this.message = message; this.data = data;
     }
+    public ApiResponse(int status, String message) {
+        this.status = status; this.message = message;
+    }
 
     public static <T> ApiResponse<T> of(int status, String message, T data) {
         return new ApiResponse<>(status, message, data);

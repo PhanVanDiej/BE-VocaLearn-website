@@ -57,7 +57,8 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             "/api/exam/detail/"
             );
 
-    private boolean isPublicEndpoint(String path) {
+    private boolean isPublicEndpoint(HttpServletRequest request) {
+        String path = request.getRequestURI().substring(request.getContextPath().length());
         return PUBLIC_ENDPOINTS.stream().anyMatch(path::startsWith);
     }
 
@@ -68,14 +69,10 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain)
             throws ServletException, IOException {
 
-        System.out.println(">> [FILTER] Path: " + request.getServletPath());
-
         String path = request.getServletPath();
 
-        if ("OPTIONS".equalsIgnoreCase(request.getMethod()) || isPublicEndpoint(path))  {
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod()) || isPublicEndpoint(request)) {
             filterChain.doFilter(request, response);
-            System.out.println(">> [FILTER] Path Pass Auth: " + request.getServletPath());
-            //System.out.println("Token bi het han roi nhe !");
             return;
         }
 
