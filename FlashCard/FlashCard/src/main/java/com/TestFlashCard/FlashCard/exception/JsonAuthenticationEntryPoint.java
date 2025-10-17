@@ -44,6 +44,5 @@ public class JsonAuthenticationEntryPoint implements AuthenticationEntryPoint {
                 detail = "AUTH_MALFORMED";
             }
         }
-
     }
 }

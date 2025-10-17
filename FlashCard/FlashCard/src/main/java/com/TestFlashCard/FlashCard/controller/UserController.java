@@ -147,7 +147,6 @@ public class UserController {
           newUser.setAddress(request.getAddress());
           newUser.setPhoneNumber(request.getPhoneNumber());
           newUser.setRole(Role.USER);
-
           userService.createUser(newUser);
           return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.of(HttpStatus.OK.value(), "Success", "User registered successfully"));
      }
