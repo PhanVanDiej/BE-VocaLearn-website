@@ -2,6 +2,7 @@ package com.TestFlashCard.FlashCard.config;
 
 import java.util.List;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -23,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
+@Slf4j
 public class securityConfig {
 
     private final JwtTokenFilter jwtTokenFilter;
@@ -34,6 +36,7 @@ public class securityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
@@ -66,6 +69,7 @@ public class securityConfig {
                     .accessDeniedHandler(new JsonAccessDeniedHandler())
                 )
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 
