@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Ignore MySQL data
+**/mysql_data/
+# Environment
+.env

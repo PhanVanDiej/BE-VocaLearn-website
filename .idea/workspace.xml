@@ -5,15 +5,18 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="307cfe20-7efd-4feb-9731-810d3e0d5c8c" name="Changes" comment="Merge">
-      <change afterPath="$PROJECT_DIR$/FlashCard/FlashCard/Dockerfile" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/FlashCard/FlashCard/src/main/java/com/TestFlashCard/FlashCard/Utils/VNPayUtil.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/FlashCard/FlashCard/src/main/java/com/TestFlashCard/FlashCard/controller/PaymentController.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/FlashCard/FlashCard/src/main/java/com/TestFlashCard/FlashCard/entity/PaymentTransaction.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/FlashCard/FlashCard/src/main/java/com/TestFlashCard/FlashCard/repository/PaymentTransactionRepository.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/FlashCard/FlashCard/src/main/java/com/TestFlashCard/FlashCard/service/VNPayServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FlashCard/FlashCard/src/main/java/com/TestFlashCard/FlashCard/config/securityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/FlashCard/FlashCard/src/main/java/com/TestFlashCard/FlashCard/config/securityConfig.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/FlashCard/FlashCard/.env" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/FlashCard/FlashCard/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/FlashCard/FlashCard/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FlashCard/FlashCard/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/FlashCard/FlashCard/src/main/resources/application.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/FlashCard/FlashCard/docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/minio_data/.minio.sys/buckets/.bloomcycle.bin/xl.meta" beforeDir="false" afterPath="$PROJECT_DIR$/minio_data/.minio.sys/buckets/.bloomcycle.bin/xl.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/minio_data/.minio.sys/buckets/.usage-cache.bin.bkp/xl.meta" beforeDir="false" afterPath="$PROJECT_DIR$/minio_data/.minio.sys/buckets/.usage-cache.bin.bkp/xl.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/minio_data/.minio.sys/buckets/.usage-cache.bin/xl.meta" beforeDir="false" afterPath="$PROJECT_DIR$/minio_data/.minio.sys/buckets/.usage-cache.bin/xl.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/minio_data/.minio.sys/buckets/.usage.json/xl.meta" beforeDir="false" afterPath="$PROJECT_DIR$/minio_data/.minio.sys/buckets/.usage.json/xl.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/minio_data/.minio.sys/buckets/vocalearn/.usage-cache.bin.bkp/xl.meta" beforeDir="false" afterPath="$PROJECT_DIR$/minio_data/.minio.sys/buckets/vocalearn/.usage-cache.bin.bkp/xl.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/minio_data/.minio.sys/buckets/vocalearn/.usage-cache.bin/xl.meta" beforeDir="false" afterPath="$PROJECT_DIR$/minio_data/.minio.sys/buckets/vocalearn/.usage-cache.bin/xl.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/minio_data/.minio.sys/tmp/5a777ac9-a61f-42eb-b8f7-3a518d0491c3" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -88,6 +91,11 @@
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\Nam3-HK2\DoAn_1\DoAn\BE-VocaLearn-website\FlashCard\FlashCard" />
+    </key>
+  </component>
   <component name="RunManager" selected="Spring Boot.FlashCardApplication">
     <configuration name="mvnw" type="ShConfigurationType">
       <option name="SCRIPT_TEXT" value="" />
@@ -153,7 +161,9 @@
       <workItem from="1761053408685" duration="18000" />
       <workItem from="1761386066144" duration="599000" />
       <workItem from="1761751692433" duration="1559000" />
-      <workItem from="1761984158975" duration="16070000" />
+      <workItem from="1761984158975" duration="17532000" />
+      <workItem from="1762331774123" duration="2778000" />
+      <workItem from="1762335345518" duration="3170000" />
     </task>
     <task id="LOCAL-00001" summary="Merge">
       <option name="closed" value="true" />
