@@ -1,11 +1,11 @@
 package com.TestFlashCard.FlashCard.request;
 
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
 @Data
+@RequiredArgsConstructor
 public class EvaluateUpdateByUserRequest {
     private String content;
-    @NotNull
     private Integer star;
 }

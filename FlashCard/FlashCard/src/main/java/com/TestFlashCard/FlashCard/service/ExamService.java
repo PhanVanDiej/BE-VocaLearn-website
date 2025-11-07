@@ -107,8 +107,11 @@ public class ExamService {
                 .collect(Collectors.toList());
 
         String image = null;
+        String audio = null;
         if(question.getImage()!=null && !question.getImage().isEmpty())
             image= minIO_MediaService.getPresignedURL(question.getImage(), Duration.ofMinutes(1));
+        if(question.getAudio()!=null && !question.getAudio().isEmpty())
+            audio= minIO_MediaService.getPresignedURL(question.getAudio(), Duration.ofDays(1));
         return new ToeicQuestionResponse(
                 question.getId(),
                 question.getIndexNumber(),
@@ -116,7 +119,7 @@ public class ExamService {
                 question.getDetail(),
                 question.getResult(),
                 image,
-                question.getAudio(),
+                audio,
                 question.getConversation(),
                 question.getClarify(),
                 options);

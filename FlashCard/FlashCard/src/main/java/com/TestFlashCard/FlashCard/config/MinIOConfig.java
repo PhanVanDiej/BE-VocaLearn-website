@@ -22,8 +22,7 @@ public class MinIOConfig {
                 .endpointOverride(URI.create(props.getEndpoint()))
                 .region(Region.of("us-east-1"))
                 .credentialsProvider(StaticCredentialsProvider.create(
-                        AwsBasicCredentials.create(props.getAccessKey(), props.getSecretKey())
-                ))
+                        AwsBasicCredentials.create(props.getAccessKey(), props.getSecretKey())))
                 .serviceConfiguration(S3Configuration.builder()
                         .pathStyleAccessEnabled(true)
                         .build())
@@ -31,17 +30,28 @@ public class MinIOConfig {
     }
 
     @Bean
-    public S3Client s3Client(MinIOProperties properties){
+    public S3Client s3Client(MinIOProperties properties) {
         return S3Client.builder()
                 .endpointOverride(URI.create(properties.getEndpoint()))
                 .region(Region.of("us-east-1"))
                 .credentialsProvider(
-                    StaticCredentialsProvider.create(
-                        AwsBasicCredentials.create(properties.getAccessKey(), properties.getSecretKey())
-                    )
-                )
+                        StaticCredentialsProvider.create(
+                                AwsBasicCredentials.create(properties.getAccessKey(), properties.getSecretKey())))
                 .serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build())
                 .httpClient(UrlConnectionHttpClient.create())
+                .build();
+    }
+
+    @Bean
+    public S3Presigner publicPresigner(MinIOProperties p) {
+        return S3Presigner.builder()
+                .endpointOverride(URI.create(p.getPublicEndpoint())) // 🔴 public host (browser sẽ gọi vào đây)
+                .region(Region.US_EAST_1)
+                .credentialsProvider(StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create(p.getAccessKey(), p.getSecretKey())))
+                .serviceConfiguration(S3Configuration.builder()
+                        .pathStyleAccessEnabled(true)
+                        .build())
                 .build();
     }
 }

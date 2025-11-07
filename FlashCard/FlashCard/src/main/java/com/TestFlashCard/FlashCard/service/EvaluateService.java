@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.apache.commons.math3.analysis.function.Min;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -16,8 +17,10 @@ import com.TestFlashCard.FlashCard.entity.User;
 import com.TestFlashCard.FlashCard.exception.ResourceNotFoundException;
 import com.TestFlashCard.FlashCard.repository.IEvaluate_Repository;
 import com.TestFlashCard.FlashCard.request.EvaluateCreateRequest;
+import com.TestFlashCard.FlashCard.request.EvaluateUpdateByUserRequest;
 import com.TestFlashCard.FlashCard.response.EvaluateResponse;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -29,8 +32,8 @@ public class EvaluateService {
     @Autowired
     private MinIO_MediaService minIO_MediaService;
 
-    // @Autowired
-    // private final DigitalOceanStorageService storageService;
+    @Autowired
+    private MinIO_MediaService mediaService;
 
     public void createEvaluate(EvaluateCreateRequest request, MultipartFile imagFile, User user) throws IOException {
 
@@ -75,6 +78,7 @@ public class EvaluateService {
     public void update(String adminReply, int id) throws IOException {
         Evaluate evaluate = evaluate_Repository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Cannot find the evaluate with id: " + id));
+        
         if (adminReply != null){
             evaluate.setAdminReply(adminReply);
             evaluate.setReplyAt(LocalDateTime.now());
@@ -84,8 +88,12 @@ public class EvaluateService {
 
     private EvaluateResponse convertToEvaluateResponse(Evaluate evaluate) {
         String image = null;
+        String avatar = null;
         if(evaluate.getImage()!=null && !evaluate.getImage().isEmpty())
             image = minIO_MediaService.getPresignedURL(evaluate.getImage(), Duration.ofMinutes(1));
+        if(evaluate.getUser().getAvatar()!=null){
+            avatar = minIO_MediaService.getPresignedURL(evaluate.getUser().getAvatar(), Duration.ofDays(1));
+        }
         return new EvaluateResponse(
                 evaluate.getId(),
                 evaluate.getContent(),
@@ -94,7 +102,7 @@ public class EvaluateService {
                 evaluate.getCreateAt(),
                 evaluate.getUser().getFullName(),
                 evaluate.getUser().getEmail(),
-                evaluate.getUser().getAvatar(),
+                avatar,
                 evaluate.getAdminReply(),
                 evaluate.getReplyAt());
     }
@@ -109,23 +117,23 @@ public class EvaluateService {
         return convertToEvaluateResponse(evaluate);
     }
 
-    // @Transactional
-    // public void updateByUser(User user, EvaluateUpdateByUserRequest request, MultipartFile image) throws IOException {
-    //     Evaluate evaluate = evaluate_Repository.findByUser(user);
-    //     if (evaluate == null)
-    //         throw new ResourceNotFoundException("Cannot find the evaluate of user : " + user.getAccountName());
+    @Transactional
+    public void updateByUser(User user, EvaluateUpdateByUserRequest request, MultipartFile image) throws IOException {
+        Evaluate evaluate = evaluate_Repository.findByUser(user);
+        if (evaluate == null)
+            throw new ResourceNotFoundException("Cannot find the evaluate of user : " + user.getAccountName());
 
-    //     if (request.getContent() != null)
-    //         evaluate.setContent(request.getContent());
-    //     if (request.getStar() != null)
-    //         evaluate.setStar(request.getStar());
+        if (request.getContent() != null)
+            evaluate.setContent(request.getContent());
+        if (request.getStar() != null)
+            evaluate.setStar(request.getStar());
 
-    //     if (image != null) {
-    //         if (evaluate.getImage() != null)
-    //             storageService.deleteImage(evaluate.getImage());
-    //         evaluate.setImage(mediaService.getImageUrl(image));
-    //     }
+        if (image != null) {
+            if (evaluate.getImage() != null)
+                mediaService.deleteFile(evaluate.getImage());
+            evaluate.setImage(mediaService.uploadFile(image));
+        }
 
-    //     evaluate_Repository.save(evaluate);
-    // }
+        evaluate_Repository.save(evaluate);
+    }
 }

@@ -1,5 +1,6 @@
 package com.TestFlashCard.FlashCard.service;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,14 +28,15 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class CommentService {
+
+    @Autowired
+    private MinIO_MediaService minIO_MediaService;
     @Autowired
     private final IComment_Repository comment_Repository;
     @Autowired
     private final ICommentReply_Repository commentReply_Repository;
     @Autowired
     private final IExam_Repository exam_Repository;
-    // @Autowired
-    // private MinIO_MediaService minIO_MediaService;
 
     @Transactional
     public void createComment(User user, CommentCreateRequest request) {
@@ -68,11 +70,12 @@ public class CommentService {
         List<Comment> comments = comment_Repository.findByExamIdOrderByCreateAtDesc(examId);
 
         return comments.stream().map(comment -> {
+
             CommentResponse cr = new CommentResponse();
             cr.setId(comment.getId());
             cr.setContent(comment.getContent());
             cr.setUserName(comment.getUser().getFullName());
-            cr.setAvatar(comment.getUser().getAvatar());
+            cr.setAvatar(minIO_MediaService.getPresignedURL(comment.getUser().getAvatar(), Duration.ofDays(1)));
             cr.setUserId(comment.getUser().getId());
             cr.setCreateAt(comment.getCreateAt());
 
@@ -93,7 +96,7 @@ public class CommentService {
         rr.setContent(reply.getContent());
         rr.setUserName(reply.getUser().getFullName());
         rr.setCreateAt(reply.getCreateAt());
-        rr.setAvatar(reply.getUser().getAvatar());
+        rr.setAvatar(minIO_MediaService.getPresignedURL(reply.getUser().getAvatar(), Duration.ofDays(1)));
         rr.setUserId(reply.getUser().getId());
 
         List<CommentReplyResponse> children = reply.getChildren().stream()

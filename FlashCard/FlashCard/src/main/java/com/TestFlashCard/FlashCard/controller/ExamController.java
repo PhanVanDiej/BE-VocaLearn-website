@@ -1,7 +1,6 @@
 package com.TestFlashCard.FlashCard.controller;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.security.Principal;
 import java.util.List;
 
@@ -91,25 +90,25 @@ public class ExamController {
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(examService.getByID(examID)));
     }
 
-    @PostMapping("/create")
+    @PostMapping("/admin/create")
     public ResponseEntity<?> createExam(@RequestBody @Valid ExamCreateRequest request) throws IOException {
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(examService.create(request)));
     }
 
-    @PutMapping("/update/{examID}")
+    @PutMapping("/admin/update/{examID}")
     public ResponseEntity<?> updateExam(@PathVariable Integer examID, @RequestBody ExamUpdateRequest request)
             throws IOException {
         examService.updateExam(request, examID);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Exam updated successfully"));
     }
 
-    @DeleteMapping("/delete/{examID}")
+    @DeleteMapping("/admin/delete/{examID}")
     public ResponseEntity<?> deleteExamById(@PathVariable Integer examID) {
         examService.DeleteById(examID);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Exam deleted successfully"));
     }
 
-    @PostMapping("/importQuestions")
+    @PostMapping("/admin/importQuestions")
     public ResponseEntity<?> importQuestion(@RequestParam("file") MultipartFile file, @RequestParam Integer examID)
             throws IOException {
         try {
@@ -200,21 +199,21 @@ public class ExamController {
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(examType));
     }
 
-    @PostMapping("/type/create")
+    @PostMapping("/admin/type/create")
     public ResponseEntity<?> createExamType(@RequestBody ExamTypeCreateRequest request) throws IOException {
         examTypeService.create(request);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Type created successfully"));
     }
     
 
-    @PutMapping("/type/update/{id}")
+    @PutMapping("/admin/type/update/{id}")
     public ResponseEntity<?> updateExamType(@PathVariable Integer id, @RequestBody ExamTypeUpdateRequest request)
             throws IOException {
         examTypeService.update(request, id);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Type updated successfully"));
     }
 
-    @DeleteMapping("/type/delete/{id}")
+    @DeleteMapping("/admin/type/delete/{id}")
     public ResponseEntity<?> deleteExamType(@PathVariable Integer id) throws IOException {
         examTypeService.softDelete(id);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Type deleted successfully"));
@@ -238,19 +237,19 @@ public class ExamController {
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(examCollection));
     }
 
-    @PostMapping("/collection/create")
+    @PostMapping("/admin/collection/create")
     public ResponseEntity<?> createExamCollection(@RequestBody ExamCollectionCreateRequest request) {
         examCollectionService.create(request);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Collection created successfully"));
     }
     
-    @PutMapping("/collection/update/{id}")
+    @PutMapping("/admin/collection/update/{id}")
     public ResponseEntity<?> updateExamCollection(@PathVariable Integer id, @RequestBody ExamCollectionUpdateRequest request) throws IOException {
         examCollectionService.update(request, id);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Collection updated successfully"));
     }
     
-    @DeleteMapping("/collection/delete/{id}")
+    @DeleteMapping("/admin/collection/delete/{id}")
     public ResponseEntity<?> deleteExamCollection(@PathVariable Integer id) throws IOException{
         examCollectionService.Delete(id);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Collection deleted successfully"));

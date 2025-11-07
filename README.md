@@ -26,3 +26,7 @@
 📌 Mỗi task có 1 branch riêng: Tránh nhảy branch tùy tiện.<br>
 📌 Review code trước khi merge: Dùng Pull Request + assign người review.<br>
 📌 Xóa branch sau khi merge ( trừ `main`, `dev` )
+
+// Command for docker
+ - Mở terminal container mysql: docker-compose exec mysql mysql -u root -p
+ 

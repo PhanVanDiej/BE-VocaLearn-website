@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.TestFlashCard.FlashCard.entity.User;
 import com.TestFlashCard.FlashCard.exception.ResourceNotFoundException;
 import com.TestFlashCard.FlashCard.request.EvaluateCreateRequest;
+import com.TestFlashCard.FlashCard.request.EvaluateUpdateByUserRequest;
 import com.TestFlashCard.FlashCard.request.EvaluateUpdateRequest;
 import com.TestFlashCard.FlashCard.response.ApiResponse;
 import com.TestFlashCard.FlashCard.response.EvaluateResponse;
@@ -60,13 +61,13 @@ public class EvaluateController {
     }
 
     @GetMapping("/get")
-    public ResponseEntity<?> getMethodName(@RequestParam(required = false) Integer star) throws IOException {
+    public ResponseEntity<?> getBy(@RequestParam(required = false) Integer star) throws IOException {
         List<EvaluateResponse> evaluates = star != null ? evaluateService.getEvaluatesByStar(star)
                 : evaluateService.getAllEvaluates();
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(evaluates));
     }
 
-    @PutMapping("/update/{id}")
+    @PutMapping("/admin/update/{id}")
     public ResponseEntity<?> updateEvaluate(@PathVariable Integer id, @RequestBody EvaluateUpdateRequest request)
             throws IOException {
         evaluateService.update(request.getAdminReply(), id);
@@ -80,14 +81,14 @@ public class EvaluateController {
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
 
-    // @PutMapping(value = "/updateByUser", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    // public ResponseEntity<?> updateByUser(@RequestPart String dataJson,
-    //         @RequestPart(required = false) MultipartFile image, Principal principal) throws IOException {
-    //     User user = userService.getUserByAccountName(principal.getName());
+    @PutMapping(value = "/updateByUser", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> updateByUser(@RequestPart String dataJson,
+            @RequestPart(required = false) MultipartFile image, Principal principal) throws IOException {
+        User user = userService.getUserByAccountName(principal.getName());
         
-    //     EvaluateUpdateByUserRequest request = objectMapper.readValue(dataJson, EvaluateUpdateByUserRequest.class);
-    //     evaluateService.updateByUser(user, request, image);
-    //     return ResponseEntity.ok("Update " + user.getAccountName() + "'s evaluate successfully");
-    // }
+        EvaluateUpdateByUserRequest request = objectMapper.readValue(dataJson, EvaluateUpdateByUserRequest.class);
+        evaluateService.updateByUser(user, request, image);
+        return ResponseEntity.ok("Update " + user.getAccountName() + "'s evaluate successfully");
+    }
 
 }

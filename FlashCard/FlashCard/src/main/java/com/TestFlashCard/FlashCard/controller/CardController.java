@@ -1,7 +1,6 @@
 package com.TestFlashCard.FlashCard.controller;
 
 import java.io.IOException;
-import java.util.List;
 
 import com.TestFlashCard.FlashCard.exception.ResourceNotFoundException;
 import com.TestFlashCard.FlashCard.response.CardFillResponse;
@@ -40,15 +39,16 @@ public class CardController {
 
     @GetMapping("/detail/{cardID}")
     public ApiResponse<?> getCardDetail(@PathVariable Integer cardID) throws IOException {
-
         try {
             if (cardID == null)
                 throw new IOException("Missing card's ID for this request");
             CardsResponse response = cardService.getCardDetail(cardID);
-//            return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
-            return new ApiResponse<>(HttpStatus.OK.value(),"View success",response);
+            // return
+            // ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
+            return new ApiResponse<>(HttpStatus.OK.value(), "View success", response);
         } catch (Exception exception) {
-            return new  ApiResponse<>().error(HttpStatus.BAD_REQUEST.value(),"View detail card faild. message =" + exception.getMessage());
+            return new ApiResponse<>().error(HttpStatus.BAD_REQUEST.value(),
+                    "View detail card faild. message =" + exception.getMessage());
         }
     }
 
@@ -57,15 +57,16 @@ public class CardController {
 
         try {
             FlashCardNomalResponse responses = cardService.getFlashCardDetail(flashCardID);
-            return new ApiResponse<>(HttpStatus.OK.value(),"View success",responses);
+            return new ApiResponse<>(HttpStatus.OK.value(), "View success", responses);
         } catch (Exception exception) {
-            return new  ApiResponse<>().error(HttpStatus.BAD_REQUEST.value(),"faild. message =" + exception.getMessage());
+            return new ApiResponse<>().error(HttpStatus.BAD_REQUEST.value(),
+                    "faild. message =" + exception.getMessage());
         }
     }
 
     @PostMapping(value = "/createCard", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> createCard(@RequestPart(required = false) MultipartFile image,
-                                        @RequestParam("data") String dataJson) throws IOException {
+            @RequestParam("data") String dataJson) throws IOException {
 
         try {
             // Transform string to json object
@@ -76,7 +77,8 @@ public class CardController {
                     .body(ApiResponse.success("Created a new Card: " + request.getTerminology()));
         } catch (Exception exception) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), "Create a new Card failed. Exception = " + exception.getMessage()));
+                    .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(),
+                            "Create a new Card failed. Exception = " + exception.getMessage()));
         }
     }
 
@@ -90,20 +92,19 @@ public class CardController {
                     .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), "Word not found: " + word));
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(),"Error while fetching word data. Exception = " + ex.getMessage()));
+                    .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(),
+                            "Error while fetching word data. Exception = " + ex.getMessage()));
         }
     }
 
-
-
     @PutMapping("/update/detail/{cardID}")
     public ApiResponse<?> updateCard(@PathVariable("cardID") Integer id, @RequestBody CardUpdateRequest request) {
-
         try {
             cardService.updateCardDetail(request, id);
-            return new ApiResponse<>(HttpStatus.OK.value(),"Card detail has been updated!");
+            return new ApiResponse<>(HttpStatus.OK.value(), "Card detail has been updated!");
         } catch (Exception exception) {
-            return new  ApiResponse<>().error(HttpStatus.BAD_REQUEST.value(),"Card detail has been failed!. message =" + exception.getMessage());
+            return new ApiResponse<>().error(HttpStatus.BAD_REQUEST.value(),
+                    "Card detail has been failed!. message =" + exception.getMessage());
         }
     }
 
@@ -132,14 +133,16 @@ public class CardController {
     }
 
     // @PostMapping("/createListCard")
-    // public ResponseEntity<?> createListCards(@RequestParam List<MultipartFile> files) throws Exception {
-    //     List<String> imageUrls = new ArrayList<>();
-    //     return ResponseEntity.ok(null);
+    // public ResponseEntity<?> createListCards(@RequestParam List<MultipartFile>
+    // files) throws Exception {
+    // List<String> imageUrls = new ArrayList<>();
+    // return ResponseEntity.ok(null);
     // }
 
     @PutMapping("resetAll/{flashcardId}")
     public ResponseEntity<?> resetAllCards(@PathVariable Integer flashcardId) {
         cardService.resetListCard(flashcardId);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("All Cards in this FlashCard has been reset."));
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success("All Cards in this FlashCard has been reset."));
     }
 }

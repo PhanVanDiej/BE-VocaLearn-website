@@ -9,6 +9,9 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,63 +29,65 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
 @Service
 public class MinIO_MediaService {
+
+    @Autowired private S3Client s3Client;
+    // Nếu bạn đặt @Bean tên "publicPresigner" trong MinIOConfig, nên dùng @Qualifier cho chắc
+    // @Autowired @Qualifier("publicPresigner")
     @Autowired
-    private S3Client s3Client;
-    @Autowired
-    private MinIOProperties minIOProperties;
-    @Autowired
-    private S3Presigner s3Presigner;
+    @Qualifier("publicPresigner")
+    private S3Presigner publicPresigner;
+
+    @Autowired private MinIOProperties minIOProperties;
 
     public static final List<String> ALLOWED_IMAGE_TYPES = Arrays.asList(
-            "image/jpeg",
-            "image/jpg",
-            "image/png",
-            "image/gif",
-            "image/webp",
-            "application/octet-stream");
+            "image/jpeg","image/jpg","image/png","image/gif","image/webp","application/octet-stream"
+    );
 
     public String uploadFile(MultipartFile file) throws IOException {
-        if (file != null && !file.isEmpty()) {
-            String contentType = file.getContentType();
-            String fileExtension = getFileExtension(file.getOriginalFilename());
+        if (file == null || file.isEmpty()) {
+            return null;
+        }
 
-            contentType = normalizeContentType(contentType, fileExtension);
+        String contentType = file.getContentType();
+        String fileExtension = getFileExtension(file.getOriginalFilename());
+        contentType = normalizeContentType(contentType, fileExtension);
 
-            // Kiểm tra content-type sau khi đã xử lý
-            if (contentType == null || !contentType.startsWith("image/")) {
-                throw new InvalidImageException("Invalid image's content type: " + contentType);
-            }
-            // Create unique file name
-            String uniqueFileName = generateUniqueFileName(file.getOriginalFilename());
+        // Cho phép image *hoặc* audio
+        if (contentType == null ||
+            !(contentType.startsWith("image/") || contentType.startsWith("audio/"))) {
+            throw new InvalidImageException("Invalid content type: " + contentType);
+        }
 
-            System.out.println("Uploading to bucket: " + minIOProperties.getBucket());
-            System.out.println("Key: " + uniqueFileName);
-            System.out.println("Content-Type: " + contentType);
+        String uniqueFileName = generateUniqueFileName(file.getOriginalFilename());
 
-            // Upload new file
-            PutObjectRequest request = PutObjectRequest.builder()
-                    .bucket(minIOProperties.getBucket())
-                    .key(uniqueFileName)
-                    .contentType(contentType)
-                    .build();
-            try {
-                s3Client.putObject(request,
-                        RequestBody.fromBytes(file.getBytes()));
-            } catch (S3Exception e) {
-                System.err.println("❌ S3Exception:");
-                System.err.println("  StatusCode: " + e.statusCode());
+        System.out.println("Uploading to bucket: " + minIOProperties.getBucket());
+        System.out.println("Key: " + uniqueFileName);
+        System.out.println("Content-Type: " + contentType);
+
+        PutObjectRequest request = PutObjectRequest.builder()
+                .bucket(minIOProperties.getBucket())
+                .key(uniqueFileName)
+                .contentType(contentType)
+                .build();
+
+        try {
+            // Tránh giữ file lớn trong heap: dùng stream
+            s3Client.putObject(request, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+        } catch (S3Exception e) {
+            System.err.println("❌ S3Exception:");
+            System.err.println("  StatusCode: " + e.statusCode());
+            if (e.awsErrorDetails() != null) {
                 System.err.println("  ErrorCode: " + e.awsErrorDetails().errorCode());
                 System.err.println("  Message: " + e.awsErrorDetails().errorMessage());
-                throw e; // hoặc throw custom
             }
-
-            return uniqueFileName;
+            throw e;
         }
-        return null;
+
+        // Lưu **key** vào DB; khi trả về FE hãy presign bằng getPresignedURL(...)
+        return uniqueFileName;
     }
 
     public String uploadFile(File imageFile) throws IOException {
@@ -93,13 +98,13 @@ public class MinIO_MediaService {
         final String originalFilename = imageFile.getName();
         final String ext = getFileExtension(originalFilename);
 
-        String contentType = Files.probeContentType(imageFile.toPath()); // OS/MIME map
+        String contentType = Files.probeContentType(imageFile.toPath());
+        contentType = normalizeContentType(contentType, ext);
 
-        contentType = normalizeContentType(contentType, ext); // xử lý lại nếu là octet-stream, null
-
-        if (contentType == null || !(contentType.startsWith("image/") ||
-                contentType.startsWith("audio/")))
-            throw new InvalidImageException("Invalid image's content type: " + contentType);
+        if (contentType == null ||
+            !(contentType.startsWith("image/") || contentType.startsWith("audio/"))) {
+            throw new InvalidImageException("Invalid content type: " + contentType);
+        }
 
         String uniqueFileName = generateUniqueFileName(originalFilename);
 
@@ -114,8 +119,10 @@ public class MinIO_MediaService {
         } catch (S3Exception e) {
             System.err.println("❌ S3Exception:");
             System.err.println("  StatusCode: " + e.statusCode());
-            System.err.println("  ErrorCode: " + e.awsErrorDetails().errorCode());
-            System.err.println("  Message: " + e.awsErrorDetails().errorMessage());
+            if (e.awsErrorDetails() != null) {
+                System.err.println("  ErrorCode: " + e.awsErrorDetails().errorCode());
+                System.err.println("  Message: " + e.awsErrorDetails().errorMessage());
+            }
             throw e;
         }
 
@@ -126,112 +133,96 @@ public class MinIO_MediaService {
         if (contentType != null && !contentType.equals("application/octet-stream")) {
             return contentType;
         }
-        if (extension == null)
-            return null;
+        if (extension == null) return null;
 
         switch (extension) {
-            case "jpg":
-                return "image/jpg";
-            case "jpeg":
-                return "image/jpeg";
-            case "png":
-                return "image/png";
-            case "gif":
-                return "image/gif";
-            case "webp":
-                return "image/webp";
-            // Nếu muốn hỗ trợ audio:
-            case "mp3":
-                return "audio/mpeg";
-            case "wav":
-                return "audio/wav";
-            case "ogg":
-                return "audio/ogg";
-            case "m4a":
-                return "audio/mp4";
-            default:
-                return null;
+            case "jpg":  return "image/jpeg"; // chuẩn hóa về image/jpeg
+            case "jpeg": return "image/jpeg";
+            case "png":  return "image/png";
+            case "gif":  return "image/gif";
+            case "webp": return "image/webp";
+            case "mp3":  return "audio/mpeg";
+            case "wav":  return "audio/wav";
+            case "ogg":  return "audio/ogg";
+            case "m4a":  return "audio/mp4";
+            default:     return null;
         }
     }
 
-    // Create presigned URL for file Media with duration
-    public String getPresignedURL(String fileName, Duration duration) {
-        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+    // Presign URL dùng publicPresigner (đã ký với public-endpoint)
+    @Cacheable(value = "presignedUrls", key = "#key")   // ✅ sửa #fileName -> #key
+    public String getPresignedURL(String key, Duration expiry) {
+        expiry = Duration.ofDays(1);
+        var get = GetObjectRequest.builder()
                 .bucket(minIOProperties.getBucket())
-                .key(fileName)
+                .key(key)
+                .responseCacheControl("public, max-age=31536000, immutable")
                 .build();
-        GetObjectPresignRequest presign = GetObjectPresignRequest.builder()
-                .getObjectRequest(getObjectRequest)
-                .signatureDuration(duration)          // ví dụ Duration.ofSeconds(60)
+        var req = GetObjectPresignRequest.builder()
+                .signatureDuration(expiry)
+                .getObjectRequest(get)
                 .build();
-
-        PresignedGetObjectRequest result = s3Presigner.presignGetObject(presign);
-        return result.url().toExternalForm();
+        return publicPresigner.presignGetObject(req).url().toString();
     }
 
-    // Generate unique file name
     private String generateUniqueFileName(String originalFileName) {
         return UUID.randomUUID().toString() + "-" + originalFileName;
     }
 
-    // Delete file with file name
-    public void deleteFile(String fileName) {
-        DeleteObjectRequest request = DeleteObjectRequest.builder()
-                .bucket(minIOProperties.getBucket())
-                .key(fileName)
-                .build();
+    // Hỗ trợ xóa cả khi người dùng lỡ lưu URL thay vì key
+    private String ensureKey(String maybeKeyOrUrl) {
+        if (maybeKeyOrUrl == null) return null;
+        if (!maybeKeyOrUrl.startsWith("http")) return maybeKeyOrUrl; // đã là key
+        // URL dạng: http(s)://host:9000/<bucket>/<key>?...
+        try {
+            var u = java.net.URI.create(maybeKeyOrUrl);
+            var path = u.getPath();          // /vocalearn/<key>
+            if (path == null) return maybeKeyOrUrl;
+            var p = path.startsWith("/") ? path.substring(1) : path;
+            var idx = p.indexOf('/');
+            if (idx < 0) return maybeKeyOrUrl;
+            var bucketInUrl = p.substring(0, idx);
+            var key = p.substring(idx + 1);
+            // Nếu bucket trong URL trùng bucket cấu hình thì trả về key
+            return bucketInUrl.equals(minIOProperties.getBucket()) ? key : maybeKeyOrUrl;
+        } catch (Exception e) {
+            return maybeKeyOrUrl;
+        }
+    }
 
+    @CacheEvict(value = "presignedUrls", key = "#fileName")
+    public void deleteFile(String fileName) {
+        String key = ensureKey(fileName);
+        if (key == null) return;
+
+        var request = DeleteObjectRequest.builder()
+                .bucket(minIOProperties.getBucket())
+                .key(key)
+                .build();
         s3Client.deleteObject(request);
     }
 
     public void copyFile(String sourceKey) {
-        String copySource = minIOProperties.getBucket() + "/" + sourceKey;
-        String destinationFileName = generateUniqueFileName(sourceKey);
-        CopyObjectRequest request = CopyObjectRequest.builder()
+        var copySource = minIOProperties.getBucket() + "/" + sourceKey;
+        var destinationFileName = generateUniqueFileName(sourceKey);
+        var request = CopyObjectRequest.builder()
                 .copySource(copySource)
                 .destinationBucket(minIOProperties.getBucket())
                 .destinationKey(destinationFileName)
                 .build();
-
         s3Client.copyObject(request);
     }
 
     private String getFileExtension(String fileName) {
-        if (fileName == null) {
-            return null;
-        }
+        if (fileName == null) return null;
         int lastDotIndex = fileName.lastIndexOf('.');
-        if (lastDotIndex == -1) {
-            return "";
-        }
+        if (lastDotIndex == -1) return "";
         return fileName.substring(lastDotIndex + 1).toLowerCase();
     }
 
-    // private boolean isValidImageExtension(String extension) {
-    //     if (extension == null || extension.isEmpty()) {
-    //         return false;
-    //     }
-    //     // Danh sách phần mở rộng hợp lệ
-    //     List<String> validExtensions = Arrays.asList("jpg", "jpeg", "png", "gif", "webp");
-    //     return validExtensions.contains(extension);
-    // }
-
-    // private String guessAudioContentType(String extension) {
-    //     return switch (extension) {
-    //         case "mp3" -> "audio/mpeg";
-    //         case "wav" -> "audio/wav";
-    //         case "ogg" -> "audio/ogg";
-    //         case "m4a" -> "audio/mp4";
-    //         default -> null;
-    //     };
-    // }
-
     @Transactional
     public void deleteQuestionMedia(ToeicQuestion question) {
-        if (question.getImage() != null)
-            deleteFile(question.getImage());
-        if (question.getAudio() != null)
-            deleteFile(question.getAudio());
-        return;
+        if (question.getImage() != null) deleteFile(question.getImage());
+        if (question.getAudio() != null) deleteFile(question.getAudio());
     }
 }

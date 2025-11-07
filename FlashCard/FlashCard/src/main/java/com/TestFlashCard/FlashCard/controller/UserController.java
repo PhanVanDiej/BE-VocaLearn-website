@@ -121,17 +121,17 @@ public class UserController {
           String uniqueName = minIO_MediaService.uploadFile(avatar);
           newUser.setAvatar(uniqueName);
 
-
           if (request.getRole() == null) {
                throw new BadRequestException("User's Role cannot be null");
           }
           newUser.setRole(request.getRole());
           userService.createUser(newUser);
-          return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.of(HttpStatus.OK.value(), "Success", "User created successfully"));
+          return ResponseEntity.status(HttpStatus.OK)
+                    .body(ApiResponse.of(HttpStatus.OK.value(), "Success", "User created successfully"));
      }
 
      @PostMapping("/register")
-     public ResponseEntity<?> registerUser(@RequestBody @Valid UserCreateRequest request) throws IOException{
+     public ResponseEntity<?> registerUser(@RequestBody @Valid UserCreateRequest request) throws IOException {
           if (userService.checkExistedAccountName(request.getAccountName())) {
                throw new BadRequestException("Failed to create user. Account name has been existed!");
           }
@@ -148,7 +148,8 @@ public class UserController {
           newUser.setPhoneNumber(request.getPhoneNumber());
           newUser.setRole(Role.USER);
           userService.createUser(newUser);
-          return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.of(HttpStatus.OK.value(), "Success", "User registered successfully"));
+          return ResponseEntity.status(HttpStatus.OK)
+                    .body(ApiResponse.of(HttpStatus.OK.value(), "Success", "User registered successfully"));
      }
 
      @PostMapping("/login")
@@ -157,7 +158,7 @@ public class UserController {
           if (user == null) {
                throw new BadRequestException("Account name doesn't exist.");
           }
-          if(user.isDeleted())
+          if (user.isDeleted())
                throw new BadRequestException("Account has been deleted!");
 
           if (!userService.checkPassword(request.getPassWord(), user.getPassWord())) {
@@ -188,9 +189,11 @@ public class UserController {
                if (user != null) {
                     String token = jwtTokenProvider.generateAccessToken(user);
                     visitLogService.create();
-                    return ResponseEntity.status(HttpStatus.ACCEPTED).body(ApiResponse.success(new renewalTokenResponse(token)));
+                    return ResponseEntity.status(HttpStatus.ACCEPTED)
+                              .body(ApiResponse.success(new renewalTokenResponse(token)));
                } else
-                    throw new AuthorizationDeniedException("The token is valid but the user identity cannot be determined.");
+                    throw new AuthorizationDeniedException(
+                              "The token is valid but the user identity cannot be determined.");
           } catch (ExpiredJwtException e) {
                throw new AuthorizationDeniedException("Renewal token expired. Please login again.");
           } catch (Exception e) {
@@ -200,46 +203,83 @@ public class UserController {
 
      // User update
      @PutMapping(value = "/updateProfile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-     public ResponseEntity<?> changeProfile(@RequestPart String dataJson,
-               @RequestPart(required = false) MultipartFile avatar, Principal principal) throws IOException {
-          if (dataJson == null) {
-               throw new BadRequestException("data for create cannot be null");
+     public ResponseEntity<?> changeProfile(
+               @RequestPart("dataJson") String dataJson,
+               @RequestPart(value = "avatar", required = false) MultipartFile avatar,
+               Principal principal) throws IOException {
+
+          if (dataJson == null || dataJson.isBlank()) {
+               throw new BadRequestException("dataJson cannot be null or blank");
           }
 
-          UserUpdateProfileRequest request = objectMapper.readValue(dataJson, UserUpdateProfileRequest.class);
+          UserUpdateProfileRequest req = objectMapper.readValue(dataJson, UserUpdateProfileRequest.class);
 
-          User user = userService.getUserByAccountName(principal.getName());
-          if (request.getAccountName() != null){
-               if(userService.getUserByAccountName(request.getAccountName())!=null)
-                    throw new BadRequestException("The Account name: '" + request.getAccountName() + "' has been existed!");
-               user.setAccountName(request.getAccountName());
+          // Lấy user hiện tại
+          User current = userService.getUserByAccountName(principal.getName());
+          if (current == null) {
+               throw new ResourceNotFoundException("Current user not found");
           }
-          if (request.getBirthday() != null){
-               if(request.getBirthday().isBefore(LocalDate.now()))
+
+          // ===== AccountName: chỉ đổi khi KHÁC hiện tại và KHÔNG bị trùng với user khác
+          // =====
+          if (req.getAccountName() != null) {
+               String newAcc = req.getAccountName().trim();
+               if (!newAcc.isEmpty() && !newAcc.equals(current.getAccountName())) {
+                    // Kiểm tra trùng với user khác
+                    User conflicted = userService.getUserByAccountName(newAcc);
+                    if (conflicted != null) {
+                         throw new BadRequestException("The Account name:xxxx '" + newAcc + "' has been existed!");
+                    }
+                    current.setAccountName(newAcc);
+               }
+          }
+
+          if (req.getEmail() != null) {
+               String newEmail = req.getEmail().trim();
+               if (!newEmail.isEmpty() && !newEmail.equals(current.getEmail())) {
+                    // Tìm email trùng thuộc user KHÁC
+                    User conflictedByEmail = userService.getUserByEmail(newEmail);
+                    if (conflictedByEmail != null) {
+                         throw new BadRequestException("The Emailxx: '" + newEmail + "' has been existed!");
+                    }
+                    current.setEmail(newEmail);
+               }
+          }
+
+          // ===== Birthday: chỉ cho phép ngày QUÁ KHỨ / HIỆN TẠI (không cho tương lai)
+          // =====
+          if (req.getBirthday() != null) {
+               if (req.getBirthday().isAfter(LocalDate.now())) {
                     throw new BadRequestException("Invalid Birthday value!");
-               user.setBirthday(request.getBirthday());}
-          if (request.getEmail() != null)
-               user.setEmail(request.getEmail());
-          if (request.getFullName() != null)
-               user.setFullName(request.getFullName());
-          if (request.getAddress() != null)
-               user.setAddress(request.getAddress());
-          if (request.getPhoneNumber() != null)
-               user.setPhoneNumber(request.getPhoneNumber());
-
-          if (avatar != null) {
-               if (user.getAvatar() != null)
-                    minIO_MediaService.deleteFile(user.getAvatar());
-               user.setAvatar(minIO_MediaService.uploadFile(avatar));
+               }
+               current.setBirthday(req.getBirthday());
           }
 
-          userService.updateUser(user);
+          // ===== Các field còn lại: set nếu có =====
+          if (req.getEmail() != null)
+               current.setEmail(req.getEmail().trim());
+          if (req.getFullName() != null)
+               current.setFullName(req.getFullName().trim());
+          if (req.getAddress() != null)
+               current.setAddress(req.getAddress().trim());
+          if (req.getPhoneNumber() != null)
+               current.setPhoneNumber(req.getPhoneNumber().trim());
 
-          return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Profile has been updated successfully"));
+          // ===== Avatar =====
+          if (avatar != null && !avatar.isEmpty()) {
+               if (current.getAvatar() != null) {
+                    minIO_MediaService.deleteFile(current.getAvatar());
+               }
+               current.setAvatar(minIO_MediaService.uploadFile(avatar));
+          }
+
+          userService.updateUser(current);
+
+          return ResponseEntity.ok(ApiResponse.success("Profile has been updated successfully"));
      }
 
      // Admin update
-     @PutMapping("/update")
+     @PutMapping("/admin/update")
      public ResponseEntity<?> update(@RequestPart String dataJson, @RequestPart(required = false) MultipartFile avatar)
                throws IOException {
 
@@ -278,27 +318,52 @@ public class UserController {
      }
 
      @GetMapping("/getUserByFilter")
-     public ResponseEntity<?> getUserByFilter(@RequestParam(required = false) Integer userID,
-               @RequestParam(required = false) String accountName) throws IOException {
-          if (userID != null) {
-               User user = userService.getUserById(userID);
-               if (user == null){
-                    throw new ResourceNotFoundException("Cannot find user with id: " + userID);
+     public ResponseEntity<?> getUserByFilter(
+               @RequestParam(value = "userID", required = false) Integer userID,
+               @RequestParam(value = "accountName", required = false) String accountName) {
+          try {
+               // Chuẩn hoá input
+               final String acc = (accountName != null) ? accountName.trim() : null;
+               final boolean hasId = (userID != null);
+               final boolean hasAcc = (acc != null && !acc.isEmpty());
+
+               // Validate tham số
+               if (!hasId && !hasAcc) {
+                    return ResponseEntity.badRequest()
+                              .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(),
+                                        "You must provide either userID or accountName"));
                }
-               return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(user));
+               if (hasId && hasAcc) {
+                    return ResponseEntity.badRequest()
+                              .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(),
+                                        "Provide only ONE of userID or accountName"));
+               }
+
+               // Xử lý chính
+               User user = hasId
+                         ? userService.getUserById(userID)
+                         : userService.getUserByAccountName(acc);
+
+               if (user == null) {
+                    throw new ResourceNotFoundException(
+                              hasId ? ("Cannot find user with id: " + userID)
+                                        : ("Cannot find user with account name: " + acc));
+               }
+
+               UserResponse response = userService.convertToResponse(user);
+               return ResponseEntity.ok(ApiResponse.success(response));
+
+          } catch (ResourceNotFoundException e) {
+               return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                         .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), e.getMessage()));
+          } catch (Exception e) {
+               // Log chi tiết nếu cần
+               return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                         .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), "Internal server error"));
           }
-          if (accountName != null && !accountName.isEmpty()) {
-               User user = userService.getUserByAccountName(accountName);
-               if (user == null)
-                    throw new ResourceNotFoundException("Cannot find user with account name: " + accountName);
-                    
-               return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(user));
-          }
-          
-          throw new BadRequestException("At least One filter: Id or AccountName have been provided!");
      }
 
-     @DeleteMapping("/delete/{id}")
+     @DeleteMapping("/admin/delete/{id}")
      public ResponseEntity<?> deleteUserById(@PathVariable Integer id) throws Exception {
           userService.deleteUser(id);
           return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("User has been deleted successfully"));
@@ -334,14 +399,15 @@ public class UserController {
                          "Yêu cầu đổi mật khẩu - Vocabulary English FlashCard account",
                          "Mật khẩu mới cho tài khoản " + user.getAccountName() + ": " + token +
                                    "\n\nĐây chỉ là mật khẩu tạm thời.\nĐể đảm bảo bảo mật, vui lòng cập nhật mật khẩu của bạn.");
-               return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Reset code has been sent to user's email"));
+               return ResponseEntity.status(HttpStatus.OK)
+                         .body(ApiResponse.success("Reset code has been sent to user's email"));
           } catch (Exception exception) {
                throw new IOException("Intenal Server Error: " + exception.getMessage());
           }
      }
 
      @PostMapping("/verify-reset-code")
-     public ResponseEntity<?> verifyCode(@RequestBody String email, @RequestParam String token) throws IOException{
+     public ResponseEntity<?> verifyCode(@RequestBody String email, @RequestParam String token) throws IOException {
           PasswordResetToken latest = passwordResetToken_Repository.findTopByEmailOrderByCreatedAtDesc(email)
                     .orElseThrow(() -> new IllegalArgumentException("Cannot find the verified token"));
 
@@ -369,6 +435,7 @@ public class UserController {
           user.setPassWord(passwordEncoder.encode(request.getNewPassword()));
           user_Repository.save(user);
 
-          return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Password has been updated successfully"));
+          return ResponseEntity.status(HttpStatus.OK)
+                    .body(ApiResponse.success("Password has been updated successfully"));
      }
 }

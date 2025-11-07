@@ -38,12 +38,12 @@ public class securityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/user/update").hasRole("ADMIN")
                         .requestMatchers("/api/user/login").permitAll()
                         .requestMatchers("/api/user/forgot-password").permitAll()
                         .requestMatchers("/api/user/verify-reset-code").permitAll()
                         .requestMatchers("/api/user/register").permitAll()
                         .requestMatchers("/api/user/create").permitAll()
+                        .requestMatchers("/api/user/getUserByFilter").permitAll()
                         .requestMatchers("/api/exam/getByCreateAt").permitAll()
                         .requestMatchers("/api/flashcard/getTopicPopular").permitAll()
                         .requestMatchers("/api/flashcard/id/**").permitAll()
@@ -59,13 +59,19 @@ public class securityConfig {
                         .requestMatchers("/api/exam/collection/getAll").permitAll()
                         .requestMatchers("/api/exam/comments/**").permitAll()
                         .requestMatchers("/api/exam/detail/**").permitAll()
-
+                        .requestMatchers("/api/blog/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/user/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/dashboard/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/exam/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/evaluate/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .exceptionHandling(exception -> exception
                     .authenticationEntryPoint(new JsonAuthenticationEntryPoint())
                     .accessDeniedHandler(new JsonAccessDeniedHandler())
                 )
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
+        
+        System.out.println("---------hahahahha---------");
         return http.build();
     }
 

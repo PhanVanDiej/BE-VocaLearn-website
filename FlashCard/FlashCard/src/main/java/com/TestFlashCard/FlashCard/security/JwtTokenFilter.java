@@ -34,6 +34,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     private static final List<String> PUBLIC_ENDPOINTS = List.of(
             "/api/user/login",
             "/api/user/create",
+            "/api/user/getUserByFilter",
             "/api/user/register",
             "/api/user/forgot-password",
             "/api/user/verify-reset-code",
