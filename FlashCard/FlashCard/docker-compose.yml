@@ -11,7 +11,8 @@ services:
     ports:
       - "3307:3306"
     volumes:
-      - ./mysql_data:/var/lib/mysql
+      # compose đặt ở FlashCard/FlashCard -> lùi 2 cấp về project root
+      - ../../mysql_data:/var/lib/mysql
     networks:
       - vocalearn_net
     deploy:
@@ -46,15 +47,17 @@ services:
       MINIO_ROOT_USER: admin
       MINIO_ROOT_PASSWORD: admin123
     volumes:
-      - ./minio_data:/data
+      # lùi 2 cấp về project root
+      - ../../minio_data:/data
     command: server /data --console-address ":9001"
     restart: always
     networks:
       - vocalearn_net
 
   backend:
+    # vì compose nằm cùng cấp pom.xml & Dockerfile → build ngay tại thư mục hiện tại
     build:
-      context: ./FlashCard/FlashCard
+      context: .
       dockerfile: Dockerfile
     container_name: backend
     restart: always
@@ -85,8 +88,10 @@ services:
           memory: 1g
 
   frontend:
+    # Trước ở project root bạn đặt ../../Githup/english_vocabulary_system
+    # Nay compose nằm sâu thêm 2 cấp → lùi 4 cấp
     build:
-      context: ../../Githup/english_vocabulary_system
+      context: ../../../../Githup/english_vocabulary_system
       dockerfile: Dockerfile
     container_name: frontend
     restart: always
@@ -103,7 +108,6 @@ services:
         reservations:
           memory: 512m
 
-# 🕸️ Khai báo network riêng cho toàn project
 networks:
   vocalearn_net:
     driver: bridge
