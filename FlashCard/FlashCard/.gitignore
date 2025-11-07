@@ -32,3 +32,15 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Runtime data
+minio_data/
+minio_cache/
+mysql_data/
+
+# Logs, cache
+*.log
+*.tmp
+
+# Docker
+docker-compose.override.yml
