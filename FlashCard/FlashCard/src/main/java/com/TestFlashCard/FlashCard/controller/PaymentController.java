@@ -1,44 +1,113 @@
 package com.TestFlashCard.FlashCard.controller;
 
 import com.TestFlashCard.FlashCard.Utils.VNPayUtil;
+import com.TestFlashCard.FlashCard.entity.PaymentTransaction;
+import com.TestFlashCard.FlashCard.entity.User;
+import com.TestFlashCard.FlashCard.repository.PaymentTransactionRepository;
+import com.TestFlashCard.FlashCard.request.PaymentCreateRequest;
 import com.TestFlashCard.FlashCard.response.ApiResponse;
+import com.TestFlashCard.FlashCard.response.PaymentTransactionResponse;
+import com.TestFlashCard.FlashCard.service.PaymentService;
+import com.TestFlashCard.FlashCard.service.UserService;
 import com.TestFlashCard.FlashCard.service.VNPayServiceImpl;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/payment")
+@Slf4j
+@RequiredArgsConstructor
 public class PaymentController {
 
     private final VNPayServiceImpl vnPayService;
+    private final UserService userService;
+    private final PaymentTransactionRepository paymentTransactionRepository;
+    private final PaymentService paymentService;
     @Value("${vnpay.hashSecret}")
     private String vnp_HashSecret;
-
-    public PaymentController(VNPayServiceImpl vnPayService) {
-        this.vnPayService = vnPayService;
-    }
+    @Value("${vnpay.returnUrl}")
+    private String vnp_ReturnUrl;
 
     @PostMapping("/vnpay/create")
-    public ApiResponse<?> createVnpayPayment(@RequestParam Long amount,
-            @RequestParam String description, HttpServletRequest request) throws Exception {
+    public ApiResponse<?> createVnpayPayment(
+            @RequestBody PaymentCreateRequest requestBody,
+            HttpServletRequest request) {
         try {
+            Long amount = requestBody.getAmount();
+            String description = requestBody.getDescription();
+            String startDate = requestBody.getStartDate();
+            String endDate = requestBody.getEndDate();
             String clientIp = vnPayService.getClientIp(request);
-            return new ApiResponse<>(HttpStatus.ACCEPTED.value(), "Trả về url thành công",
-                    vnPayService.createPayment(amount, description, clientIp));
-        } catch (Exception e) {
-            return new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "Trả về url thất bại vì " + e.getMessage());
-        }
+            // Tạo tạm transaction để lưu start/end trước khi thanh toán
+            PaymentTransaction tempTransaction = paymentService.createTempTransaction(amount, description,
+                    startDate,endDate);
 
+            // Tạo URL thanh toán VNPAY
+            String paymentUrl = vnPayService.createPayment(amount,tempTransaction.getOrderId(),description, clientIp, tempTransaction.getId());
+
+            return new ApiResponse<>(HttpStatus.ACCEPTED.value(), "Trả về url thành công", paymentUrl);
+
+        } catch (Exception e) {
+            return new ApiResponse<>(HttpStatus.BAD_REQUEST.value(),
+                    "Trả về url thất bại vì " + e.getMessage());
+        }
+    }
+    // API 1: Chi tiết giao dịch theo txnRef
+    @GetMapping("/{txnRef}")
+    public ApiResponse<?> getPaymentByTxnRef(@PathVariable String txnRef) {
+        try {
+            PaymentTransaction tx = paymentService.findByOrderId(txnRef);
+            return new ApiResponse<>(HttpStatus.OK.value(), "Thành công", paymentService.toDTO(tx));
+        } catch (Exception e) {
+            return new ApiResponse<>(HttpStatus.BAD_REQUEST.value(),
+                    "Thất bại: " + e.getMessage());
+        }
     }
 
+    @GetMapping("/checkExpiration")
+    public ApiResponse<?> checkExpiration(@RequestParam Long userId) {
+        try {
+            List<PaymentTransaction> payments = paymentService.findAllByUserIdAndTransactionStatus(userId);
+            boolean hasValidPayment = payments.stream()
+                    .anyMatch(tx -> tx.getEndDate() != null && tx.getEndDate().isAfter(LocalDateTime.now()));
+
+            return new ApiResponse<>(HttpStatus.OK.value(), "Thành công",
+                    Map.of("hasValidPayment", hasValidPayment));
+
+        } catch (Exception e) {
+            return new ApiResponse<>(HttpStatus.BAD_REQUEST.value(),
+                    "Thất bại: " + e.getMessage());
+        }
+    }
+    @GetMapping("/validPayments")
+    public ApiResponse<?> getValidPayments(@RequestParam Long userId) {
+        try {
+            List<PaymentTransaction> payments = paymentService.findAllByUserIdAndTransactionStatus(userId);
+
+            // Lọc các payment còn hạn và chuyển sang DTO
+            List<PaymentTransactionResponse> validPayments = payments.stream()
+                    .filter(tx -> tx.getEndDate() != null && tx.getEndDate().isAfter(LocalDateTime.now()))
+                    .map(paymentService::toDTO)  // dùng hàm toDTO của bạn
+                    .toList();
+
+            return new ApiResponse<>(HttpStatus.OK.value(), "Thành công", validPayments);
+
+        } catch (Exception e) {
+            return new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "Thất bại: " + e.getMessage());
+        }
+    }
     @GetMapping("/vnpay-ipn")
     public ApiResponse<Map<String, String>> handleVnpayIPN(HttpServletRequest request) {
         Map<String, String> response = new HashMap<>();
@@ -78,6 +147,7 @@ public class PaymentController {
                             if ("00".equals(vnp_ResponseCode)) {
                                 response.put("RspCode", "00");
                                 response.put("Message", "Confirm Success");
+                                //upadte db
                             } else {
                                 response.put("RspCode", "00");
                                 response.put("Message", "Payment Failed");
@@ -110,11 +180,10 @@ public class PaymentController {
     }
 
     @GetMapping("/vnpay-return")
-    public ResponseEntity<String> handleVnpayReturn(HttpServletRequest request) throws UnsupportedEncodingException {
+    public void handleVnpayReturn(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, String> fields = new HashMap<>();
-
-        // ✅ Lấy tất cả các tham số VNPAY gửi về
         Map<String, String[]> paramMap = request.getParameterMap();
+
         for (String key : paramMap.keySet()) {
             String[] values = paramMap.get(key);
             if (values != null && values.length > 0 && !values[0].isEmpty()) {
@@ -122,35 +191,63 @@ public class PaymentController {
             }
         }
 
-        // ✅ Lấy SecureHash để kiểm tra
+        log.info("===== [VNPAY RETURN] =====");
+        log.info("Params: {}", fields);
+
         String vnp_SecureHash = request.getParameter("vnp_SecureHash");
         fields.remove("vnp_SecureHashType");
         fields.remove("vnp_SecureHash");
 
-        // ✅ Tính chữ ký (hashAllFields là hàm bạn đã có trong VNPayUtil)
-        String signValue = VNPayUtil.hashAllFields(fields, vnp_HashSecret);
+        String feBase = "https://english-vocabulary-system.vercel.app/VnpayResult";
+        String redirectUrl;
 
-        // ✅ Tạo HTML trả về
-        StringBuilder html = new StringBuilder("<html><body style='font-family:sans-serif;'>");
+        try {
+            String signValue = VNPayUtil.hashAllFields(fields, vnp_HashSecret);
+            String vnp_ResponseCode = fields.get("vnp_ResponseCode");
+            String vnp_TxnRef = fields.get("vnp_TxnRef");
+            String vnp_Amount = fields.get("vnp_Amount");
+            String vnp_BankCode = fields.get("vnp_BankCode");
+            String vnp_OrderInfo = fields.get("vnp_OrderInfo");
+            String vnp_TransactionNo = fields.get("vnp_TransactionNo");
 
-        if (signValue.equals(vnp_SecureHash)) {
-            String vnp_ResponseCode = request.getParameter("vnp_ResponseCode");
+            if (signValue.equals(vnp_SecureHash)) {
+                if ("00".equals(vnp_ResponseCode)) {
+                    log.info("✔ Thanh toán thành công cho đơn {}", vnp_TxnRef);
 
-            if ("00".equals(vnp_ResponseCode)) {
-                html.append("<h2 style='color:green;'>Giao dịch thành công!</h2>");
+                    // Lấy temp transaction lưu start/end trước đó
+                    PaymentTransaction tempTransaction = paymentService.findByOrderId(vnp_TxnRef);
+                    tempTransaction.setAmount(Long.parseLong(vnp_Amount) / 100);
+                    tempTransaction.setPaymentMethod("VNPAY");
+                    tempTransaction.setCurrency("VND");
+                    tempTransaction.setBankCode(vnp_BankCode);
+                    tempTransaction.setTransactionCode(vnp_TransactionNo);
+                    tempTransaction.setResponseCode(vnp_ResponseCode);
+                    tempTransaction.setTransactionStatus("SUCCESS");
+                    tempTransaction.setDescription(vnp_OrderInfo);
+                    tempTransaction.setTransactionDate(LocalDateTime.now());
+                    tempTransaction.setSecureHash(vnp_SecureHash);
+
+                    paymentTransactionRepository.save(tempTransaction);
+                    log.info("✔ Lưu giao dịch vào DB thành công: {}", tempTransaction.getOrderId());
+
+                    redirectUrl = String.format("%s/%s", feBase, vnp_TxnRef);
+
+                } else {
+                    redirectUrl = String.format("%s?status=fail&code=%s&orderId=%s",
+                            feBase, vnp_ResponseCode, vnp_TxnRef);
+                }
             } else {
-                html.append("<h2 style='color:red;'>Giao dịch thất bại!</h2>")
-                        .append("<p>Mã lỗi: ").append(vnp_ResponseCode).append("</p>");
+                redirectUrl = String.format("%s?status=invalid-signature&orderId=%s", feBase, vnp_TxnRef);
             }
 
-        } else {
-            html.append("<h2 style='color:red;'>Chữ ký không hợp lệ!</h2>");
+        } catch (Exception e) {
+            log.error("❌ Lỗi xử lý VNPay return: {}", e.getMessage(), e);
+            redirectUrl = feBase + "?status=server-error";
         }
 
-        html.append("<br><a href='/'>Quay lại trang chủ</a></body></html>");
-
-        return ResponseEntity.ok()
-                .header("Content-Type", "text/html; charset=UTF-8")
-                .body(html.toString());
+        response.setHeader("ngrok-skip-browser-warning", "anyvalue");
+        response.sendRedirect(redirectUrl);
     }
 }
+
+

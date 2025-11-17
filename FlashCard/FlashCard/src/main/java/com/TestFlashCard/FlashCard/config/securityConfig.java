@@ -57,6 +57,7 @@ public class securityConfig {
                         .requestMatchers("/api/blog/getAll").permitAll()
                         .requestMatchers("/api/exam/filter").permitAll()
                         .requestMatchers("/api/exam/collection/getAll").permitAll()
+                        .requestMatchers("/api/payment/vnpay-return").permitAll()
                         .requestMatchers("/api/exam/comments/**").permitAll()
                         .requestMatchers("/api/exam/detail/**").permitAll()
                         .requestMatchers("/api/blog/admin/**").hasRole("ADMIN")

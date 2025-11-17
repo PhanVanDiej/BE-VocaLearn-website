@@ -21,4 +21,10 @@ public class PaymentTransaction {
     private String description;         // Nội dung thanh toán
     private LocalDateTime transactionDate; // Ngày giờ giao dịch
     private String secureHash;          // Mã hash (nếu có)
+    // 🔗 Thêm quan hệ với User
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+    private LocalDateTime startDate;  // thêm
+    private LocalDateTime endDate;
 }

@@ -52,7 +52,8 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             "/api/exam/filter",
             "/api/exam/collection/getAll",
             "/api/exam/comments",
-            "/api/exam/detail/"
+            "/api/exam/detail/",
+            "/api/payment/vnpay-return"
             );
 
     private boolean isPublicEndpoint(HttpServletRequest request) {

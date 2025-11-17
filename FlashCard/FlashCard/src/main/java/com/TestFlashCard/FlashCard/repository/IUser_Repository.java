@@ -13,12 +13,13 @@ import com.TestFlashCard.FlashCard.entity.User;
 @Repository
 public interface IUser_Repository extends JpaRepository<User, Integer>, JpaSpecificationExecutor<User> {
 
-    // Optional<User> findById (Long id);
-    public User findByAccountName(String accountName);
+     Optional<User> findById (Long id);
+     User findByAccountName(String accountName);
 
     public User findByEmail(String email);
 
     public List<User> findAll();
+
 
  
 

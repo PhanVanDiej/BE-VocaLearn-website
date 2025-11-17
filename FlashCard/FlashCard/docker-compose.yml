@@ -78,6 +78,11 @@ services:
       MINIO_ACCESS_KEY: admin
       MINIO_SECRET_KEY: admin123
       MINIO_BUCKET: vocalearn
+      VNPAY_TMN_CODE: E4YNWZ27
+      VNPAY_HASH_SECRET: ZZYOA0ILG1NO4TPXPPH48S9CA832CKS3
+      VNPAY_URL: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+      VNPAY_RETURN_URL: https://unstartling-suellen-unstacked.ngrok-free.dev/api/payment/vnpay-return
+      VNPAY_IPN: https://unstartling-suellen-unstacked.ngrok-free.dev/api/payment/vnpay-ipn
     networks:
       - vocalearn_net
     deploy:
@@ -91,7 +96,7 @@ services:
     # Trước ở project root bạn đặt ../../Githup/english_vocabulary_system
     # Nay compose nằm sâu thêm 2 cấp → lùi 4 cấp
     build:
-      context: ../../../../Githup/english_vocabulary_system
+      context: ../../../english_vocabulary_system
       dockerfile: Dockerfile
     container_name: frontend
     restart: always

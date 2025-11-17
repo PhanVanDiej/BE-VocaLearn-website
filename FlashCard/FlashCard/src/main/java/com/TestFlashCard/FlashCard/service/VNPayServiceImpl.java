@@ -2,6 +2,7 @@ package com.TestFlashCard.FlashCard.service;
 
 import com.TestFlashCard.FlashCard.Utils.VNPayUtil;
 import com.TestFlashCard.FlashCard.entity.PaymentTransaction;
+import com.TestFlashCard.FlashCard.entity.User;
 import com.TestFlashCard.FlashCard.repository.PaymentTransactionRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,6 +13,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.HashMap;
@@ -21,6 +24,7 @@ import java.util.UUID;
 @Service
 public class VNPayServiceImpl {
 
+    private final UserService userService;
     @Value("${vnpay.tmnCode}")
     private String vnp_TmnCode;
 
@@ -32,25 +36,16 @@ public class VNPayServiceImpl {
 
     @Value("${vnpay.returnUrl}")
     private String vnp_ReturnUrl;
-
+    @Value("${vnpay.ipn}")
+    private String vnp_Ipn;
     private final PaymentTransactionRepository paymentRepo;
 
-    public VNPayServiceImpl(PaymentTransactionRepository paymentRepo) {
+    public VNPayServiceImpl(PaymentTransactionRepository paymentRepo, UserService userService) {
         this.paymentRepo = paymentRepo;
+        this.userService = userService;
     }
 
-    public String createPayment(Long amount, String orderInfo, String clientIp) throws UnsupportedEncodingException {
-        // B1: Tạo PaymentTransaction trong DB
-        PaymentTransaction transaction = new PaymentTransaction();
-        String orderId = UUID.randomUUID().toString().replaceAll("-", "").substring(0, 20);
-        transaction.setOrderId(orderId);
-        transaction.setAmount(amount);
-        transaction.setCurrency("VND");
-        transaction.setPaymentMethod("VNPAY");
-        transaction.setTransactionStatus("PENDING");
-        transaction.setDescription(orderInfo);
-        transaction.setTransactionDate(LocalDateTime.now());
-        paymentRepo.save(transaction);
+    public String createPayment(Long amount,String  orderId,String orderInfo, String clientIp,Long tempTransactionId) throws UnsupportedEncodingException {
 
         // B2: Tạo tham số gửi sang VNPAY
         Map<String, String> vnpParams = new HashMap<>();
@@ -59,17 +54,15 @@ public class VNPayServiceImpl {
         vnpParams.put("vnp_TmnCode", vnp_TmnCode);
         vnpParams.put("vnp_Amount", String.valueOf(amount * 100));
         vnpParams.put("vnp_CurrCode", "VND");
-        vnpParams.put("vnp_TxnRef", transaction.getOrderId());
+        vnpParams.put("vnp_TxnRef", orderId);
         vnpParams.put("vnp_OrderInfo", VNPayUtil.removeVietnameseAccent(orderInfo));
         vnpParams.put("vnp_OrderType", "other");
         vnpParams.put("vnp_Locale", "vn");
         vnpParams.put("vnp_ReturnUrl", vnp_ReturnUrl);
         vnpParams.put("vnp_IpAddr", clientIp);
-        // vnpParams.put("vnp_IpnUrl",
-        // "https://eleven-poets-lick.loca.lt/api/payment/vnpay-ipn");
-        // vnpParams.put("vnp_SecureHashType", "HmacSHA512");
+
         // Thời gian tạo và hết hạn
-        LocalDateTime now = LocalDateTime.now();
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
         vnpParams.put("vnp_CreateDate", now.format(formatter));
         vnpParams.put("vnp_ExpireDate", now.plusMinutes(15).format(formatter));
@@ -77,6 +70,7 @@ public class VNPayServiceImpl {
         // B3: Sinh URL
         return VNPayUtil.getPaymentUrlLikeVnPaySample(vnpParams, secretKey, vnp_PayUrl);
     }
+
 
     public String getClientIp(HttpServletRequest request) {
         String ip = request.getHeader("X-Forwarded-For");

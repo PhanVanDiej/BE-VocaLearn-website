@@ -1,5 +1,7 @@
 package com.TestFlashCard.FlashCard.Utils;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -71,6 +73,7 @@ public class VNPayUtil {
             throw new RuntimeException("Error generating HMAC SHA512", e);
         }
     }
+
     // Hàm ký lại tất cả field (dùng cho IPN)
     public static String hashAllFields(Map<String, String> fields, String secretKey) throws UnsupportedEncodingException {
         // 1️⃣ Sắp xếp theo thứ tự alphabet (A-Z)

@@ -4,8 +4,11 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-
+@Slf4j
 public class UserService {
 
     @Autowired
@@ -73,7 +76,8 @@ public class UserService {
     }
 
     public User getUserById(int id) {
-        return userRepository.findById(id).orElse(null);
+        return userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
     public User getUserByEmail(String email) {
@@ -102,5 +106,22 @@ public class UserService {
         response.setPhoneNumber(user.getPhoneNumber());
         response.setRole(user.getRole());
         return response;
+    }
+    public User getCurrentUser() {
+        try {
+            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+            String username;
+            if (principal instanceof UserDetails) {
+                username = ((UserDetails) principal).getUsername();
+            } else {
+                username = principal.toString();
+            }
+
+            return userRepository.findByAccountName(username);
+        } catch (Exception e) {
+            log.error("Lỗi khi lấy user hiện tại từ SecurityContextHolder", e);
+            return null;
+        }
     }
 }
