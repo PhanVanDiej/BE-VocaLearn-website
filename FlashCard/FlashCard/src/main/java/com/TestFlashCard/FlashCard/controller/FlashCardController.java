@@ -4,31 +4,21 @@ import java.io.IOException;
 import java.security.Principal;
 import java.util.List;
 
+import com.TestFlashCard.FlashCard.response.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.TestFlashCard.FlashCard.exception.ResourceNotFoundException;
 import com.TestFlashCard.FlashCard.request.FlashCardCreateRequest;
 import com.TestFlashCard.FlashCard.request.FlashCardTopicCreateRequest;
 import com.TestFlashCard.FlashCard.request.FlashCardTopicUpdateRequest;
 import com.TestFlashCard.FlashCard.request.FlashCardUpdateRequest;
-import com.TestFlashCard.FlashCard.response.ApiResponse;
-import com.TestFlashCard.FlashCard.response.ListFlashCardTopicResponse;
-import com.TestFlashCard.FlashCard.response.ListFlashCardsResponse;
 import com.TestFlashCard.FlashCard.service.FlashCardService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 
 @RestController
 @RequestMapping("/api/flashcard")
@@ -77,7 +67,16 @@ public class FlashCardController {
         flashCardService.createFlashCardTopic(request, principal.getName());
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Topic created successfully"));
     }
+    @GetMapping("/checkTopicOfUser/{topicID}")
+    public ApiResponse<?> checkFlashCardOfUser(@PathVariable Integer topicID, Principal principal) {
 
+        try {
+            return new ApiResponse<>(HttpStatus.OK.value(), "Check success",  flashCardService.checkTopicOfUser(topicID, principal.getName()));
+        } catch (Exception exception) {
+            return new ApiResponse<>().error(HttpStatus.BAD_REQUEST.value(),
+                    "Check false because: " + exception.getMessage());
+        }
+    }
     @PutMapping("/updateTopic")
     public ResponseEntity<?> updateTopic(@RequestBody FlashCardTopicUpdateRequest request, Principal principal) {
         flashCardService.updateTopic(request, principal.getName());
@@ -91,9 +90,13 @@ public class FlashCardController {
     }
 
     @DeleteMapping("/deleteTopic/{id}")
-    public ResponseEntity<?> deleteTopicById(@PathVariable int id) {
-        flashCardService.deleteTopic(id);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Topic deleted successfully"));
+    public ApiResponse<?> deleteTopicById(@PathVariable int id) {
+        try {
+            flashCardService.deleteTopic(id);
+            return new ApiResponse<>(HttpStatus.OK.value(), "Topic deleted successfully");
+        }catch(Exception e){
+            return new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(),"Topic deleted failed because: "+e.getMessage());
+        }
     }
 
     @DeleteMapping("/deleteFlashCard/{id}")
@@ -108,9 +111,21 @@ public class FlashCardController {
     }
 
     @PostMapping("/savePublishTopic/{topicID}")
-    public ResponseEntity<?> savePublishTopic(@PathVariable Integer topicID,Principal principal)throws IOException {
-        flashCardService.savePublishTopic(topicID, principal.getName());
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Topic saved successfully"));
+    public ApiResponse<?> savePublishTopic(@PathVariable Integer topicID,Principal principal){
+        try {
+            flashCardService.savePublishTopic(topicID, principal.getName());
+            return new ApiResponse<>(HttpStatus.ACCEPTED.value(),"Topic saved successfully",true );
+        }catch(Exception e){
+            return new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(),"Topic saved failed because: "+e.getMessage(),new ShareTopicResponse(false,"Topic saved failed because: "+e.getMessage()));
+        }
+    }
+    @PatchMapping("/shareTopic/{topicID}")
+    public ApiResponse<?> shareTopic(@PathVariable int topicID){
+        try {
+            return new ApiResponse<>(HttpStatus.OK.value(), "Topic shared successfully",flashCardService.shareTopic(topicID));
+        }catch(Exception e){
+            return new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(),"Topic shared failed because: "+e.getMessage());
+        }
     }
     
     @PutMapping("/raiseVisitCount/{id}")

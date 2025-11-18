@@ -3,6 +3,7 @@ package com.TestFlashCard.FlashCard.service;
 import java.io.IOException;
 import java.util.List;
 
+import com.TestFlashCard.FlashCard.exception.DuplicateResourceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -124,6 +125,7 @@ public class FlashCardService {
         FlashCardTopic topic = new FlashCardTopic();
         topic.setTitle(flashCardTopicDetail.getTitle());
         topic.setStatus(flashCardTopicDetail.getStatus());
+        topic.setStatusGain(false);
         topic.setLeaningStatus(LearningStatus.NEW);
         topic.setVisitCount(0);
         topic.setUser(user);
@@ -184,7 +186,7 @@ public class FlashCardService {
             List<CardsResponse> cards = cardService.getFlashCardDetail(flashCard.getId()).getListCardResponse();
             for (CardsResponse card : cards) {
                 if (card.image() != null)
-                    storageService.deleteImage(card.image());
+                    minIO_MediaService.deleteFile(card.image());
             }
         }
         flashCardTopic_Repository.delete(topic);
@@ -195,6 +197,17 @@ public class FlashCardService {
         FlashCard flashCard = flashCard_Repository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Cannot find FlashCard with id: " + id));
         flashCard_Repository.delete(flashCard);
+    }
+    public boolean checkTopicOfUser(int topicID, String accountName){
+        FlashCardTopic topic = flashCardTopic_Repository.findById(topicID).orElseThrow(
+                ()-> new ResourceNotFoundException("Cannot find Flashcard topic with id: "+ topicID)
+        );
+        User user = user_Repository.findByAccountName(accountName);
+        if(topic.getUser().getId() == user.getId()){
+            return true;
+        }else{
+            return false;
+        }
     }
 
     private FlashCardTopicPublicResponse convertToPublicTopicResponse(FlashCardTopic topic) {
@@ -210,17 +223,20 @@ public class FlashCardService {
     }
 
     @Transactional
-    public void savePublishTopic(int topicID, String accountName) throws IOException{
+    public String savePublishTopic(int topicID, String accountName) throws IOException{
         FlashCardTopic topic = flashCardTopic_Repository.findById(topicID).orElseThrow(
             ()-> new ResourceNotFoundException("Cannot find Flashcard topic with id: "+ topicID)
         );
         User user = user_Repository.findByAccountName(accountName);
-        
+        if(topic.getUser().getId() == user.getId()){
+            throw new DuplicateResourceException("You are person who created this topic");
+        }
         FlashCardTopic newTopic = new FlashCardTopic();
         newTopic.setTitle(topic.getTitle());
         newTopic.setLeaningStatus(LearningStatus.NEW);
-        newTopic.setStatus(FlashCardTopicStatus.PUBLIC);
+        newTopic.setStatus(FlashCardTopicStatus.PRIVATE);
         newTopic.setUser(user);
+        newTopic.setStatusGain(true);
         newTopic.setVisitCount(0);
 
         flashCardTopic_Repository.save(newTopic);
@@ -245,13 +261,28 @@ public class FlashCardService {
                 newCard.setPartOfSpeech(card.getPartOfSpeech());
                 newCard.setPronounce(card.getPronounce());
                 newCard.setTerminology(card.getTerminology());
-
+                newCard.setHint(card.getHint());
                 //Copy file MiniIO
-                minIO_MediaService.copyFile(card.getImage());
-                newCard.setImage(card.getImage());
+                if (card.getImage() != null) {
+                    String newImageKey = minIO_MediaService.copyFile(card.getImage());
+                    newCard.setImage(newImageKey); // lưu key mới vào bản copy
+                }
+//                System.out.println("COPY IMAGE: " + card.getImage());
+//                minIO_MediaService.copyFile(card.getImage());
+//                newCard.setImage(card.getImage());
 
                 card_Repository.save(newCard);
             }
         }
+        return "true";
+    }
+    public boolean shareTopic (int topicID){
+        FlashCardTopic topic = flashCardTopic_Repository.findById(topicID).orElseThrow(()-> new ResourceNotFoundException("Cannot find Topic with id: "+ topicID));
+        if(topic.getStatusGain() == false){
+            topic.setStatus(FlashCardTopicStatus.PUBLIC);
+            flashCardTopic_Repository.save(topic);
+            return true;
+        }
+        return false;
     }
 }

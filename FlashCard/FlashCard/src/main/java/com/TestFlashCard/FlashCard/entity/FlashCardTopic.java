@@ -36,6 +36,9 @@ public class FlashCardTopic {
     @Column(name = "status", columnDefinition = "ENUM('PRIVATE', 'PUBLIC') DEFAULT 'PUBLIC'")
     private FlashCardTopicStatus status;
 
+    @Column(name = "status_gain")
+    private Boolean statusGain;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "learning_status", columnDefinition = "ENUM('MASTERED', 'IN_PROGRESS', 'NEW', 'REVIEW_NEEDED') DEFAULT 'NEW'")
     private LearningStatus leaningStatus;

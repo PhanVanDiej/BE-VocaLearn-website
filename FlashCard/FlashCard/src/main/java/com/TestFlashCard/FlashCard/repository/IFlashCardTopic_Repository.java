@@ -17,4 +17,7 @@ public interface IFlashCardTopic_Repository
     List<FlashCardTopic> findAllByStatusOrderByVisitCountDesc(FlashCardTopicStatus status);
     boolean existsByUserIdAndTitle(Integer userId, String title);
 
+    //chỉ cho xem khi isPublic = true và không phải người tạo ra nó
+
+
 }

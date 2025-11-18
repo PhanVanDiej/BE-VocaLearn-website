@@ -36,7 +36,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status)
                 .body(ApiResponse.of(status.value(), message, data));
     }
-
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleDuplicateResource(DuplicateResourceException ex) {
+        Map<String, Object> data = Map.of(
+                "errorCode", "DUPLICATE_RESOURCE",
+                "detail", ex.getMessage()
+        );
+        return build(HttpStatus.CONFLICT, "Duplicate Resource", data);
+    }
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Map<String, Object>>> handleAllExceptions(Exception ex, HttpServletRequest req) {
         String message = ex.getMessage();

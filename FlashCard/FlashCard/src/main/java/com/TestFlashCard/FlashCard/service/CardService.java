@@ -97,7 +97,6 @@ public class CardService {
         return new FlashCardNomalResponse(listCardResponse, listCardChoice);
     }
 
-
     public CardsResponse getCardDetail(int cardID) {
         Card card = card_Repository.findById(cardID).orElseThrow(
                 () -> new ResourceNotFoundException("Cannot find Card with id: " + cardID));

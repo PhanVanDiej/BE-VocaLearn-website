@@ -202,17 +202,32 @@ public class MinIO_MediaService {
         s3Client.deleteObject(request);
     }
 
-    public void copyFile(String sourceKey) {
-        var copySource = minIOProperties.getBucket() + "/" + sourceKey;
-        var destinationFileName = generateUniqueFileName(sourceKey);
-        var request = CopyObjectRequest.builder()
+//    public void copyFile(String sourceKey) {
+//        var copySource = minIOProperties.getBucket() + "/" + sourceKey;
+//        var destinationFileName = generateUniqueFileName(sourceKey);
+//        var request = CopyObjectRequest.builder()
+//                .copySource(copySource)
+//                .destinationBucket(minIOProperties.getBucket())
+//                .destinationKey(destinationFileName)
+//                .build();
+//        s3Client.copyObject(request);
+//    }
+    public String copyFile(String sourceKey) {
+        if (sourceKey == null || sourceKey.isBlank()) return null;
+
+        String copySource = minIOProperties.getBucket() + "/" + sourceKey;
+        String destinationFileName = generateUniqueFileName(sourceKey);
+
+        CopyObjectRequest request = CopyObjectRequest.builder()
                 .copySource(copySource)
                 .destinationBucket(minIOProperties.getBucket())
                 .destinationKey(destinationFileName)
                 .build();
-        s3Client.copyObject(request);
-    }
 
+        s3Client.copyObject(request);
+
+        return destinationFileName; // trả về key mới
+    }
     private String getFileExtension(String fileName) {
         if (fileName == null) return null;
         int lastDotIndex = fileName.lastIndexOf('.');
