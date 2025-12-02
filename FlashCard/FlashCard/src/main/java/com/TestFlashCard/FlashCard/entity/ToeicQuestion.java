@@ -48,9 +48,9 @@ public class ToeicQuestion {
     @JoinColumn(name = "examID", nullable = false)
     private Exam exam;
 
-    @OneToMany(mappedBy = "toeicQuestion", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "toeicQuestion", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ToeicQuestionOption> options;
 
-    @OneToMany(mappedBy = "toeicQuestion", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "toeicQuestion", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<QuestionReview> questionReviews;
 }

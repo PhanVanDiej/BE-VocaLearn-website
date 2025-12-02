@@ -146,6 +146,63 @@ public class ToeicQuestionService {
 
         return toeicQuestionRepository.save(question);
     }
+
+    @Transactional
+    public void deleteToeicQuestion(Integer questionId) {
+        ToeicQuestion question = toeicQuestionRepository.findById(questionId)
+                .orElseThrow(() -> new RuntimeException("Câu hỏi không tồn tại"));
+
+        // Xoá media trên MinIO
+        if (question.getAudio() != null) {
+            minIO_MediaService.deleteFile(question.getAudio());
+        }
+
+        if (question.getImages() != null) {
+            question.getImages().forEach(img -> minIO_MediaService.deleteFile(img.getUrl()));
+        }
+
+        // Xoá câu hỏi
+        toeicQuestionRepository.delete(question);
+    }
+
+    @Transactional
+    public ToeicQuestion updateQuestion(Integer questionId, ToeicQuestionRequestDTO request) {
+        ToeicQuestion question = toeicQuestionRepository.findById(questionId)
+                .orElseThrow(() -> new RuntimeException("Câu hỏi không tồn tại"));
+
+        question.setDetail(request.getDetail());
+        question.setResult(request.getResult());
+        question.setClarify(request.getClarify());
+        question.setAudio(request.getAudio());
+        question.setConversation(request.getConversation());
+
+        // ---- Options ----
+        question.getOptions().clear();
+        List<ToeicQuestionOption> newOptions = request.getOptions().stream().map(o -> {
+            ToeicQuestionOption opt = new ToeicQuestionOption();
+            opt.setDetail(o.getDetail());
+            opt.setMark(o.getMark());
+            opt.setToeicQuestion(question);
+            return opt;
+        }).toList();
+        question.getOptions().addAll(newOptions);
+
+        // ---- Images ----
+        question.getImages().clear();
+        if (request.getImages() != null) {
+            List<ToeicQuestionImage> newImages = request.getImages().stream().map(img -> {
+                ToeicQuestionImage image = new ToeicQuestionImage();
+                image.setUrl(img.getUrl());
+                image.setToeicQuestion(question);
+                return image;
+            }).toList();
+            question.getImages().addAll(newImages);
+        }
+
+        return toeicQuestionRepository.save(question);
+    }
+
+
     private int getStartIndexByPart(String part) {
         return switch (part) {
             case "Part 1" -> 1;

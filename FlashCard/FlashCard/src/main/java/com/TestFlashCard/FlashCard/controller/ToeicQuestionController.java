@@ -8,10 +8,7 @@ import com.TestFlashCard.FlashCard.service.ToeicQuestionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/toeic-question")
@@ -32,6 +29,28 @@ public class ToeicQuestionController {
         } catch (Exception e) {
             return new ApiResponse<>(HttpStatus.BAD_REQUEST.value(),
                     "Tạo câu hỏi thất bại vì: " + e.getMessage());
+        }
+    }
+    @DeleteMapping("/{questionId}")
+    public ApiResponse<?> deleteQuestion(@PathVariable Integer questionId) {
+        try {
+            toeicQuestionService.deleteToeicQuestion(questionId);
+            return new ApiResponse<>(HttpStatus.OK.value(), "Xoá câu hỏi thành công");
+        } catch (Exception e) {
+            return new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "Xoá câu hỏi thất bại: " + e.getMessage());
+        }
+    }
+
+    @PutMapping("/{questionId}")
+    public ApiResponse<?> updateQuestion(@PathVariable Integer questionId,
+                                         @RequestBody ToeicQuestionRequestDTO request) {
+        try {
+            ToeicQuestion updated = toeicQuestionService.updateQuestion(questionId, request);
+            ToeicQuestionResponse response = toeicQuestionService.convertQuestionToResponse(updated);
+            return new ApiResponse<>(HttpStatus.OK.value(), "Cập nhật câu hỏi thành công", response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "Cập nhật thất bại: " + e.getMessage());
         }
     }
 
