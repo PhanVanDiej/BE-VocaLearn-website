@@ -30,8 +30,9 @@ public class ToeicQuestion {
     @Column(columnDefinition = "TEXT", nullable = true)
     private String clarify;
 
-    @Column(length = 255)
-    private String image;
+    @OneToMany(mappedBy = "toeicQuestion", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ToeicQuestionImage> images;
+
 
     @Column(length = 255)
     private String audio;

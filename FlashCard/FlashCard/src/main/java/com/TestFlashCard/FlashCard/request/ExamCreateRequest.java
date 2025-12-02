@@ -23,4 +23,7 @@ public class ExamCreateRequest {
 
     @NotNull
     private String collection;
+
+    @NotNull
+    private Boolean isRandom;
 }

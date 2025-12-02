@@ -36,6 +36,9 @@ public class Exam {
     @Column(name = "attemps")
     private int attemps;
 
+    @Column(nullable = false)
+    private boolean isRandom;
+
     @CreationTimestamp
     @Column(name = "createdAt", updatable = false)
     private LocalDateTime createdAt;

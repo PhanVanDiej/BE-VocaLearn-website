@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import com.TestFlashCard.FlashCard.entity.ToeicQuestionImage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.annotation.CacheEvict;
@@ -237,7 +238,13 @@ public class MinIO_MediaService {
 
     @Transactional
     public void deleteQuestionMedia(ToeicQuestion question) {
-        if (question.getImage() != null) deleteFile(question.getImage());
+        if (question.getImages() != null) {
+            for (ToeicQuestionImage img : question.getImages()) {
+                if (img.getUrl() != null) {
+                    deleteFile(img.getUrl());
+                }
+            }
+        }
         if (question.getAudio() != null) deleteFile(question.getAudio());
     }
 }

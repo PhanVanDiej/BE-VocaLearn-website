@@ -241,7 +241,7 @@ public class PaymentController {
             }
 
         } catch (Exception e) {
-            log.error("❌ Lỗi xử lý VNPay return: {}", e.getMessage(), e);
+            log.error("Lỗi xử lý VNPay return: {}", e.getMessage(), e);
             redirectUrl = feBase + "?status=server-error";
         }
 

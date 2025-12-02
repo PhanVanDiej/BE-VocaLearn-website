@@ -4,6 +4,11 @@ import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.TestFlashCard.FlashCard.entity.ToeicQuestionImage;
+import com.TestFlashCard.FlashCard.entity.ToeicQuestionOption;
+import com.TestFlashCard.FlashCard.repository.ExamRepository;
+import com.TestFlashCard.FlashCard.repository.ToeicQuestionRepository;
+import com.TestFlashCard.FlashCard.request.ToeicQuestionRequestDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +20,7 @@ import com.TestFlashCard.FlashCard.repository.IToeicQuestion_Repository;
 import com.TestFlashCard.FlashCard.response.ToeicQuestionResponse;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +31,10 @@ public class ToeicQuestionService {
     private final IExam_Repository exam_Repository;
     @Autowired
     private MinIO_MediaService minIO_MediaService;
+    @Autowired
+    private ExamRepository examRepository;
+    @Autowired
+    private ToeicQuestionRepository toeicQuestionRepository;
 
     public ToeicQuestionResponse getById(int questionID) {
         ToeicQuestion question = toeicQuestion_Repository.findById(questionID).orElseThrow(
@@ -41,23 +51,111 @@ public class ToeicQuestionService {
     }
 
     public ToeicQuestionResponse convertQuestionToResponse(ToeicQuestion question) {
-        List<ToeicQuestionResponse.OptionResponse> options = question.getOptions().stream()
-                .map(opt -> new ToeicQuestionResponse.OptionResponse(opt.getMark(), opt.getDetail()))
-                .collect(Collectors.toList());
 
-        String image = null;
-        if(question.getImage()!=null && !question.getImage().isEmpty())
-            image = minIO_MediaService.getPresignedURL(question.getImage(), Duration.ofMinutes(1));
+        // ---- Options ----
+        List<ToeicQuestionResponse.OptionResponse> options =
+                question.getOptions().stream()
+                        .map(opt -> new ToeicQuestionResponse.OptionResponse(
+                                opt.getMark(),
+                                opt.getDetail()
+                        ))
+                        .collect(Collectors.toList());
+
+        // ---- Images (new) ----
+        List<String> imageUrls = question.getImages() != null
+                ? question.getImages().stream()
+                .map(img -> minIO_MediaService.getPresignedURL(
+                        img.getUrl(),
+                        Duration.ofMinutes(1))
+                )
+                .collect(Collectors.toList())
+                : List.of();
+
         return new ToeicQuestionResponse(
                 question.getId(),
                 question.getIndexNumber(),
                 question.getPart(),
                 question.getDetail(),
                 question.getResult(),
-                image,
+                imageUrls,                     // NEW FIELD
                 question.getAudio(),
                 question.getConversation(),
                 question.getClarify(),
-                options);
+                options
+        );
+    }
+
+
+    @Transactional
+    public ToeicQuestion createToeicQuestion(ToeicQuestionRequestDTO request) {
+
+        Exam exam = examRepository.findById(request.getExamId())
+                .orElseThrow(() -> new RuntimeException("Exam not found"));
+
+        ToeicQuestion question = new ToeicQuestion();
+        question.setDetail(request.getDetail());
+        question.setResult(request.getResult());
+        question.setClarify(request.getClarify());
+        question.setAudio(request.getAudio());
+        question.setConversation(request.getConversation());
+        question.setExam(exam);
+
+        // ---- TỰ TÍNH INDEX ----
+        int indexNumber;
+        if (exam.isRandom()) {
+            // Đề random: lấy max index trong đề
+            Integer maxIndex = toeicQuestionRepository.findMaxIndexByExam(exam.getId());
+            indexNumber = (maxIndex != null ? maxIndex : 0) + 1;
+            // Không set part cho câu này
+            question.setPart(null);
+        } else {
+            // TOEIC chuẩn: phải có part
+            if (request.getPart() == null) {
+                throw new RuntimeException("Part không được để trống cho đề TOEIC chuẩn");
+            }
+            question.setPart(request.getPart());
+
+            int baseIndex = getStartIndexByPart(request.getPart());
+            Integer maxIndexInPart = toeicQuestionRepository.findMaxIndexByExamAndPart(exam.getId(), request.getPart());
+            indexNumber = (maxIndexInPart != null ? maxIndexInPart : baseIndex - 1) + 1;
+        }
+        question.setIndexNumber(indexNumber);
+
+        // ---------- Options ----------
+        List<ToeicQuestionOption> optionList = request.getOptions().stream()
+                .map(o -> {
+                    ToeicQuestionOption option = new ToeicQuestionOption();
+                    option.setDetail(o.getDetail());
+                    option.setMark(o.getMark());
+                    option.setToeicQuestion(question);
+                    return option;
+                }).toList();
+        question.setOptions(optionList);
+
+        // ---------- Images ----------
+        if (request.getImages() != null) {
+            List<ToeicQuestionImage> imageList = request.getImages().stream()
+                    .map(img -> {
+                        ToeicQuestionImage image = new ToeicQuestionImage();
+                        image.setUrl(img.getUrl());
+                        image.setToeicQuestion(question);
+                        return image;
+                    }).toList();
+            question.setImages(imageList);
+        }
+
+        return toeicQuestionRepository.save(question);
+    }
+    private int getStartIndexByPart(String part) {
+        return switch (part) {
+            case "Part 1" -> 1;
+            case "Part 2" -> 7;
+            case "Part 3" -> 32;
+            case "Part 4" -> 71;
+            case "Part 5" -> 101;
+            case "Part 6" -> 131;
+            case "Part 7" -> 147;
+            default -> 1;
+        };
     }
 }

@@ -1,21 +1,32 @@
 package com.TestFlashCard.FlashCard.response;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
 import java.util.List;
 
-public record ToeicQuestionResponse(
-    int id,
-    int indexNumber,
-    String part,
-    String detail,
-    String result,
-    String image,
-    String audio,
-    String conversation,
-    String clarify,
-    List<OptionResponse> options
-) {
-    public record OptionResponse(
-        String mark,
-        String detail
-    ) {}
+@Data
+@AllArgsConstructor
+public class ToeicQuestionResponse {
+
+    private Integer id;
+    private Integer indexNumber;
+    private String part;
+    private String detail;
+    private String result;
+
+    private List<String> images;   // đổi từ String → List<String>
+
+    private String audio;
+    private String conversation;
+    private String clarify;
+
+    private List<OptionResponse> options;
+
+    @Data
+    @AllArgsConstructor
+    public static class OptionResponse {
+        private String mark;
+        private String detail;
+    }
 }

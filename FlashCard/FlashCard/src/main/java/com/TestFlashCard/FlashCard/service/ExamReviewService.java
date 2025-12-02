@@ -180,36 +180,59 @@ public class ExamReviewService {
 
     public List<QuestionReviewResponse> convertToQuestionsResponse(List<QuestionReview> questionReviews) {
         return questionReviews.stream().map(qr -> {
+
             QuestionReviewResponse qrr = new QuestionReviewResponse();
             ToeicQuestion question = qr.getToeicQuestion();
-            String image = null;
+
+            // --- IMAGE (nhiều ảnh) ---
+            List<String> imageUrls = null;
+            if (question.getImages() != null && !question.getImages().isEmpty()) {
+
+                imageUrls = question.getImages().stream()
+                        .map(img -> minIO_MediaService.getPresignedURL(
+                                img.getUrl(),
+                                Duration.ofMinutes(1))
+                        )
+                        .collect(Collectors.toList());
+            }
+
+            // --- AUDIO (mặc định 1 file) ---
             String audio = null;
-            if (question.getImage() != null && !question.getImage().isEmpty())
-                image = minIO_MediaService.getPresignedURL(question.getImage(), Duration.ofMinutes(1));
-            if (question.getAudio() != null && !question.getAudio().isEmpty())
-                audio = minIO_MediaService.getPresignedURL(question.getAudio(), Duration.ofMinutes(1));
+            if (question.getAudio() != null && !question.getAudio().isEmpty()) {
+                audio = minIO_MediaService.getPresignedURL(
+                        question.getAudio(),
+                        Duration.ofMinutes(1)
+                );
+            }
+
+            // --- SET FIELD ---
             qrr.setQuestionId(question.getId());
             qrr.setIndexNumber(question.getIndexNumber());
             qrr.setDetail(question.getDetail());
-            qrr.setImage(image);
+            qrr.setImages(imageUrls);
             qrr.setAudio(audio);
             qrr.setConversation(question.getConversation());
             qrr.setUserAnswer(qr.getUserAnswer());
             qrr.setCorrectAnswer(question.getResult());
             qrr.setCorrect(
-                    qr.getUserAnswer() != null && qr.getUserAnswer().equalsIgnoreCase(question.getResult()));
+                    qr.getUserAnswer() != null &&
+                            qr.getUserAnswer().equalsIgnoreCase(question.getResult())
+            );
 
-            // Map options A–D
-            List<QuestionReviewResponse.OptionResponse> optionResponses = question.getOptions().stream().map(opt -> {
-                QuestionReviewResponse.OptionResponse optRes = new QuestionReviewResponse.OptionResponse();
-                optRes.setMark(opt.getMark());
-                optRes.setDetail(opt.getDetail());
-                return optRes;
-            }).collect(Collectors.toList());
+            // --- OPTIONS ---
+            List<QuestionReviewResponse.OptionResponse> optionResponses =
+                    question.getOptions().stream().map(opt -> {
+                        QuestionReviewResponse.OptionResponse optRes =
+                                new QuestionReviewResponse.OptionResponse();
+                        optRes.setMark(opt.getMark());
+                        optRes.setDetail(opt.getDetail());
+                        return optRes;
+                    }).collect(Collectors.toList());
 
             qrr.setOptions(optionResponses);
 
             return qrr;
+
         }).collect(Collectors.toList());
     }
 

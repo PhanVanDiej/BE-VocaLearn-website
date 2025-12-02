@@ -102,27 +102,38 @@ public class ExamService {
     }
 
     public ToeicQuestionResponse convertQuestionToResponse(ToeicQuestion question) {
-        List<ToeicQuestionResponse.OptionResponse> options = question.getOptions().stream()
-                .map(opt -> new ToeicQuestionResponse.OptionResponse(opt.getMark(), opt.getDetail()))
-                .collect(Collectors.toList());
 
-        String image = null;
+        // Options
+        List<ToeicQuestionResponse.OptionResponse> options =
+                question.getOptions().stream()
+                        .map(opt -> new ToeicQuestionResponse.OptionResponse(opt.getMark(), opt.getDetail()))
+                        .collect(Collectors.toList());
+
+        // Images (new)
+        List<String> imageUrls = question.getImages() != null
+                ? question.getImages().stream()
+                .map(i -> minIO_MediaService.getPresignedURL(i.getUrl(), Duration.ofMinutes(1)))
+                .collect(Collectors.toList())
+                : List.of();
+
+        // Audio (unchanged)
         String audio = null;
-        if(question.getImage()!=null && !question.getImage().isEmpty())
-            image= minIO_MediaService.getPresignedURL(question.getImage(), Duration.ofMinutes(1));
-        if(question.getAudio()!=null && !question.getAudio().isEmpty())
-            audio= minIO_MediaService.getPresignedURL(question.getAudio(), Duration.ofDays(1));
+        if (question.getAudio() != null && !question.getAudio().isEmpty()) {
+            audio = minIO_MediaService.getPresignedURL(question.getAudio(), Duration.ofDays(1));
+        }
+
         return new ToeicQuestionResponse(
                 question.getId(),
                 question.getIndexNumber(),
                 question.getPart(),
                 question.getDetail(),
                 question.getResult(),
-                image,
+                imageUrls,          // <-- LIST mới
                 audio,
                 question.getConversation(),
                 question.getClarify(),
-                options);
+                options
+        );
     }
 
     @Transactional
@@ -139,6 +150,7 @@ public class ExamService {
         exam.setTitle(examDetail.getTitle());
         exam.setType(examType);
         exam.setYear(examDetail.getYear());
+        exam.setRandom(examDetail.getIsRandom());
         exam.setAttemps(0);
         exam_Repository.save(exam);
         return convertToResponse(exam);

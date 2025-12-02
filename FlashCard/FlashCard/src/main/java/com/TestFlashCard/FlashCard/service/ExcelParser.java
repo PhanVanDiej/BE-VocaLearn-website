@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.TestFlashCard.FlashCard.entity.ToeicQuestionImage;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -51,16 +52,22 @@ public class ExcelParser {
 
                 indexQuestion++;
 
-                // upload file ảnh và setImage
+                // upload file ảnh và thêm vào danh sách images
                 String imageFileName = getCellValue(row.getCell(3));
                 if (imageFileName != null && !imageFileName.isBlank()) {
+
                     File imageFile = new File(mediaFolder, imageFileName);
-                    if (imageFile.exists()) {
-                        String imageUrl = minIO_MediaService.uploadFile(imageFile);
-                        question.setImage(imageUrl);
-                    } else {
+                    if (!imageFile.exists()) {
                         throw new FileNotFoundException("Image file not found: " + imageFile.getPath());
                     }
+
+                    String imageUrl = minIO_MediaService.uploadFile(imageFile);
+
+                    ToeicQuestionImage img = new ToeicQuestionImage();
+                    img.setUrl(imageUrl);
+                    img.setToeicQuestion(question);
+
+                    question.getImages().add(img);   // vì list luôn != null
                 }
                 // upload audio và setAudio
                 String audioFileName = getCellValue(row.getCell(4));

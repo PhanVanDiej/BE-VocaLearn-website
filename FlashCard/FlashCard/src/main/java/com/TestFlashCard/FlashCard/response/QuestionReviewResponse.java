@@ -10,7 +10,7 @@ public class QuestionReviewResponse {
     private Integer indexNumber;
     private String conversation;
     private String detail;
-    private String image;
+    private List<String> images;
     private String audio;
     private String userAnswer;
     private String correctAnswer;
