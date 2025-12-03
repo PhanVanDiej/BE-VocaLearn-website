@@ -8,6 +8,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.TestFlashCard.FlashCard.entity.*;
+import com.TestFlashCard.FlashCard.response.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -15,10 +17,6 @@ import org.springframework.web.multipart.MultipartFile;
 import org.zeroturnaround.zip.ZipUtil;
 
 import com.TestFlashCard.FlashCard.JpaSpec.ExamSpecification;
-import com.TestFlashCard.FlashCard.entity.Exam;
-import com.TestFlashCard.FlashCard.entity.ExamCollection;
-import com.TestFlashCard.FlashCard.entity.ExamType;
-import com.TestFlashCard.FlashCard.entity.ToeicQuestion;
 import com.TestFlashCard.FlashCard.exception.ResourceNotFoundException;
 import com.TestFlashCard.FlashCard.repository.ICommentReply_Repository;
 import com.TestFlashCard.FlashCard.repository.IComment_Repository;
@@ -26,10 +24,6 @@ import com.TestFlashCard.FlashCard.repository.IExam_Repository;
 import com.TestFlashCard.FlashCard.repository.IToeicQuestion_Repository;
 import com.TestFlashCard.FlashCard.request.ExamCreateRequest;
 import com.TestFlashCard.FlashCard.request.ExamUpdateRequest;
-import com.TestFlashCard.FlashCard.response.ExamAttemp;
-import com.TestFlashCard.FlashCard.response.ExamFilterdResponse;
-import com.TestFlashCard.FlashCard.response.ExamInformationResponse;
-import com.TestFlashCard.FlashCard.response.ToeicQuestionResponse;
 
 import org.springframework.util.FileSystemUtils;
 import jakarta.transaction.Transactional;
@@ -86,6 +80,15 @@ public class ExamService {
     }
 
     public ExamInformationResponse convertToExamDetailResponse(Exam exam) {
+        List<ToeicQuestionResponse> singleQuestions = exam.getQuestions().stream()
+                .filter(q -> !List.of("3", "4", "7").contains(q.getPart()))
+                .map(this::convertQuestionToResponse)
+                .toList();
+
+        List<GroupQuestionResponseDTO> groupQuestions = exam.getGroupQuestions().stream()
+                .map(this::convertGroupToResponse)
+                .toList();
+
         return new ExamInformationResponse(
                 exam.getId(),
                 exam.getDuration(),
@@ -98,7 +101,43 @@ public class ExamService {
                 exam.getAttemps(),
                 countAllCommentsAndReplies(exam.getId()),
                 exam.getFileImportName(),
-                exam.getQuestions().stream().map(this::convertQuestionToResponse).toList());
+                singleQuestions,
+                groupQuestions
+        );
+    }
+    public GroupQuestionResponseDTO convertGroupToResponse(GroupQuestion group) {
+        // Images
+        List<String> images = group.getImages() != null
+                ? group.getImages().stream()
+                .map(i -> minIO_MediaService.getPresignedURL(i.getUrl(), Duration.ofDays(1)))
+                .toList()
+                : List.of();
+
+        // Audios
+        List<String> audios = group.getAudios() != null
+                ? group.getAudios().stream()
+                .map(a -> minIO_MediaService.getPresignedURL(a.getUrl(), Duration.ofDays(1)))
+                .toList()
+                : List.of();
+
+        // Child questions
+        List<ToeicQuestionResponse> childQuestions = group.getQuestions() != null
+                ? group.getQuestions().stream()
+                .map(this::convertQuestionToResponse)
+                .toList()
+                : List.of();
+
+        return new GroupQuestionResponseDTO(
+                group.getId(),
+                group.getPart(),
+                group.getTitle(),
+                group.getContent(),
+                group.getQuestionRange(),
+                group.getExam().getId(),
+                images,
+                audios,
+                childQuestions
+        );
     }
 
     public ToeicQuestionResponse convertQuestionToResponse(ToeicQuestion question) {
@@ -191,13 +230,40 @@ public class ExamService {
     }
 
     @Transactional
-    public void DeleteById(int examID) {
-        Exam exam = exam_Repository.findById(examID).orElseThrow(
-                () -> new ResourceNotFoundException("Cannot find the Exam with id : " + examID));
-        List<ToeicQuestion> questions = exam.getQuestions();
-        for (ToeicQuestion question : questions) {
+    public void deleteById(int examID) {
+        Exam exam = exam_Repository.findById(examID)
+                .orElseThrow(() -> new ResourceNotFoundException("Cannot find Exam with id: " + examID));
+
+        // 1️⃣ Xóa media các ToeicQuestion trực tiếp
+        for (ToeicQuestion question : exam.getQuestions()) {
             minIO_MediaService.deleteQuestionMedia(question);
         }
+
+        // 2️⃣ Xóa media các GroupQuestion
+        if (exam.getGroupQuestions() != null) {
+            for (GroupQuestion group : exam.getGroupQuestions()) {
+                // Xóa ảnh của group
+                if (group.getImages() != null) {
+                    for (GroupQuestionImage img : group.getImages()) {
+                        minIO_MediaService.deleteFile(img.getUrl());
+                    }
+                }
+                // Xóa audio của group
+                if (group.getAudios() != null) {
+                    for (GroupQuestionAudio audio : group.getAudios()) {
+                        minIO_MediaService.deleteFile(audio.getUrl());
+                    }
+                }
+                // Xóa media cho các ToeicQuestion con trong group
+                if (group.getQuestions() != null) {
+                    for (ToeicQuestion question : group.getQuestions()) {
+                        minIO_MediaService.deleteQuestionMedia(question);
+                    }
+                }
+            }
+        }
+
+        // 3️⃣ Xóa Exam → cascade sẽ xóa tất cả entity
         exam_Repository.delete(exam);
     }
 

@@ -104,7 +104,7 @@ public class ExamController {
 
     @DeleteMapping("/admin/delete/{examID}")
     public ResponseEntity<?> deleteExamById(@PathVariable Integer examID) {
-        examService.DeleteById(examID);
+        examService.deleteById(examID);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Exam deleted successfully"));
     }
 

@@ -2,6 +2,7 @@ package com.TestFlashCard.FlashCard.service;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.util.Arrays;
@@ -191,19 +192,54 @@ public class MinIO_MediaService {
         }
     }
 
-    @CacheEvict(value = "presignedUrls", key = "#fileName")
-    public void deleteFile(String fileName) {
-        String key = ensureKey(fileName);
-        if (key == null) return;
+    @CacheEvict(value = "presignedUrls", key = "#maybeKeyOrUrl")
+    public void deleteFile(String maybeKeyOrUrl) {
+        if (maybeKeyOrUrl == null || maybeKeyOrUrl.isBlank()) return;
 
-        var request = DeleteObjectRequest.builder()
-                .bucket(minIOProperties.getBucket())
-                .key(key)
-                .build();
-        s3Client.deleteObject(request);
+        String key = maybeKeyOrUrl;
+
+        // Nếu là URL, parse ra key
+        if (key.startsWith("http")) {
+            try {
+                var uri = java.net.URI.create(key);
+                String path = uri.getPath(); // /bucket-name/key
+                if (path.startsWith("/")) path = path.substring(1);
+                int idx = path.indexOf('/');
+                if (idx >= 0) {
+                    String bucketInUrl = path.substring(0, idx);
+                    key = path.substring(idx + 1);
+                    // Chỉ báo nếu bucket khác, nhưng không throw để stop
+                    if (!bucketInUrl.equals(minIOProperties.getBucket())) {
+                        System.err.println("⚠ Bucket trong URL không khớp với config: " + bucketInUrl);
+                    }
+                }
+                key = java.net.URLDecoder.decode(key, StandardCharsets.UTF_8);
+            } catch (Exception e) {
+                System.err.println("⚠ Cannot parse S3 key from URL: " + key + " | " + e.getMessage());
+                return; // Không throw, chỉ log
+            }
+        }
+
+        // Thay space bằng '_' (giống khi upload)
+        key = key.replace(" ", "_");
+
+        try {
+            var request = DeleteObjectRequest.builder()
+                    .bucket(minIOProperties.getBucket())
+                    .key(key)
+                    .build();
+            s3Client.deleteObject(request);
+        } catch (S3Exception e) {
+            System.err.println("❌ Cannot delete S3 object: " + key);
+            System.err.println("   StatusCode: " + e.statusCode());
+            if (e.awsErrorDetails() != null) {
+                System.err.println("   Message: " + e.awsErrorDetails().errorMessage());
+            }
+        }
     }
 
-//    public void copyFile(String sourceKey) {
+
+    //    public void copyFile(String sourceKey) {
 //        var copySource = minIOProperties.getBucket() + "/" + sourceKey;
 //        var destinationFileName = generateUniqueFileName(sourceKey);
 //        var request = CopyObjectRequest.builder()

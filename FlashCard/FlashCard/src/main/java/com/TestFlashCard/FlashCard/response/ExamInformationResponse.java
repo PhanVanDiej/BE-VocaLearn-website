@@ -14,5 +14,6 @@ public record ExamInformationResponse(
     int attemps,
     int numberOfComment,
     String fileImportName,
-    List<ToeicQuestionResponse> questions
+    List<ToeicQuestionResponse> questions,       // Câu đơn: part 1,2,5
+    List<GroupQuestionResponseDTO> groupQuestions // Câu nhóm: part 3,4,7
 ) {}

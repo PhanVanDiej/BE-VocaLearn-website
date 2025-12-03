@@ -48,6 +48,10 @@ public class ToeicQuestion {
     @JoinColumn(name = "examID", nullable = false)
     private Exam exam;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_question_id", nullable = true)
+    private GroupQuestion group;
+
     @OneToMany(mappedBy = "toeicQuestion", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ToeicQuestionOption> options;
 
