@@ -19,6 +19,7 @@ public class GroupQuestionService {
     private final ExamRepository examRepository;
     private final GroupQuestionRepository groupRepo;
     private final ToeicQuestionRepository questionRepo;
+    private final MinIO_MediaService minIO_MediaService;
 
     @Transactional
     public GroupQuestionResponseDTO createGroup(GroupQuestionRequestDTO req) {
@@ -98,7 +99,7 @@ public class GroupQuestionService {
     }
 
     @Transactional
-    public GroupQuestion updateGroup(Integer groupId, GroupQuestionRequestDTO req) {
+    public GroupQuestionResponseDTO updateGroup(Integer groupId, GroupQuestionRequestDTO req) {
 
         GroupQuestion group = groupRepo.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group không tồn tại"));
@@ -108,8 +109,21 @@ public class GroupQuestionService {
         group.setQuestionRange(req.getQuestionRange());
         group.setContent(req.getContent());
 
-        // --- Replace Images ---
-        group.getImages().clear();
+        // --- Xóa media cũ ---
+        if (group.getImages() != null) {
+            for (var img : group.getImages()) minIO_MediaService.deleteFile(img.getUrl());
+            group.getImages().clear();
+        }
+        if (group.getAudios() != null) {
+            for (var audio : group.getAudios()) minIO_MediaService.deleteFile(audio.getUrl());
+            group.getAudios().clear();
+        }
+        if (group.getQuestions() != null) {
+            for (var q : group.getQuestions()) minIO_MediaService.deleteQuestionMedia(q);
+            group.getQuestions().clear();
+        }
+
+        // --- Add new images ---
         if (req.getImages() != null) {
             for (var img : req.getImages()) {
                 GroupQuestionImage i = new GroupQuestionImage();
@@ -119,8 +133,7 @@ public class GroupQuestionService {
             }
         }
 
-        // --- Replace Audios ---
-        group.getAudios().clear();
+        // --- Add new audios ---
         if (req.getAudios() != null) {
             for (var audio : req.getAudios()) {
                 GroupQuestionAudio a = new GroupQuestionAudio();
@@ -130,11 +143,12 @@ public class GroupQuestionService {
             }
         }
 
-        // --- Replace Questions ---
-        group.getQuestions().clear();
+        // --- Add new questions ---
         if (req.getQuestions() != null) {
+            int idx = extractStartIndex(req.getQuestionRange()); // ex: "32-35" -> 32
             for (ToeicQuestionRequestDTO qReq : req.getQuestions()) {
                 ToeicQuestion q = new ToeicQuestion();
+                q.setIndexNumber(idx++);
                 q.setDetail(qReq.getDetail());
                 q.setResult(qReq.getResult());
                 q.setClarify(qReq.getClarify());
@@ -144,33 +158,38 @@ public class GroupQuestionService {
                 q.setGroup(group);
 
                 // Options
-                q.setOptions(
-                        qReq.getOptions().stream().map(o -> {
-                            ToeicQuestionOption opt = new ToeicQuestionOption();
-                            opt.setMark(o.getMark());
-                            opt.setDetail(o.getDetail());
-                            opt.setToeicQuestion(q);
-                            return opt;
-                        }).toList()
-                );
+                q.setOptions(qReq.getOptions().stream().map(o -> {
+                    ToeicQuestionOption opt = new ToeicQuestionOption();
+                    opt.setMark(o.getMark());
+                    opt.setDetail(o.getDetail());
+                    opt.setToeicQuestion(q);
+                    return opt;
+                }).toList());
 
                 // Images
                 if (qReq.getImages() != null) {
-                    q.setImages(
-                            qReq.getImages().stream().map(img -> {
-                                ToeicQuestionImage qi = new ToeicQuestionImage();
-                                qi.setUrl(img.getUrl());
-                                qi.setToeicQuestion(q);
-                                return qi;
-                            }).toList()
-                    );
+                    q.setImages(qReq.getImages().stream().map(img -> {
+                        ToeicQuestionImage qi = new ToeicQuestionImage();
+                        qi.setUrl(img.getUrl());
+                        qi.setToeicQuestion(q);
+                        return qi;
+                    }).toList());
                 }
 
                 group.getQuestions().add(q);
             }
         }
 
-        return groupRepo.save(group);
+        return toResponseDTO(groupRepo.save(group));
+    }
+
+    // Hàm helper: parse "32-35" -> 32
+    private int extractStartIndex(String range) {
+        try {
+            return Integer.parseInt(range.split("-")[0].trim());
+        } catch (Exception e) {
+            return 1; // default
+        }
     }
 
     @Transactional
@@ -178,12 +197,35 @@ public class GroupQuestionService {
         GroupQuestion group = groupRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Group không tồn tại"));
 
+        //  Xóa media ảnh của group
+        if (group.getImages() != null) {
+            for (GroupQuestionImage img : group.getImages()) {
+                minIO_MediaService.deleteFile(img.getUrl());
+            }
+        }
+
+        //  Xóa media audio của group
+        if (group.getAudios() != null) {
+            for (GroupQuestionAudio audio : group.getAudios()) {
+                minIO_MediaService.deleteFile(audio.getUrl());
+            }
+        }
+
+        // Xóa media cho các ToeicQuestion con trong group
+        if (group.getQuestions() != null) {
+            for (ToeicQuestion question : group.getQuestions()) {
+                minIO_MediaService.deleteQuestionMedia(question);
+            }
+        }
+
+        // 4️⃣ Xóa group → cascade xóa các entity con trong DB
         groupRepo.delete(group);
     }
 
-    public GroupQuestion getGroup(Integer id) {
-        return groupRepo.findById(id)
+    public GroupQuestionResponseDTO getGroup(Integer id) {
+        GroupQuestion gr = groupRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Group không tồn tại"));
+        return toResponseDTO(gr);
     }
 
     private GroupQuestionResponseDTO toResponseDTO(GroupQuestion group) {
