@@ -1,9 +1,14 @@
 package com.TestFlashCard.FlashCard.repository;
 
 import com.TestFlashCard.FlashCard.entity.ToeicQuestion;
+
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public interface ToeicQuestionRepository extends JpaRepository<ToeicQuestion, Integer> {
 
     @Query("SELECT MAX(t.indexNumber) FROM ToeicQuestion t WHERE t.exam.id = :examId")
@@ -11,5 +16,4 @@ public interface ToeicQuestionRepository extends JpaRepository<ToeicQuestion, In
 
     @Query("SELECT MAX(t.indexNumber) FROM ToeicQuestion t WHERE t.exam.id = :examId AND t.part = :part")
     Integer findMaxIndexByExamAndPart(Integer examId, String part);
-
 }

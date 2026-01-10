@@ -13,4 +13,4 @@ import com.TestFlashCard.FlashCard.entity.User;
 public interface IEvaluate_Repository extends JpaRepository<Evaluate,Integer>, JpaSpecificationExecutor<Evaluate>{
     List<Evaluate>findAll();
     Evaluate findByUser(User user);
-} 
+}

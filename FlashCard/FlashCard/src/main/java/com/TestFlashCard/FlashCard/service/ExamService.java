@@ -23,7 +23,9 @@ import com.TestFlashCard.FlashCard.repository.IComment_Repository;
 import com.TestFlashCard.FlashCard.repository.IExam_Repository;
 import com.TestFlashCard.FlashCard.repository.IToeicQuestion_Repository;
 import com.TestFlashCard.FlashCard.request.ExamCreateRequest;
+import com.TestFlashCard.FlashCard.request.ExamCreateRequestVer2;
 import com.TestFlashCard.FlashCard.request.ExamUpdateRequest;
+import com.TestFlashCard.FlashCard.request.ToeicCustomExamUpdateRequest;
 
 import org.springframework.util.FileSystemUtils;
 import jakarta.transaction.Transactional;
@@ -91,13 +93,13 @@ public class ExamService {
 
         return new ExamInformationResponse(
                 exam.getId(),
-                exam.getDuration(),
+                exam.getDuration() !=null ? exam.getDuration(): null,                    // giữ null nếu không có giá trị
                 getNumOfPart(exam.getId()),
                 getNumOfQuestion(exam.getId()),
                 exam.getTitle(),
-                exam.getYear(),
-                exam.getType().getType(),
-                exam.getCollection().getCollection(),
+                exam.getYear() !=null ? exam.getYear() : null,
+                exam.getType() !=null ? exam.getType().getType() : null,
+                exam.getCollection() != null ?exam.getCollection().getCollection() : null,
                 exam.getAttemps(),
                 countAllCommentsAndReplies(exam.getId()),
                 exam.getFileImportName(),
@@ -195,6 +197,15 @@ public class ExamService {
         return convertToResponse(exam);
     }
 
+    @Transactional
+    public ExamFilterdResponse create(ExamCreateRequestVer2 examDetail) throws IOException {
+        Exam exam = new Exam();
+        exam.setTitle(examDetail.getTitle());
+        exam.setAttemps(0);
+        exam_Repository.save(exam);
+        return convertToResponse(exam);
+    }
+
     public int getNumOfQuestion(int examID) {
         return toeicQuestion_repository.countQuestionsByExamId(examID);
     }
@@ -233,13 +244,13 @@ public class ExamService {
     public void deleteById(int examID) {
         Exam exam = exam_Repository.findById(examID)
                 .orElseThrow(() -> new ResourceNotFoundException("Cannot find Exam with id: " + examID));
-
-        // 1️⃣ Xóa media các ToeicQuestion trực tiếp
+        
+        //Xóa media các ToeicQuestion trực tiếp
         for (ToeicQuestion question : exam.getQuestions()) {
             minIO_MediaService.deleteQuestionMedia(question);
         }
 
-        // 2️⃣ Xóa media các GroupQuestion
+        // Xóa media các GroupQuestion
         if (exam.getGroupQuestions() != null) {
             for (GroupQuestion group : exam.getGroupQuestions()) {
                 // Xóa ảnh của group
@@ -263,7 +274,7 @@ public class ExamService {
             }
         }
 
-        // 3️⃣ Xóa Exam → cascade sẽ xóa tất cả entity
+        //Xóa Exam → cascade sẽ xóa tất cả entity
         exam_Repository.delete(exam);
     }
 
@@ -316,4 +327,28 @@ public class ExamService {
                 })
                 .collect(Collectors.toList());
     }
+
+    @Transactional
+    public ToeicCustomUpdateResponse updateToeicCustomExam (ToeicCustomExamUpdateRequest request, int examId){
+        Exam exam = exam_Repository.findById(examId).orElseThrow(()->
+            new ResourceNotFoundException("Cannot find the Toeic Custom Exam with id : " + examId)
+        );
+
+        if(request.getTitle()!=null)
+            exam.setTitle(request.getTitle());
+        if(request.getDuration()!=null)
+            exam.setDuration(request.getDuration());
+        if(request.getAttemps()!= null)
+            exam.setAttemps(request.getAttemps());
+        exam_Repository.save(exam);
+        ToeicCustomUpdateResponse response = new ToeicCustomUpdateResponse();
+        response.setAttemps(exam.getAttemps());
+        response.setDuration(exam.getDuration());
+        response.setTitle(exam.getTitle());
+
+        return response;
+    }
+    
 }
+
+

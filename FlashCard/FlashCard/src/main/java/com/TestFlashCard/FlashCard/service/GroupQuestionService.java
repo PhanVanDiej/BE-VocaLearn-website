@@ -5,10 +5,17 @@ import com.TestFlashCard.FlashCard.repository.ExamRepository;
 import com.TestFlashCard.FlashCard.repository.GroupQuestionRepository;
 import com.TestFlashCard.FlashCard.repository.ToeicQuestionRepository;
 import com.TestFlashCard.FlashCard.request.GroupQuestionRequestDTO;
+import com.TestFlashCard.FlashCard.request.ToeicQuestionForGroupRequestDTO;
 import com.TestFlashCard.FlashCard.request.ToeicQuestionRequestDTO;
 import com.TestFlashCard.FlashCard.response.GroupQuestionResponseDTO;
 import com.TestFlashCard.FlashCard.response.ToeicQuestionResponse;
 import lombok.RequiredArgsConstructor;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +27,7 @@ public class GroupQuestionService {
     private final GroupQuestionRepository groupRepo;
     private final ToeicQuestionRepository questionRepo;
     private final MinIO_MediaService minIO_MediaService;
+    private final ToeicQuestionRepository toeicQuestionRepository;
 
     @Transactional
     public GroupQuestionResponseDTO createGroup(GroupQuestionRequestDTO req) {
@@ -75,8 +83,7 @@ public class GroupQuestionService {
                             opt.setMark(o.getMark());
                             opt.setToeicQuestion(q);
                             return opt;
-                        }).toList()
-                );
+                        }).toList());
 
                 // Images
                 if (qReq.getImages() != null) {
@@ -86,8 +93,7 @@ public class GroupQuestionService {
                                 qi.setUrl(img.getUrl());
                                 qi.setToeicQuestion(q);
                                 return qi;
-                            }).toList()
-                    );
+                            }).toList());
                 }
 
                 group.getQuestions().add(q);
@@ -111,15 +117,18 @@ public class GroupQuestionService {
 
         // --- Xóa media cũ ---
         if (group.getImages() != null) {
-            for (var img : group.getImages()) minIO_MediaService.deleteFile(img.getUrl());
+            for (var img : group.getImages())
+                minIO_MediaService.deleteFile(img.getUrl());
             group.getImages().clear();
         }
         if (group.getAudios() != null) {
-            for (var audio : group.getAudios()) minIO_MediaService.deleteFile(audio.getUrl());
+            for (var audio : group.getAudios())
+                minIO_MediaService.deleteFile(audio.getUrl());
             group.getAudios().clear();
         }
         if (group.getQuestions() != null) {
-            for (var q : group.getQuestions()) minIO_MediaService.deleteQuestionMedia(q);
+            for (var q : group.getQuestions())
+                minIO_MediaService.deleteQuestionMedia(q);
             group.getQuestions().clear();
         }
 
@@ -193,18 +202,46 @@ public class GroupQuestionService {
     }
 
     @Transactional
+    public GroupQuestionResponseDTO addGroupToQuestion(Integer questionId, Integer groupId) {
+        GroupQuestion group = groupRepo.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group không tồn tại"));
+
+        ToeicQuestion q = questionRepo.findById(questionId)
+                .orElseThrow(() -> new RuntimeException("ToeicQuestion không tồn tại"));
+
+        // Remove from old group (two-way)
+        if (q.getGroup() != null && q.getGroup().getId() != null) {
+            q.getGroup().getQuestions().removeIf(qq -> qq.getId().equals(q.getId()));
+        }
+
+        q.setGroup(group);
+        q.setExam(group.getExam());
+        q.setPart(group.getPart());
+        questionRepo.save(q);
+
+        if (group.getQuestions() == null) {
+            group.setQuestions(new java.util.ArrayList<>());
+        }
+        if (group.getQuestions().stream().noneMatch(qq -> qq.getId().equals(q.getId()))) {
+            group.getQuestions().add(q);
+        }
+
+        return toResponseDTO(groupRepo.save(group));
+    }
+
+    @Transactional
     public void deleteGroup(Integer id) {
         GroupQuestion group = groupRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Group không tồn tại"));
 
-        //  Xóa media ảnh của group
+        // Xóa media ảnh của group
         if (group.getImages() != null) {
             for (GroupQuestionImage img : group.getImages()) {
                 minIO_MediaService.deleteFile(img.getUrl());
             }
         }
 
-        //  Xóa media audio của group
+        // Xóa media audio của group
         if (group.getAudios() != null) {
             for (GroupQuestionAudio audio : group.getAudios()) {
                 minIO_MediaService.deleteFile(audio.getUrl());
@@ -218,7 +255,7 @@ public class GroupQuestionService {
             }
         }
 
-        // 4️⃣ Xóa group → cascade xóa các entity con trong DB
+        // Xóa group → cascade xóa các entity con trong DB
         groupRepo.delete(group);
     }
 
@@ -238,21 +275,19 @@ public class GroupQuestionService {
         dto.setQuestionRange(group.getQuestionRange());
         dto.setExamId(group.getExam().getId());
 
-        // Images
+        // ✅ Images - Convert keys to presigned URLs
         dto.setImages(
                 group.getImages().stream()
-                        .map(GroupQuestionImage::getUrl)
-                        .toList()
-        );
+                        .map(img -> minIO_MediaService.getPresignedURL(img.getUrl(), Duration.ofDays(1)))
+                        .toList());
 
-        // Audios
+        // ✅ Audios - Convert keys to presigned URLs
         dto.setAudios(
                 group.getAudios().stream()
-                        .map(GroupQuestionAudio::getUrl)
-                        .toList()
-        );
+                        .map(audio -> minIO_MediaService.getPresignedURL(audio.getUrl(), Duration.ofDays(1)))
+                        .toList());
 
-        // Questions
+        // ✅ Questions - Convert với presigned URLs
         dto.setQuestions(
                 group.getQuestions().stream()
                         .map(q -> new ToeicQuestionResponse(
@@ -261,21 +296,64 @@ public class GroupQuestionService {
                                 q.getPart(),
                                 q.getDetail(),
                                 q.getResult(),
-                                q.getImages().stream().map(ToeicQuestionImage::getUrl).toList(),
-                                q.getAudio(),
-                                q.getConversation(), // nếu không có thì bỏ
+                                // ✅ Images của question - convert to URLs
+                                q.getImages().stream()
+                                        .map(img -> minIO_MediaService.getPresignedURL(img.getUrl(),
+                                                Duration.ofDays(1)))
+                                        .toList(),
+                                // ✅ Audio của question - convert to URL (hoặc null)
+                                q.getAudio() != null && !q.getAudio().isEmpty()
+                                        ? minIO_MediaService.getPresignedURL(q.getAudio(), Duration.ofDays(1))
+                                        : null,
+                                q.getConversation(),
                                 q.getClarify(),
                                 q.getOptions().stream()
                                         .map(o -> new ToeicQuestionResponse.OptionResponse(
                                                 o.getMark(),
-                                                o.getDetail()
-                                        ))
-                                        .toList()
-                        ))
-                        .toList()
-        );
-
+                                                o.getDetail()))
+                                        .toList()))
+                        .toList());
         return dto;
     }
-}
 
+    public ToeicQuestionResponse convertQuestionToResponse(ToeicQuestion question) {
+
+        // ---- Options ----
+        List<ToeicQuestionResponse.OptionResponse> options = question.getOptions().stream()
+                .map(opt -> new ToeicQuestionResponse.OptionResponse(
+                        opt.getMark(),
+                        opt.getDetail()))
+                .collect(Collectors.toList());
+
+        // ---- Images (new) ----
+        List<String> imageUrls = question.getImages() != null
+                ? question.getImages().stream()
+                        .map(img -> minIO_MediaService.getPresignedURL(
+                                img.getUrl(),
+                                Duration.ofMinutes(1)))
+                        .collect(Collectors.toList())
+                : List.of();
+
+        return new ToeicQuestionResponse(
+                question.getId(),
+                question.getIndexNumber(),
+                question.getPart(),
+                question.getDetail(),
+                question.getResult(),
+                imageUrls, // NEW FIELD
+                question.getAudio(),
+                question.getConversation(),
+                question.getClarify(),
+                options);
+    }
+
+    @Transactional
+    public ToeicQuestion updateQuestion(Integer questionId, ToeicQuestionForGroupRequestDTO request) {
+        ToeicQuestion question = toeicQuestionRepository.findById(questionId)
+                .orElseThrow(() -> new RuntimeException("Câu hỏi không tồn tại"));
+        GroupQuestion group = groupRepo.findById(request.getGroupId())
+                .orElseThrow(() -> new RuntimeException("Group không tồn tại"));
+        question.setGroup(group);
+        return toeicQuestionRepository.save(question);
+    }
+}
