@@ -1,14 +1,17 @@
 package com.TestFlashCard.FlashCard.controller;
 
 import com.TestFlashCard.FlashCard.entity.ToeicQuestion;
+import com.TestFlashCard.FlashCard.request.ToeicQuestionReorderRequest;
 import com.TestFlashCard.FlashCard.request.ToeicQuestionRequestDTO;
 import com.TestFlashCard.FlashCard.response.ApiResponse;
 import com.TestFlashCard.FlashCard.response.ToeicQuestionResponse;
 import com.TestFlashCard.FlashCard.service.ToeicQuestionService;
 import lombok.RequiredArgsConstructor;
+
+import org.apache.coyote.BadRequestException;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 
 @RestController
 @RequestMapping("/api/toeic-question")
@@ -31,6 +34,7 @@ public class ToeicQuestionController {
                     "Tạo câu hỏi thất bại vì: " + e.getMessage());
         }
     }
+
     @DeleteMapping("/{questionId}")
     public ApiResponse<?> deleteQuestion(@PathVariable Integer questionId) {
         try {
@@ -43,7 +47,7 @@ public class ToeicQuestionController {
 
     @PutMapping("/{questionId}")
     public ApiResponse<?> updateQuestion(@PathVariable Integer questionId,
-                                         @RequestBody ToeicQuestionRequestDTO request) {
+            @RequestBody ToeicQuestionRequestDTO request) {
         try {
             ToeicQuestion updated = toeicQuestionService.updateQuestion(questionId, request);
             ToeicQuestionResponse response = toeicQuestionService.convertQuestionToResponse(updated);
@@ -54,4 +58,11 @@ public class ToeicQuestionController {
         }
     }
 
+    @PutMapping("reorder/{examId}")
+    public ApiResponse<?> reorderQuestionsIndexNumber(@PathVariable Integer examId, @RequestBody ToeicQuestionReorderRequest request) throws BadRequestException{
+        
+        toeicQuestionService.reorder(request, examId);
+        
+        return new ApiResponse<>(HttpStatus.OK.value(), "Thay doi thu tu thanh cong");
+    }
 }

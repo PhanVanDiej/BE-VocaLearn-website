@@ -47,6 +47,7 @@ public class ExcelParser {
                 question.setPart(getCellValue(row.getCell(0)));
                 question.setDetail(getCellValue(row.getCell(1)));
                 question.setResult(getCellValue(row.getCell(2)));
+                //todo: sua lai
                 question.setConversation(getCellValue(row.getCell(9)));
                 question.setClarify(getCellValue(row.getCell(10)));
 

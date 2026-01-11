@@ -5,7 +5,6 @@ import java.util.List;
 
 @Data
 public class ToeicQuestionRequestDTO {
-
     private Integer indexNumber;
     private String part;
     private String detail;

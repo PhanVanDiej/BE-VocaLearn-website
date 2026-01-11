@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.TestFlashCard.FlashCard.Utils.random6DigitNumber;
 import com.TestFlashCard.FlashCard.entity.Exam;
 import com.TestFlashCard.FlashCard.entity.ExamCollection;
 import com.TestFlashCard.FlashCard.entity.ExamType;
@@ -23,14 +24,18 @@ import com.TestFlashCard.FlashCard.request.CommentUpdateRequest;
 import com.TestFlashCard.FlashCard.request.ExamCollectionCreateRequest;
 import com.TestFlashCard.FlashCard.request.ExamCollectionUpdateRequest;
 import com.TestFlashCard.FlashCard.request.ExamCreateRequest;
+import com.TestFlashCard.FlashCard.request.ExamCreateRequestVer2;
 import com.TestFlashCard.FlashCard.request.ExamSubmitRequest;
 import com.TestFlashCard.FlashCard.request.ExamTypeCreateRequest;
 import com.TestFlashCard.FlashCard.request.ExamTypeUpdateRequest;
 import com.TestFlashCard.FlashCard.request.ExamUpdateRequest;
+import com.TestFlashCard.FlashCard.request.ToeicCustomExamUpdateRequest;
+import com.TestFlashCard.FlashCard.request.ToeicQuestionReorderRequest;
 import com.TestFlashCard.FlashCard.response.ApiResponse;
 import com.TestFlashCard.FlashCard.response.CommentResponse;
 import com.TestFlashCard.FlashCard.response.ExamInformationResponse;
 import com.TestFlashCard.FlashCard.response.ExamReviewResponse;
+import com.TestFlashCard.FlashCard.response.ToeicCustomUpdateResponse;
 import com.TestFlashCard.FlashCard.service.CommentService;
 import com.TestFlashCard.FlashCard.service.ExamCollectionService;
 import com.TestFlashCard.FlashCard.service.ExamReviewService;
@@ -130,7 +135,7 @@ public class ExamController {
         User user = userService.getUserByAccountName(accountName);
 
         ExamReviewResponse response = examReviewService.submitExam(request, user);
-        
+
         System.out.println("====================" + request.getSelectedPart());
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
     }
@@ -176,9 +181,10 @@ public class ExamController {
     @PutMapping("comment/update/{id}")
     public ResponseEntity<?> updateComment(@PathVariable Integer id, @RequestBody CommentUpdateRequest request) {
         commentService.updateComment(id, request);
-        
+
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Comment updated successfully"));
     }
+
     @PutMapping("reply-comment/update/{id}")
     public ResponseEntity<?> updateReplyComment(@PathVariable Integer id, @RequestBody CommentUpdateRequest request) {
         commentService.updateCommentReply(id, request);
@@ -208,7 +214,6 @@ public class ExamController {
         examTypeService.create(request);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Type created successfully"));
     }
-    
 
     @PutMapping("/admin/type/update/{id}")
     public ResponseEntity<?> updateExamType(@PathVariable Integer id, @RequestBody ExamTypeUpdateRequest request)
@@ -224,20 +229,20 @@ public class ExamController {
     }
 
     @GetMapping("/collection/getAll")
-    public ResponseEntity<?> getAllExamCollections() throws IOException{
+    public ResponseEntity<?> getAllExamCollections() throws IOException {
         List<ExamCollection> collections = examCollectionService.getAllExamCollection();
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(collections));
     }
 
     @GetMapping("/collection/id/{id}")
-    public ResponseEntity<?> getExamCollectionById(@PathVariable Integer id) throws IOException{
-        ExamCollection examCollection=examCollectionService.getDetailById(id);
+    public ResponseEntity<?> getExamCollectionById(@PathVariable Integer id) throws IOException {
+        ExamCollection examCollection = examCollectionService.getDetailById(id);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(examCollection));
     }
 
     @GetMapping("/collection/name/{collection}")
-    public ResponseEntity<?> getExamCollectionByName(@PathVariable String collection) throws IOException{
-        ExamCollection examCollection=examCollectionService.getDetailByCollection(collection);
+    public ResponseEntity<?> getExamCollectionByName(@PathVariable String collection) throws IOException {
+        ExamCollection examCollection = examCollectionService.getDetailByCollection(collection);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(examCollection));
     }
 
@@ -246,31 +251,61 @@ public class ExamController {
         examCollectionService.create(request);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Collection created successfully"));
     }
-    
+
     @PutMapping("/admin/collection/update/{id}")
-    public ResponseEntity<?> updateExamCollection(@PathVariable Integer id, @RequestBody ExamCollectionUpdateRequest request) throws IOException {
+    public ResponseEntity<?> updateExamCollection(@PathVariable Integer id,
+            @RequestBody ExamCollectionUpdateRequest request) throws IOException {
         examCollectionService.update(request, id);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Collection updated successfully"));
     }
-    
+
     @DeleteMapping("/admin/collection/delete/{id}")
-    public ResponseEntity<?> deleteExamCollection(@PathVariable Integer id) throws IOException{
+    public ResponseEntity<?> deleteExamCollection(@PathVariable Integer id) throws IOException {
         examCollectionService.Delete(id);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("Collection deleted successfully"));
     }
-    
+
     @GetMapping("/result/getAllByExam/{examId}")
     public ResponseEntity<?> getAllResult(@PathVariable Integer examId, Principal principal) {
         User user = userService.getUserByAccountName(principal.getName());
         Exam exam = exam_Repository.findById(examId).orElseThrow(
-            ()-> new ResourceNotFoundException("Cannot find the Exam with id: " + examId)
-        );
+                () -> new ResourceNotFoundException("Cannot find the Exam with id: " + examId));
         List<ExamReviewResponse> responses = examReviewService.getAllExamResultByUser(user, exam);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(responses));
     }
+
     @GetMapping("/result/id/{id}")
     public ResponseEntity<?> getReviewById(@PathVariable Integer id) {
         ExamReviewResponse response = examReviewService.getById(id);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response));
+    }
+
+    // @PostMapping("/{examId}/part/{part}")
+    // public ApiResponse<?> uploadToeicPart(@PathVariable Integer examId, @PathVariable Integer part,
+    //         @RequestParam("dataJson") String dataJson, @RequestParam("files") List<MultipartFile> files) {
+
+    //     return entity;
+    // }
+    
+    @PostMapping("/create/draft")
+    public ResponseEntity<?> createDraftExam() throws IOException {
+
+        ExamCreateRequestVer2 exam = new ExamCreateRequestVer2();
+        exam.setTitle("New Toeic Exam - " + random6DigitNumber.randomDigit());
+        exam.setDuration(120);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(examService.create(exam)));
+    }
+
+    @DeleteMapping("/custom/{examId}")
+    public ApiResponse<?> deleteCustomToeicExam (@PathVariable Integer examId){
+        examService.deleteById(examId);
+        return new ApiResponse<>(HttpStatus.OK.value(), "Xoa bai thi thanh cong");
+    }
+    @PutMapping("/custom/{examId}")
+    public ApiResponse<?> updateCustomExam(@PathVariable Integer examId, @RequestBody ToeicCustomExamUpdateRequest request) {
+        
+        ToeicCustomUpdateResponse response = examService.updateToeicCustomExam(request, examId);
+        
+        return new ApiResponse<>(HttpStatus.OK.value(), "Cap nhat thong tin thanh cong.", response);
     }
 }

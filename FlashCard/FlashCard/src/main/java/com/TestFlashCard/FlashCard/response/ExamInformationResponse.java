@@ -4,15 +4,15 @@ import java.util.List;
 
 public record ExamInformationResponse(
     int id,
-    int duration,
-    int parts,
-    int size,
+    Integer duration,
+    Integer parts,
+    Integer size,
     String title,
-    int year,
+    Integer year,
     String type,
     String collection,
-    int attemps,
-    int numberOfComment,
+    Integer attemps,
+    Integer numberOfComment,
     String fileImportName,
     List<ToeicQuestionResponse> questions,       // Câu đơn: part 1,2,5
     List<GroupQuestionResponseDTO> groupQuestions // Câu nhóm: part 3,4,7

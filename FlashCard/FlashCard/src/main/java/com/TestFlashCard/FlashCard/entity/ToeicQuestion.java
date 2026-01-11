@@ -33,7 +33,6 @@ public class ToeicQuestion {
     @OneToMany(mappedBy = "toeicQuestion", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ToeicQuestionImage> images;
 
-
     @Column(length = 255)
     private String audio;
 

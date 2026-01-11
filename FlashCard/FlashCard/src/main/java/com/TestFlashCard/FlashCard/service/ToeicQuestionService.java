@@ -1,14 +1,21 @@
 package com.TestFlashCard.FlashCard.service;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.TestFlashCard.FlashCard.entity.ToeicQuestionImage;
 import com.TestFlashCard.FlashCard.entity.ToeicQuestionOption;
 import com.TestFlashCard.FlashCard.repository.ExamRepository;
 import com.TestFlashCard.FlashCard.repository.ToeicQuestionRepository;
+import com.TestFlashCard.FlashCard.request.ToeicQuestionReorderRequest;
+import com.TestFlashCard.FlashCard.request.ToeicQuestionReorderRequest.Item;
 import com.TestFlashCard.FlashCard.request.ToeicQuestionRequestDTO;
+
+import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -26,9 +33,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ToeicQuestionService {
     @Autowired
-    private final IToeicQuestion_Repository toeicQuestion_Repository;
+    private IToeicQuestion_Repository toeicQuestion_Repository;
     @Autowired
-    private final IExam_Repository exam_Repository;
+    private IExam_Repository exam_Repository;
     @Autowired
     private MinIO_MediaService minIO_MediaService;
     @Autowired
@@ -53,38 +60,34 @@ public class ToeicQuestionService {
     public ToeicQuestionResponse convertQuestionToResponse(ToeicQuestion question) {
 
         // ---- Options ----
-        List<ToeicQuestionResponse.OptionResponse> options =
-                question.getOptions().stream()
-                        .map(opt -> new ToeicQuestionResponse.OptionResponse(
-                                opt.getMark(),
-                                opt.getDetail()
-                        ))
-                        .collect(Collectors.toList());
+        List<ToeicQuestionResponse.OptionResponse> options = question.getOptions().stream()
+                .map(opt -> new ToeicQuestionResponse.OptionResponse(
+                        opt.getMark(),
+                        opt.getDetail()))
+                .collect(Collectors.toList());
 
         // ---- Images (new) ----
         List<String> imageUrls = question.getImages() != null
                 ? question.getImages().stream()
-                .map(img -> minIO_MediaService.getPresignedURL(
-                        img.getUrl(),
-                        Duration.ofMinutes(1))
-                )
-                .collect(Collectors.toList())
+                        .map(img -> minIO_MediaService.getPresignedURL(
+                                img.getUrl(),
+                                Duration.ofMinutes(1)))
+                        .collect(Collectors.toList())
                 : List.of();
 
+        String audioUrlString = question.getAudio()!= null ?  minIO_MediaService.getPresignedURL(question.getAudio(), Duration.ofMinutes(1)) : null;
         return new ToeicQuestionResponse(
                 question.getId(),
                 question.getIndexNumber(),
                 question.getPart(),
                 question.getDetail(),
                 question.getResult(),
-                imageUrls,                     // NEW FIELD
-                question.getAudio(),
+                imageUrls, // NEW FIELD
+                audioUrlString,
                 question.getConversation(),
                 question.getClarify(),
-                options
-        );
+                options);
     }
-
 
     @Transactional
     public ToeicQuestion createToeicQuestion(ToeicQuestionRequestDTO request) {
@@ -96,7 +99,8 @@ public class ToeicQuestionService {
         question.setDetail(request.getDetail());
         question.setResult(request.getResult());
         question.setClarify(request.getClarify());
-        question.setAudio(request.getAudio());
+        if (request.getAudio() != null)
+            question.setAudio(request.getAudio());
         question.setConversation(request.getConversation());
         question.setExam(exam);
 
@@ -173,7 +177,10 @@ public class ToeicQuestionService {
         question.setDetail(request.getDetail());
         question.setResult(request.getResult());
         question.setClarify(request.getClarify());
-        question.setAudio(request.getAudio());
+        if (request.getAudio() != null) {
+            minIO_MediaService.deleteFile(question.getAudio());
+            question.setAudio(request.getAudio());
+        }
         question.setConversation(request.getConversation());
 
         // ---- Options ----
@@ -202,7 +209,6 @@ public class ToeicQuestionService {
         return toeicQuestionRepository.save(question);
     }
 
-
     private int getStartIndexByPart(String part) {
         return switch (part) {
             case "Part 1" -> 1;
@@ -214,5 +220,24 @@ public class ToeicQuestionService {
             case "Part 7" -> 147;
             default -> 1;
         };
+    }
+
+    @Transactional
+    public void reorder(ToeicQuestionReorderRequest req, Integer examId) throws BadRequestException {
+        List<ToeicQuestion> questions;
+
+        questions = toeicQuestion_Repository.findByExamIdAndPart(examId, req.getPart());
+
+        Map<Integer, ToeicQuestion> map = questions.stream()
+                .collect(Collectors.toMap(ToeicQuestion::getId, Function.identity()));
+
+        for (Item it : req.getItems()) {
+            ToeicQuestion q = map.get(it.getQuestionId());
+            if (q == null)
+                throw new BadRequestException("questionId not in exam/part");
+            q.setIndexNumber(it.getIndexNumber());
+        }
+
+        toeicQuestion_Repository.saveAll(map.values());
     }
 }

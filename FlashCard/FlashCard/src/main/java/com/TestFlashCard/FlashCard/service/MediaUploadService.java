@@ -43,4 +43,3 @@ public class MediaUploadService {
         return new MediaUploadResultResponse(imageResults, audioResults);
     }
 }
-
