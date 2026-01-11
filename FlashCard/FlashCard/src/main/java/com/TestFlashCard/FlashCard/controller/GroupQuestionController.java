@@ -1,7 +1,11 @@
 package com.TestFlashCard.FlashCard.controller;
 
+import com.TestFlashCard.FlashCard.entity.ToeicQuestion;
 import com.TestFlashCard.FlashCard.request.GroupQuestionRequestDTO;
+import com.TestFlashCard.FlashCard.request.ToeicQuestionForGroupRequestDTO;
+import com.TestFlashCard.FlashCard.request.ToeicQuestionRequestDTO;
 import com.TestFlashCard.FlashCard.response.ApiResponse;
+import com.TestFlashCard.FlashCard.response.ToeicQuestionResponse;
 import com.TestFlashCard.FlashCard.service.GroupQuestionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -54,6 +58,19 @@ public class GroupQuestionController {
             return new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "Lấy group thất bại vì " + e.getMessage());
         }
 
+    }
+
+    @PutMapping("question/{questionId}")
+    public ApiResponse<?> updateQuestionForGroup(@PathVariable Integer questionId,
+                                         @RequestBody ToeicQuestionForGroupRequestDTO request) {
+        try {
+            ToeicQuestion updated = service.updateQuestion(questionId, request);
+            ToeicQuestionResponse response = service.convertQuestionToResponse(updated);
+            return new ApiResponse<>(HttpStatus.OK.value(), "Cập nhật câu hỏi thành công", response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "Cập nhật thất bại: " + e.getMessage());
+        }
     }
 }
 

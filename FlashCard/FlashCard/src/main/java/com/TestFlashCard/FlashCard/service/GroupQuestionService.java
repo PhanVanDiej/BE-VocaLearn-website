@@ -5,12 +5,17 @@ import com.TestFlashCard.FlashCard.repository.ExamRepository;
 import com.TestFlashCard.FlashCard.repository.GroupQuestionRepository;
 import com.TestFlashCard.FlashCard.repository.ToeicQuestionRepository;
 import com.TestFlashCard.FlashCard.request.GroupQuestionRequestDTO;
+import com.TestFlashCard.FlashCard.request.ToeicQuestionForGroupRequestDTO;
 import com.TestFlashCard.FlashCard.request.ToeicQuestionRequestDTO;
 import com.TestFlashCard.FlashCard.response.GroupQuestionResponseDTO;
 import com.TestFlashCard.FlashCard.response.ToeicQuestionResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +25,7 @@ public class GroupQuestionService {
     private final GroupQuestionRepository groupRepo;
     private final ToeicQuestionRepository questionRepo;
     private final MinIO_MediaService minIO_MediaService;
+    private final ToeicQuestionRepository toeicQuestionRepository;
 
     @Transactional
     public GroupQuestionResponseDTO createGroup(GroupQuestionRequestDTO req) {
@@ -277,5 +283,49 @@ public class GroupQuestionService {
 
         return dto;
     }
+    public ToeicQuestionResponse convertQuestionToResponse(ToeicQuestion question) {
+
+        // ---- Options ----
+        List<ToeicQuestionResponse.OptionResponse> options =
+                question.getOptions().stream()
+                        .map(opt -> new ToeicQuestionResponse.OptionResponse(
+                                opt.getMark(),
+                                opt.getDetail()
+                        ))
+                        .collect(Collectors.toList());
+
+        // ---- Images (new) ----
+        List<String> imageUrls = question.getImages() != null
+                ? question.getImages().stream()
+                .map(img -> minIO_MediaService.getPresignedURL(
+                        img.getUrl(),
+                        Duration.ofMinutes(1))
+                )
+                .collect(Collectors.toList())
+                : List.of();
+
+        return new ToeicQuestionResponse(
+                question.getId(),
+                question.getIndexNumber(),
+                question.getPart(),
+                question.getDetail(),
+                question.getResult(),
+                imageUrls,                     // NEW FIELD
+                question.getAudio(),
+                question.getConversation(),
+                question.getClarify(),
+                options
+        );
+    }
+
+    @Transactional
+    public ToeicQuestion updateQuestion(Integer questionId, ToeicQuestionForGroupRequestDTO request) {
+        ToeicQuestion question = toeicQuestionRepository.findById(questionId)
+                .orElseThrow(() -> new RuntimeException("Câu hỏi không tồn tại"));
+        GroupQuestion group = groupRepo.findById(request.getGroupId()).orElseThrow(() -> new RuntimeException("Group không tồn tại"));
+        question.setGroup(group);
+        return toeicQuestionRepository.save(question);
+    }
+
 }
 

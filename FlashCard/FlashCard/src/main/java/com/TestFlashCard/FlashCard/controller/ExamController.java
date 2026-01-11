@@ -70,13 +70,17 @@ public class ExamController {
     private final IExam_Repository exam_Repository;
 
     @GetMapping("/filter")
-    public ResponseEntity<?> getExamsByFilter(@RequestParam(required = false) Integer year,
+    public ApiResponse<?> getExamsByFilter(@RequestParam(required = false) Integer year,
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String collection,
             @RequestParam(required = false) String title) {
 
-        List<ExamInformationResponse> exams = examService.getByFilter(year, type, collection, title);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(exams));
+        try{
+            List<ExamInformationResponse> exams = examService.getByFilter(year, type, collection, title);
+            return new ApiResponse<>(HttpStatus.OK.value(), HttpStatus.OK.getReasonPhrase(), exams);
+        }catch(Exception e){
+            return new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "Fail because:" + e.getMessage());
+        }
     }
 
     @GetMapping("/getByCreateAt")

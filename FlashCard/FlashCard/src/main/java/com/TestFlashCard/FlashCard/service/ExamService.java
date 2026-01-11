@@ -89,15 +89,30 @@ public class ExamService {
                 .map(this::convertGroupToResponse)
                 .toList();
 
+//        return new ExamInformationResponse(
+//                exam.getId(),
+//                exam.getDuration(),
+//                getNumOfPart(exam.getId()),
+//                getNumOfQuestion(exam.getId()),
+//                exam.getTitle(),
+//                exam.getYear(),
+//                exam.getType().getType(),
+//                exam.getCollection().getCollection(),
+//                exam.getAttemps(),
+//                countAllCommentsAndReplies(exam.getId()),
+//                exam.getFileImportName(),
+//                singleQuestions,
+//                groupQuestions
+//        );
         return new ExamInformationResponse(
                 exam.getId(),
-                exam.getDuration(),
+                exam.getDuration() !=null ? exam.getDuration(): null,                    // giữ null nếu không có giá trị
                 getNumOfPart(exam.getId()),
                 getNumOfQuestion(exam.getId()),
                 exam.getTitle(),
-                exam.getYear(),
-                exam.getType().getType(),
-                exam.getCollection().getCollection(),
+                exam.getYear() !=null ? exam.getYear() : null,
+                exam.getType() !=null ? exam.getType().getType() : null,
+                exam.getCollection() != null ?exam.getCollection().getCollection() : null,
                 exam.getAttemps(),
                 countAllCommentsAndReplies(exam.getId()),
                 exam.getFileImportName(),
