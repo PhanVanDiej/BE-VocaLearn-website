@@ -16,21 +16,21 @@ public class Exam {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(nullable = false)
+    @Column
     private Integer duration;
 
     @Column(nullable = false, length = 100)
     private String title;
 
-    @Column(nullable = false)
+    @Column
     private Integer year;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "type_id", nullable = false)
+    @JoinColumn(name = "type_id")
     private ExamType type;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "collection_id", nullable = false)
+    @JoinColumn(name = "collection_id")
     private ExamCollection collection;
 
     @Column(name = "attemps")
