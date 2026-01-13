@@ -151,8 +151,10 @@ public class ExamService {
                 group.getContent(),
                 group.getQuestionRange(),
                 group.getExam().getId(),
+                group.getImages().stream().map(img -> img.getUrl()).toList(),
                 images,
                 audios,
+                group.getAudios().stream().map(audio -> audio.getUrl()).toList(),
                 childQuestions
         );
     }
@@ -184,7 +186,9 @@ public class ExamService {
                 question.getPart(),
                 question.getDetail(),
                 question.getResult(),
-                imageUrls,          // <-- LIST mới
+                imageUrls,          // <-- LIST mớ
+                question.getImages().stream().map(img->img.getUrl()).toList(),
+                question.getAudio(),
                 audio,
                 question.getConversation(),
                 question.getClarify(),

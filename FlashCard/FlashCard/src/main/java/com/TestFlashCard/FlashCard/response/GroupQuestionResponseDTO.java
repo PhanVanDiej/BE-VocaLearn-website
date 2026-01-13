@@ -17,6 +17,8 @@ public class GroupQuestionResponseDTO {
     private String questionRange;
     private Integer examId;
     private List<String> images;
+    private List<String> imageKeys;
     private List<String> audios;
+    private List<String> audioKeys;
     private List<ToeicQuestionResponse> questions;
 }

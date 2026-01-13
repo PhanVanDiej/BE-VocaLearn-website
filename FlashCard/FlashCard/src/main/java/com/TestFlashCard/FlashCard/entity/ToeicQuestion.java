@@ -34,7 +34,7 @@ public class ToeicQuestion {
     private List<ToeicQuestionImage> images;
 
     @Column(length = 255)
-    private String audio;
+    private String audio;   
 
     @Column
     private String conversation;

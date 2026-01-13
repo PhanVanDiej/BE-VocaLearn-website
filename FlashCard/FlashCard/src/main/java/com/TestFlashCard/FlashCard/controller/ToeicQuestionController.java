@@ -11,6 +11,9 @@ import lombok.RequiredArgsConstructor;
 import org.apache.coyote.BadRequestException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
 
 
 @RestController
@@ -19,6 +22,12 @@ import org.springframework.web.bind.annotation.*;
 public class ToeicQuestionController {
 
     private final ToeicQuestionService toeicQuestionService;
+
+    @GetMapping("/{id}")
+    public ApiResponse<?> getToeicQuestion(@PathVariable Integer id) {
+        return new ApiResponse<>(HttpStatus.OK.value(),"Get toeic question detail success!", toeicQuestionService.getById(id));
+    }
+    
 
     @PostMapping
     public ApiResponse<?> create(@RequestBody ToeicQuestionRequestDTO request) {

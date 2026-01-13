@@ -13,5 +13,4 @@ public class FileUploadResponse {
         this.key = key;
         this.url = url;
     }
-
 }

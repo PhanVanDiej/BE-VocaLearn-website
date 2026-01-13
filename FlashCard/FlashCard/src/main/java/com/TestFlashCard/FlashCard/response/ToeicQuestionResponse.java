@@ -15,9 +15,11 @@ public class ToeicQuestionResponse {
     private String detail;
     private String result;
 
-    private List<String> images;   // đổi từ String → List<String>
+    private List<String> images;
+    private List<String> imageKeys;
 
     private String audio;
+    private String audioKey;
     private String conversation;
     private String clarify;
 
