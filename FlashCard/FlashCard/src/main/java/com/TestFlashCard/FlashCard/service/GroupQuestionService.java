@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -101,7 +100,11 @@ public class GroupQuestionService {
         }
 
         GroupQuestion saved = groupRepo.save(group);
-        return toResponseDTO(saved);
+        groupRepo.flush(); // optional nhưng nên có
+
+        GroupQuestion fresh = groupRepo.findById(saved.getId())
+                .orElseThrow();
+        return toResponseDTO(fresh);
     }
 
     @Transactional
@@ -110,84 +113,89 @@ public class GroupQuestionService {
         GroupQuestion group = groupRepo.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group không tồn tại"));
 
-        group.setPart(req.getPart());
-        group.setTitle(req.getTitle());
-        group.setQuestionRange(req.getQuestionRange());
-        group.setContent(req.getContent());
-
-        // --- Xóa media cũ ---
-        if (group.getImages() != null) {
-            for (var img : group.getImages())
-                minIO_MediaService.deleteFile(img.getUrl());
-            group.getImages().clear();
+        // Update basic fields
+        if (req.getPart() != null) {
+            group.setPart(req.getPart());
         }
-        if (group.getAudios() != null) {
-            for (var audio : group.getAudios())
-                minIO_MediaService.deleteFile(audio.getUrl());
-            group.getAudios().clear();
+        if (req.getTitle() != null) {
+            group.setTitle(req.getTitle());
         }
-        if (group.getQuestions() != null) {
-            for (var q : group.getQuestions())
-                minIO_MediaService.deleteQuestionMedia(q);
-            group.getQuestions().clear();
+        if (req.getQuestionRange() != null) {
+            group.setQuestionRange(req.getQuestionRange());
+        }
+        if (req.getContent() != null) {
+            group.setContent(req.getContent());
         }
 
-        // --- Add new images ---
+        // --- Update images (chỉ khi request có gửi images) ---
         if (req.getImages() != null) {
-            for (var img : req.getImages()) {
-                GroupQuestionImage i = new GroupQuestionImage();
-                i.setUrl(img.getUrl());
-                i.setGroup(group);
-                group.getImages().add(i);
-            }
-        }
+            // Xóa ảnh cũ không còn trong request
+            if (group.getImages() != null) {
+                List<String> newKeys = req.getImages().stream()
+                        .map(img -> img.getUrl())
+                        .toList();
 
-        // --- Add new audios ---
-        if (req.getAudios() != null) {
-            for (var audio : req.getAudios()) {
-                GroupQuestionAudio a = new GroupQuestionAudio();
-                a.setUrl(audio.getUrl());
-                a.setGroup(group);
-                group.getAudios().add(a);
-            }
-        }
+                // Xóa những ảnh không còn trong danh sách mới
+                List<GroupQuestionImage> toRemove = group.getImages().stream()
+                        .filter(img -> !newKeys.contains(img.getUrl()))
+                        .toList();
 
-        // --- Add new questions ---
-        if (req.getQuestions() != null) {
-            int idx = extractStartIndex(req.getQuestionRange()); // ex: "32-35" -> 32
-            for (ToeicQuestionRequestDTO qReq : req.getQuestions()) {
-                ToeicQuestion q = new ToeicQuestion();
-                q.setIndexNumber(idx++);
-                q.setDetail(qReq.getDetail());
-                q.setResult(qReq.getResult());
-                q.setClarify(qReq.getClarify());
-                q.setAudio(qReq.getAudio());
-                q.setPart(req.getPart());
-                q.setExam(group.getExam());
-                q.setGroup(group);
-
-                // Options
-                q.setOptions(qReq.getOptions().stream().map(o -> {
-                    ToeicQuestionOption opt = new ToeicQuestionOption();
-                    opt.setMark(o.getMark());
-                    opt.setDetail(o.getDetail());
-                    opt.setToeicQuestion(q);
-                    return opt;
-                }).toList());
-
-                // Images
-                if (qReq.getImages() != null) {
-                    q.setImages(qReq.getImages().stream().map(img -> {
-                        ToeicQuestionImage qi = new ToeicQuestionImage();
-                        qi.setUrl(img.getUrl());
-                        qi.setToeicQuestion(q);
-                        return qi;
-                    }).toList());
+                for (var img : toRemove) {
+                    minIO_MediaService.deleteFile(img.getUrl());
+                    group.getImages().remove(img);
                 }
+            }
 
-                group.getQuestions().add(q);
+            // Thêm ảnh mới (những key chưa có)
+            List<String> existingKeys = group.getImages().stream()
+                    .map(img -> img.getUrl())
+                    .toList();
+
+            for (var img : req.getImages()) {
+                if (!existingKeys.contains(img.getUrl())) {
+                    GroupQuestionImage i = new GroupQuestionImage();
+                    i.setUrl(img.getUrl());
+                    i.setGroup(group);
+                    group.getImages().add(i);
+                }
             }
         }
+
+        // --- Update audios (chỉ khi request có gửi audios) ---
+        if (req.getAudios() != null) {
+            // Xóa audio cũ không còn trong request
+            if (group.getAudios() != null) {
+                List<String> newKeys = req.getAudios().stream()
+                        .map(audio -> audio.getUrl())
+                        .toList();
+
+                List<GroupQuestionAudio> toRemove = group.getAudios().stream()
+                        .filter(audio -> !newKeys.contains(audio.getUrl()))
+                        .toList();
+
+                for (var audio : toRemove) {
+                    minIO_MediaService.deleteFile(audio.getUrl());
+                    group.getAudios().remove(audio);
+                }
+            }
+
+            // Thêm audio mới
+            List<String> existingKeys = group.getAudios().stream()
+                    .map(audio -> audio.getUrl())
+                    .toList();
+
+            for (var audio : req.getAudios()) {
+                if (!existingKeys.contains(audio.getUrl())) {
+                    GroupQuestionAudio a = new GroupQuestionAudio();
+                    a.setUrl(audio.getUrl());
+                    a.setGroup(group);
+                    group.getAudios().add(a);
+                }
+            }
+        }
+
+        // --- KHÔNG xóa questions ở đây ---
+        // Questions được quản lý riêng qua ToeicQuestionController
 
         return toResponseDTO(groupRepo.save(group));
     }
@@ -275,19 +283,31 @@ public class GroupQuestionService {
         dto.setQuestionRange(group.getQuestionRange());
         dto.setExamId(group.getExam().getId());
 
-        // ✅ Images - Convert keys to presigned URLs
+        // ✅ Images - Presigned URLs để hiển thị
         dto.setImages(
                 group.getImages().stream()
                         .map(img -> minIO_MediaService.getPresignedURL(img.getUrl(), Duration.ofDays(1)))
                         .toList());
 
-        // ✅ Audios - Convert keys to presigned URLs
+        // ✅ Image Keys - để frontend gửi lại khi update
+        dto.setImageKeys(
+                group.getImages().stream()
+                        .map(img -> img.getUrl())
+                        .toList());
+
+        // ✅ Audios - Presigned URLs để hiển thị
         dto.setAudios(
                 group.getAudios().stream()
                         .map(audio -> minIO_MediaService.getPresignedURL(audio.getUrl(), Duration.ofDays(1)))
                         .toList());
 
-        // ✅ Questions - Convert với presigned URLs
+        // ✅ Audio Keys - để frontend gửi lại khi update
+        dto.setAudioKeys(
+                group.getAudios().stream()
+                        .map(audio -> audio.getUrl())
+                        .toList());
+
+        // ✅ Questions - Convert với presigned URLs và keys
         dto.setQuestions(
                 group.getQuestions().stream()
                         .map(q -> new ToeicQuestionResponse(
@@ -296,15 +316,21 @@ public class GroupQuestionService {
                                 q.getPart(),
                                 q.getDetail(),
                                 q.getResult(),
-                                // ✅ Images của question - convert to URLs
+                                // Images URLs
                                 q.getImages().stream()
                                         .map(img -> minIO_MediaService.getPresignedURL(img.getUrl(),
                                                 Duration.ofDays(1)))
                                         .toList(),
-                                // ✅ Audio của question - convert to URL (hoặc null)
+                                // Image Keys
+                                q.getImages().stream()
+                                        .map(img -> img.getUrl())
+                                        .toList(),
+                                // Audio URL
                                 q.getAudio() != null && !q.getAudio().isEmpty()
                                         ? minIO_MediaService.getPresignedURL(q.getAudio(), Duration.ofDays(1))
                                         : null,
+                                // Audio Key
+                                q.getAudio(),
                                 q.getConversation(),
                                 q.getClarify(),
                                 q.getOptions().stream()
@@ -318,21 +344,31 @@ public class GroupQuestionService {
 
     public ToeicQuestionResponse convertQuestionToResponse(ToeicQuestion question) {
 
-        // ---- Options ----
+        // Options
         List<ToeicQuestionResponse.OptionResponse> options = question.getOptions().stream()
                 .map(opt -> new ToeicQuestionResponse.OptionResponse(
                         opt.getMark(),
                         opt.getDetail()))
                 .collect(Collectors.toList());
 
-        // ---- Images (new) ----
+        // Images URLs
         List<String> imageUrls = question.getImages() != null
                 ? question.getImages().stream()
-                        .map(img -> minIO_MediaService.getPresignedURL(
-                                img.getUrl(),
-                                Duration.ofMinutes(1)))
+                        .map(img -> minIO_MediaService.getPresignedURL(img.getUrl(), Duration.ofMinutes(1)))
                         .collect(Collectors.toList())
                 : List.of();
+
+        // Image Keys
+        List<String> imageKeys = question.getImages() != null
+                ? question.getImages().stream()
+                        .map(img -> img.getUrl())
+                        .collect(Collectors.toList())
+                : List.of();
+
+        // Audio URL
+        String audioUrl = question.getAudio() != null && !question.getAudio().isEmpty()
+                ? minIO_MediaService.getPresignedURL(question.getAudio(), Duration.ofMinutes(1))
+                : null;
 
         return new ToeicQuestionResponse(
                 question.getId(),
@@ -340,8 +376,10 @@ public class GroupQuestionService {
                 question.getPart(),
                 question.getDetail(),
                 question.getResult(),
-                imageUrls, // NEW FIELD
-                question.getAudio(),
+                imageUrls,
+                imageKeys,
+                audioUrl,
+                question.getAudio(), // audioKey
                 question.getConversation(),
                 question.getClarify(),
                 options);

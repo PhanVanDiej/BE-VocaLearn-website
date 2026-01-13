@@ -83,7 +83,9 @@ public class ToeicQuestionService {
                 question.getDetail(),
                 question.getResult(),
                 imageUrls, // NEW FIELD
+                question.getImages().stream().map(img->img.getUrl()).toList(),
                 audioUrlString,
+                question.getAudio(),
                 question.getConversation(),
                 question.getClarify(),
                 options);
