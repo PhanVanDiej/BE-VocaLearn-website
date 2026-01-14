@@ -179,10 +179,25 @@ public class ToeicQuestionService {
         question.setDetail(request.getDetail());
         question.setResult(request.getResult());
         question.setClarify(request.getClarify());
-        if (request.getAudio() != null) {
+        // ===== AUDIO UPDATE LOGIC CHUẨN =====
+
+        // Case 1: user gửi audio = null → xoá audio
+        if (request.getAudio() == null && question.getAudio() != null) {
             minIO_MediaService.deleteFile(question.getAudio());
+            question.setAudio(null);
+        }
+
+        // Case 2: user upload audio mới
+        else if (request.getAudio() != null && !request.getAudio().equals(question.getAudio())) {
+            if (question.getAudio() != null) {
+                minIO_MediaService.deleteFile(question.getAudio());
+            }
             question.setAudio(request.getAudio());
         }
+
+        // Case 3: request.getAudio() == null && question.getAudio() == null
+        // → không làm gì cả (giữ nguyên)
+
         question.setConversation(request.getConversation());
 
         // ---- Options ----

@@ -122,22 +122,60 @@ public class ExamService {
                 groupQuestions
         );
     }
+//    public GroupQuestionResponseDTO convertGroupToResponse(GroupQuestion group) {
+//        // Images
+//        List<String> images = group.getImages() != null
+//                ? group.getImages().stream()
+//                .map(i -> minIO_MediaService.getPresignedURL(i.getUrl(), Duration.ofDays(1)))
+//                .toList()
+//                : List.of();
+//
+//        // Audios
+//        List<String> audios = group.getAudios() != null
+//                ? group.getAudios().stream()
+//                .map(a -> minIO_MediaService.getPresignedURL(a.getUrl(), Duration.ofDays(1)))
+//                .toList()
+//                : List.of();
+//
+//        // Child questions
+//        List<ToeicQuestionResponse> childQuestions = group.getQuestions() != null
+//                ? group.getQuestions().stream()
+//                .map(this::convertQuestionToResponse)
+//                .toList()
+//                : List.of();
+//
+//        return new GroupQuestionResponseDTO(
+//                group.getId(),
+//                group.getPart(),
+//                group.getTitle(),
+//                group.getContent(),
+//                group.getQuestionRange(),
+//                group.getExam().getId(),
+//                group.getImages().stream().map(img -> img.getUrl()).toList(),
+//                images,
+//                audios,
+//                group.getAudios().stream().map(audio -> audio.getUrl()).toList(),
+//                childQuestions
+//        );
+//    }
+
+
     public GroupQuestionResponseDTO convertGroupToResponse(GroupQuestion group) {
-        // Images
-        List<String> images = group.getImages() != null
-                ? group.getImages().stream()
-                .map(i -> minIO_MediaService.getPresignedURL(i.getUrl(), Duration.ofDays(1)))
-                .toList()
-                : List.of();
+        List<String> imageKeys = group.getImages().stream()
+                .map(img -> img.getUrl())
+                .toList();
 
-        // Audios
-        List<String> audios = group.getAudios() != null
-                ? group.getAudios().stream()
+        List<String> imageUrls = group.getImages().stream()
+                .map(img -> minIO_MediaService.getPresignedURL(img.getUrl(), Duration.ofDays(1)))
+                .toList();
+
+        List<String> audioKeys = group.getAudios().stream()
+                .map(a -> a.getUrl())
+                .toList();
+
+        List<String> audioUrls = group.getAudios().stream()
                 .map(a -> minIO_MediaService.getPresignedURL(a.getUrl(), Duration.ofDays(1)))
-                .toList()
-                : List.of();
-
-        // Child questions
+                .toList();
         List<ToeicQuestionResponse> childQuestions = group.getQuestions() != null
                 ? group.getQuestions().stream()
                 .map(this::convertQuestionToResponse)
@@ -151,12 +189,16 @@ public class ExamService {
                 group.getContent(),
                 group.getQuestionRange(),
                 group.getExam().getId(),
-                group.getImages().stream().map(img -> img.getUrl()).toList(),
-                images,
-                audios,
-                group.getAudios().stream().map(audio -> audio.getUrl()).toList(),
+
+                imageUrls,   // ✅ URLs
+                imageKeys,   // ✅ KEYS
+
+                audioUrls,   // ✅ URLs
+                audioKeys,   // ✅ KEYS
+
                 childQuestions
         );
+
     }
 
     public ToeicQuestionResponse convertQuestionToResponse(ToeicQuestion question) {
@@ -188,8 +230,8 @@ public class ExamService {
                 question.getResult(),
                 imageUrls,          // <-- LIST mớ
                 question.getImages().stream().map(img->img.getUrl()).toList(),
-                question.getAudio(),
                 audio,
+                question.getAudio(),
                 question.getConversation(),
                 question.getClarify(),
                 options
