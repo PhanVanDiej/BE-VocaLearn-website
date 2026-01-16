@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 import com.TestFlashCard.FlashCard.entity.ToeicQuestionImage;
@@ -100,8 +101,7 @@ public class ExcelParser {
                         options.add(option);
                     }
                 }
-
-                question.setOptions(options);
+                question.setOptions(new HashSet<>(options));
                 questions.add(question);
             }
 

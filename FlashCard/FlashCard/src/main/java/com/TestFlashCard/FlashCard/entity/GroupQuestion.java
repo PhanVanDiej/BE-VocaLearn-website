@@ -1,13 +1,18 @@
 package com.TestFlashCard.FlashCard.entity;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "group_question")
-@Data
+@Getter
+@Setter
+@ToString(exclude = {"questions", "images", "audios", "exam"})
+@EqualsAndHashCode(exclude = {"questions", "images", "audios", "exam"})
 public class GroupQuestion {
 
     @Id
@@ -34,9 +39,9 @@ public class GroupQuestion {
     private List<ToeicQuestion> questions = new ArrayList<>();
 
     @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<GroupQuestionImage> images = new ArrayList<>();
+    private Set<GroupQuestionImage> images = new HashSet<>();
 
     @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<GroupQuestionAudio> audios = new ArrayList<>();
+    private Set<GroupQuestionAudio> audios = new HashSet<>();
 }
 

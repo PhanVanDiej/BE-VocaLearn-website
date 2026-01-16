@@ -1,15 +1,20 @@
 package com.TestFlashCard.FlashCard.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "toeicQuestion")
-@Data
+@Getter
+@Setter
+@ToString(exclude = {"group", "exam", "options", "images", "questionReviews"})
+@EqualsAndHashCode(exclude = {"group", "exam", "options", "images", "questionReviews"})
 public class ToeicQuestion {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -52,7 +57,7 @@ public class ToeicQuestion {
     private GroupQuestion group;
 
     @OneToMany(mappedBy = "toeicQuestion", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ToeicQuestionOption> options;
+    private Set<ToeicQuestionOption> options = new HashSet<>();
 
     @OneToMany(mappedBy = "toeicQuestion", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<QuestionReview> questionReviews;

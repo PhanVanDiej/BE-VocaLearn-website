@@ -12,6 +12,7 @@ import com.TestFlashCard.FlashCard.response.ToeicQuestionResponse;
 import lombok.RequiredArgsConstructor;
 
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -75,14 +76,14 @@ public class GroupQuestionService {
                 q.setGroup(group);
 
                 // Options
-                q.setOptions(
+                q.setOptions(new HashSet<>(
                         qReq.getOptions().stream().map(o -> {
                             ToeicQuestionOption opt = new ToeicQuestionOption();
                             opt.setDetail(o.getDetail());
                             opt.setMark(o.getMark());
                             opt.setToeicQuestion(q);
                             return opt;
-                        }).toList());
+                        }).toList()));
 
                 // Images
                 if (qReq.getImages() != null) {

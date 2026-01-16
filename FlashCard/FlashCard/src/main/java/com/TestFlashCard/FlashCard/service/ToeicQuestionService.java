@@ -2,6 +2,7 @@ package com.TestFlashCard.FlashCard.service;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -136,7 +137,7 @@ public class ToeicQuestionService {
                     option.setToeicQuestion(question);
                     return option;
                 }).toList();
-        question.setOptions(optionList);
+        question.setOptions(new HashSet<>(optionList));
 
         // ---------- Images ----------
         if (request.getImages() != null) {

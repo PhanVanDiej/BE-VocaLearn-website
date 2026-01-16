@@ -2,9 +2,12 @@ package com.TestFlashCard.FlashCard.exception;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.TestFlashCard.FlashCard.mapper.BankMapper;
+import com.TestFlashCard.FlashCard.response.BankToeicQuestionResponse;
 import org.apache.coyote.BadRequestException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +33,11 @@ import jakarta.servlet.http.HttpServletRequest;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private final BankMapper bankMapper;
+
+    public GlobalExceptionHandler(BankMapper bankMapper) {
+        this.bankMapper = bankMapper;
+    }
 
     // Helper để build ResponseEntity<ApiResponse<?>>
     private <T> ResponseEntity<ApiResponse<T>> build(HttpStatus status, String message, T data) {
@@ -165,4 +173,19 @@ public class GlobalExceptionHandler {
         data.put("detail", exception.getMessage());
         return build(HttpStatus.UNAUTHORIZED, exception.getErrorCode(), data);
     }
+    @ExceptionHandler(DuplicateQuestionInBankException.class)
+    public ResponseEntity<ApiResponse<?>> handleDuplicateBankQuestion(
+            DuplicateQuestionInBankException ex
+    ) {
+
+
+        return ResponseEntity.badRequest().body(
+                new ApiResponse<>(
+                        400,
+                        "Some questions already exist in question bank",
+                        ex.getDuplicatedResponses()
+                )
+        );
+    }
+
 }

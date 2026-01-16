@@ -1,0 +1,265 @@
+package com.TestFlashCard.FlashCard.mapper;
+
+import com.TestFlashCard.FlashCard.entity.*;
+import com.TestFlashCard.FlashCard.response.BankGroupChildQuestionResponse;
+import com.TestFlashCard.FlashCard.response.BankGroupQuestionResponse;
+import com.TestFlashCard.FlashCard.response.BankToeicOptionResponse;
+import com.TestFlashCard.FlashCard.response.BankToeicQuestionResponse;
+import com.TestFlashCard.FlashCard.service.MediaService;
+import com.TestFlashCard.FlashCard.service.MinIO_MediaService;
+import org.springframework.stereotype.Component;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+@Component
+public class BankMapper {
+
+    private final MinIO_MediaService minIO_MediaService;
+    private final MediaService mediaService;
+
+    public BankMapper(MinIO_MediaService minIO_MediaService, MediaService mediaService) {
+        this.minIO_MediaService = minIO_MediaService;
+        this.mediaService = mediaService;
+    }
+
+    public BankToeicQuestion mapToeicToBank(ToeicQuestion q) {
+
+        BankToeicQuestion b = new BankToeicQuestion();
+        b.setPart(q.getPart());
+        b.setDetail(q.getDetail());
+        b.setResult(q.getResult());
+        b.setClarify(q.getClarify());
+        b.setAudio(q.getAudio()); // KEY
+        b.setIsPublic(true);
+        b.setSourceToeicId(q.getId());
+
+        // OPTIONS
+        List<BankToeicOption> options = q.getOptions().stream().map(o -> {
+            BankToeicOption x = new BankToeicOption();
+            x.setMark(o.getMark());
+            x.setDetail(o.getDetail());
+            x.setQuestion(b);
+            return x;
+        }).toList();
+
+        // IMAGES (url = key)
+        List<BankImage> images = q.getImages().stream().map(i -> {
+            BankImage x = new BankImage();
+            x.setUrl(i.getUrl());
+            x.setQuestion(b);
+            return x;
+        }).toList();
+
+        b.setOptions(options);
+        b.setImages(images);
+
+        return b;
+    }
+
+    public BankToeicQuestionResponse mapToResponse(BankToeicQuestion q) {
+
+        // ===== OPTIONS =====
+        List<BankToeicQuestionResponse.OptionResponse> options =
+                q.getOptions().stream()
+                        .map(o -> new BankToeicQuestionResponse.OptionResponse(
+                                o.getMark(),
+                                o.getDetail()
+                        ))
+                        .toList();
+
+        // ===== IMAGES =====
+        List<String> imageKeys = q.getImages().stream()
+                .map(BankImage::getUrl)
+                .toList();
+
+        List<String> imageUrls = imageKeys.stream()
+                .map(k -> minIO_MediaService.getPresignedURL(k, Duration.ofDays(1)))
+                .toList();
+
+        // ===== AUDIO =====
+        String audioKey = q.getAudio();
+        String audioUrl = audioKey != null
+                ? minIO_MediaService.getPresignedURL(audioKey, Duration.ofDays(1))
+                : null;
+
+        return new BankToeicQuestionResponse(
+                q.getId(),
+                q.getPart(),
+                q.getDetail(),
+                q.getResult(),
+                q.getClarify(),
+                imageUrls,
+                imageKeys,
+                audioUrl,
+                audioKey,
+                options
+        );
+    }
+
+
+//    public BankGroupQuestion mapGroupToBank(GroupQuestion g, User contributor) {
+//
+//        BankGroupQuestion bg = new BankGroupQuestion();
+//        bg.setPart(g.getPart());
+//        bg.setContent(g.getContent());
+//        bg.setContributor(contributor);
+//        bg.setSourceGroupId(g.getId());
+//
+//        // ===== images =====
+//        Set<BankGroupImage> imgs = g.getImages().stream()
+//                .map(i -> {
+//                    BankGroupImage x = new BankGroupImage();
+//                    x.setImageKey(i.getUrl()); // nhớ dùng KEY, không phải URL
+//                    x.setGroup(bg);
+//                    return x;
+//                })
+//                .collect(Collectors.toSet());
+//        bg.setImages(imgs);
+//
+//        // ===== audios =====
+//        Set<BankGroupAudio> auds = g.getAudios().stream()
+//                .map(a -> {
+//                    BankGroupAudio x = new BankGroupAudio();
+//                    x.setAudioKey(a.getUrl()); // KEY
+//                    x.setGroup(bg);
+//                    return x;
+//                })
+//                .collect(Collectors.toSet());
+//        bg.setAudios(auds);
+//
+//        // ===== child questions =====
+//        List<BankGroupChildQuestion> children = g.getQuestions().stream().map(q -> {
+//
+//            BankGroupChildQuestion c = new BankGroupChildQuestion();
+//            c.setIndexNumber(q.getIndexNumber());
+//            c.setDetail(q.getDetail());
+//            c.setResult(q.getResult());
+//            c.setClarify(q.getClarify());
+//            c.setGroup(bg);
+//
+//            List<BankToeicOption> ops = q.getOptions().stream().map(o -> {
+//                BankToeicOption bo = new BankToeicOption();
+//                bo.setMark(o.getMark());
+//                bo.setDetail(o.getDetail());
+//                bo.setChildQuestion(c);
+//                return bo;
+//            }).toList();
+//
+//            c.setOptions(ops);
+//            return c;
+//
+//        }).toList();
+//
+//        bg.setQuestions(children);
+//
+//        return bg;
+//    }
+public BankGroupQuestion mapGroupToBank(
+        GroupQuestion g,
+        User contributor,
+        List<ToeicQuestion> questions
+) {
+
+    BankGroupQuestion bg = new BankGroupQuestion();
+    bg.setPart(g.getPart());
+    bg.setContent(g.getContent());
+    bg.setContributor(contributor);
+    bg.setSourceGroupId(g.getId());
+
+    // ===== images =====
+    Set<BankGroupImage> imgs = g.getImages().stream()
+            .map(i -> {
+                BankGroupImage x = new BankGroupImage();
+                x.setImageKey(i.getUrl());
+                x.setGroup(bg);
+                return x;
+            })
+            .collect(Collectors.toSet());
+    bg.setImages(imgs);
+
+    // ===== audios =====
+    Set<BankGroupAudio> auds = g.getAudios().stream()
+            .map(a -> {
+                BankGroupAudio x = new BankGroupAudio();
+                x.setAudioKey(a.getUrl());
+                x.setGroup(bg);
+                return x;
+            })
+            .collect(Collectors.toSet());
+    bg.setAudios(auds);
+
+    // ===== child questions =====
+    List<BankGroupChildQuestion> children = questions.stream().map(q -> {
+
+        BankGroupChildQuestion c = new BankGroupChildQuestion();
+        c.setIndexNumber(q.getIndexNumber());
+        c.setDetail(q.getDetail());
+        c.setResult(q.getResult());
+        c.setClarify(q.getClarify());
+        c.setGroup(bg);
+
+        List<BankToeicOption> ops = q.getOptions().stream().map(o -> {
+            BankToeicOption bo = new BankToeicOption();
+            bo.setMark(o.getMark());
+            bo.setDetail(o.getDetail());
+            bo.setChildQuestion(c);
+            return bo;
+        }).toList();
+
+        c.setOptions(ops);
+        return c;
+
+    }).toList();
+
+    bg.setQuestions(children);
+
+    return bg;
+}
+
+
+    // ===== BANK GROUP → RESPONSE =====
+    public BankGroupQuestionResponse mapGroupToResponse(BankGroupQuestion bg) {
+
+        BankGroupQuestionResponse dto = new BankGroupQuestionResponse();
+        dto.setId(bg.getId());
+        dto.setPart(bg.getPart());
+        dto.setContent(bg.getContent());
+        dto.setSourceGroupId(bg.getSourceGroupId());
+
+        dto.setImages(
+                bg.getImages().stream()
+                        .map(i -> minIO_MediaService.getPresignedURL(i.getImageKey(), Duration.ofDays(1)))
+                        .toList()
+        );
+
+        dto.setAudios(
+                bg.getAudios().stream()
+                        .map(a -> minIO_MediaService.getPresignedURL(a.getAudioKey(), Duration.ofDays(1)))
+                        .toList()
+        );
+
+        dto.setQuestions(
+                bg.getQuestions().stream().map(q -> {
+                    BankGroupChildQuestionResponse c = new BankGroupChildQuestionResponse();
+                    c.setId(q.getId());
+                    c.setIndexNumber(q.getIndexNumber());
+                    c.setDetail(q.getDetail());
+                    c.setResult(q.getResult());
+                    c.setClarify(q.getClarify());
+
+                    c.setOptions(
+                            q.getOptions().stream()
+                                    .map(o -> new BankToeicOptionResponse(o.getMark(), o.getDetail()))
+                                    .toList()
+                    );
+                    return c;
+                }).toList()
+        );
+
+        return dto;
+    }
+
+}

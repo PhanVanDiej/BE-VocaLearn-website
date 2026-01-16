@@ -16,4 +16,11 @@ public interface ToeicQuestionRepository extends JpaRepository<ToeicQuestion, In
 
     @Query("SELECT MAX(t.indexNumber) FROM ToeicQuestion t WHERE t.exam.id = :examId AND t.part = :part")
     Integer findMaxIndexByExamAndPart(Integer examId, String part);
+
+    @Query("""
+select distinct q from ToeicQuestion q
+left join fetch q.options
+where q.group.id in :ids
+""")
+    List<ToeicQuestion> findQuestionsWithOptionsByGroupIds(List<Integer> ids);
 }
