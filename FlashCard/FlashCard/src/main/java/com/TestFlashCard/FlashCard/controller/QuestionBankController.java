@@ -4,9 +4,8 @@ import com.TestFlashCard.FlashCard.exception.DuplicateGroupInBankException;
 import com.TestFlashCard.FlashCard.exception.DuplicateQuestionInBankException;
 import com.TestFlashCard.FlashCard.mapper.BankMapper;
 import com.TestFlashCard.FlashCard.request.ListIdContributeRequest;
-import com.TestFlashCard.FlashCard.response.ApiResponse;
-import com.TestFlashCard.FlashCard.response.BankGroupQuestionResponse;
-import com.TestFlashCard.FlashCard.response.BankToeicQuestionResponse;
+import com.TestFlashCard.FlashCard.request.UseFromBankRequest;
+import com.TestFlashCard.FlashCard.response.*;
 import com.TestFlashCard.FlashCard.service.QuestionBankService;
 import com.TestFlashCard.FlashCard.service.QuestionBankServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -67,13 +66,26 @@ public class QuestionBankController {
     // ==========================
     // DÙNG TỪ BANK VÀO EXAM
     // ==========================
-//    @PostMapping("/use/toeic/{bankId}/exam/{examId}")
-//    public ApiResponse<?> useToeicFromBank(
-//            @PathVariable Long bankId,
-//            @PathVariable Integer examId
-//    ) {
-//        questionBankService.useToeicFromBank(bankId, examId);
-//        return new ApiResponse<>(200,"Added question to exam successfully");
-//    }
+    @PostMapping("/single")
+    public ApiResponse<List<BankUseSingleQuestionResponse>> useSingle(
+            @RequestBody UseFromBankRequest req
+    ) {
+        return ApiResponse.success(
+                questionBankService.useSingleQuestions(
+                        req.getIds().stream().map(Long::intValue).toList()
+                )
+        );
+    }
+
+
+    // ===== GROUP =====
+    @PostMapping("/group")
+    public ApiResponse<List<BankUseGroupQuestionResponse>> useGroup(
+            @RequestBody UseFromBankRequest req
+    ) {
+        return ApiResponse.success(
+                questionBankService.useGroupQuestions(req.getIds())
+        );
+    }
 }
 

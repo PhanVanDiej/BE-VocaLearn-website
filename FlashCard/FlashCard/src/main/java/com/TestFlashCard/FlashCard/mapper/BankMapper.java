@@ -1,10 +1,7 @@
 package com.TestFlashCard.FlashCard.mapper;
 
 import com.TestFlashCard.FlashCard.entity.*;
-import com.TestFlashCard.FlashCard.response.BankGroupChildQuestionResponse;
-import com.TestFlashCard.FlashCard.response.BankGroupQuestionResponse;
-import com.TestFlashCard.FlashCard.response.BankToeicOptionResponse;
-import com.TestFlashCard.FlashCard.response.BankToeicQuestionResponse;
+import com.TestFlashCard.FlashCard.response.*;
 import com.TestFlashCard.FlashCard.service.MediaService;
 import com.TestFlashCard.FlashCard.service.MinIO_MediaService;
 import org.springframework.stereotype.Component;
@@ -262,4 +259,76 @@ public BankGroupQuestion mapGroupToBank(
         return dto;
     }
 
+    // ===== SINGLE =====
+    public BankUseSingleQuestionResponse toSingleResponse(BankToeicQuestion q) {
+
+        BankUseSingleQuestionResponse res = new BankUseSingleQuestionResponse();
+
+        res.setId(q.getId());
+        res.setPart(q.getPart());
+        res.setDetail(q.getDetail());
+        res.setResult(q.getResult());
+        res.setClarify(q.getClarify());
+
+        res.setImages(
+                q.getImages().stream()
+                        .map(i -> new MediaFileResponse(minIO_MediaService.getPresignedURL(i.getUrl(), Duration.ofDays(1)),i.getUrl()))
+                        .toList()
+        );
+
+        if (q.getAudio() != null) {
+            res.setAudio(new MediaFileResponse(
+                    minIO_MediaService.getPresignedURL(q.getAudio(), Duration.ofDays(1)),q.getAudio()
+            ));
+        }
+
+        res.setOptions(
+                q.getOptions().stream()
+                        .map(o -> new BankToeicOptionResponse(o.getMark(), o.getDetail()))
+                        .toList()
+        );
+
+        return res;
+    }
+
+    public BankUseGroupQuestionResponse toGroupResponse(
+            BankGroupQuestion g,
+            List<BankGroupChildQuestion> children
+    ) {
+
+        BankUseGroupQuestionResponse res = new BankUseGroupQuestionResponse();
+
+        res.setId(g.getId());
+        res.setPart(g.getPart());
+        res.setContent(g.getContent());
+
+        res.setImages(
+                g.getImages().stream()
+                        .map(i -> new MediaFileResponse(minIO_MediaService.getPresignedURL(i.getImageKey(), Duration.ofDays(1)),i.getImageKey()))
+                        .toList()
+        );
+
+        res.setAudios(
+                g.getAudios().stream()
+                        .map(a -> new MediaFileResponse(minIO_MediaService.getPresignedURL(a.getAudioKey(), Duration.ofDays(1)),a.getAudioKey()))
+                        .toList()
+        );
+
+        res.setQuestions(
+                children.stream()
+                        .map(c -> new BankUseGroupQuestionResponse.ChildQuestion(
+                                c.getId(),
+                                c.getIndexNumber(),
+                                c.getDetail(),
+                                c.getResult(),
+                                c.getClarify(),
+                                c.getOptions().stream()
+                                        .map(o -> new BankToeicOptionResponse(o.getMark(), o.getDetail()))
+                                        .toList()
+                        ))
+                        .toList()
+        );
+
+        return res;
+    }
 }

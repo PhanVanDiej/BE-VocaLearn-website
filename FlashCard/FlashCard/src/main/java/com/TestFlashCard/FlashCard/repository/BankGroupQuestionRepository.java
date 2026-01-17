@@ -1,12 +1,15 @@
 package com.TestFlashCard.FlashCard.repository;
 
 
+import com.TestFlashCard.FlashCard.entity.BankGroupChildQuestion;
 import com.TestFlashCard.FlashCard.entity.BankGroupQuestion;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+@Repository
 public interface BankGroupQuestionRepository
         extends JpaRepository<BankGroupQuestion, Long> {
     @Query("""
@@ -15,22 +18,36 @@ public interface BankGroupQuestionRepository
     """)
     List<Integer> findExistingSourceIds( List<Integer> ids);
 
-//    @Query("""
-//    SELECT DISTINCT b FROM BankGroupQuestion b
-//    LEFT JOIN FETCH b.questions q
-//    LEFT JOIN FETCH q.options
-//    LEFT JOIN FETCH b.images
-//    LEFT JOIN FETCH b.audios
-//    WHERE b.sourceGroupId IN :ids
-//    """)
-//    List<BankGroupQuestion> findBySourceGroupIds( List<Integer> ids);
-// load group + media để trả về khi bị trùng
-@Query("""
-        select distinct b from BankGroupQuestion b
-        left join fetch b.images
-        left join fetch b.audios
-        where b.sourceGroupId in :ids
+    @Query("""
+            select distinct b from BankGroupQuestion b
+            left join fetch b.images
+            left join fetch b.audios
+            where b.sourceGroupId in :ids
+        """)
+    List<BankGroupQuestion> findBySourceGroupIds(List<Integer> ids);
+
+    // group + media
+    @Query("""
+        select distinct g from BankGroupQuestion g
+        left join fetch g.images
+        left join fetch g.audios
+        where g.isPublic = true
+          and (:part is null or g.part = :part)
     """)
-List<BankGroupQuestion> findBySourceGroupIds(List<Integer> ids);
+    List<BankGroupQuestion> findGroupsForUse( String part);
+
+    @Query("""
+    select distinct g from BankGroupQuestion g
+    left join fetch g.images
+    left join fetch g.audios
+    where g.id in :ids
+""")
+    List<BankGroupQuestion> findGroupsWithMedia(List<Long> ids);
+    @Query("""
+    select distinct c from BankGroupChildQuestion c
+    left join fetch c.options
+    where c.group.id in :ids
+""")
+    List<BankGroupChildQuestion> findChildrenWithOptions(List<Long> ids);
 
 }

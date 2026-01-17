@@ -7,6 +7,8 @@ import com.TestFlashCard.FlashCard.mapper.BankMapper;
 import com.TestFlashCard.FlashCard.repository.*;
 import com.TestFlashCard.FlashCard.response.BankGroupQuestionResponse;
 import com.TestFlashCard.FlashCard.response.BankToeicQuestionResponse;
+import com.TestFlashCard.FlashCard.response.BankUseGroupQuestionResponse;
+import com.TestFlashCard.FlashCard.response.BankUseSingleQuestionResponse;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -31,6 +33,8 @@ public class QuestionBankServiceImpl implements QuestionBankService {
     private final BankGroupQuestionRepository bankGroupQuestionRepository;
     private final GroupQuestionRepository groupQuestionRepository;
     private final ToeicQuestionRepository toeicQuestionRepository;
+    private final BankToeicOptionRepoitory bankToeicOptionRepoitory;
+
 
     @Override
     @Transactional
@@ -84,20 +88,6 @@ public class QuestionBankServiceImpl implements QuestionBankService {
     public List<BankGroupQuestionResponse> contributeManyGroupQuestions(List<Integer> ids) {
 
         // ===== check trùng trong bank =====
-//        List<Integer> existedIds = bankGroupQuestionRepository.findExistingSourceIds(ids);
-//
-//        if (!existedIds.isEmpty()) {
-//
-//            List<BankGroupQuestion> existed =
-//                    bankGroupQuestionRepository.findBySourceGroupIds(existedIds);
-//
-//            List<BankGroupQuestionResponse> res = existed.stream()
-//                    .map(bankMapper::mapGroupToResponse)
-//                    .toList();
-//
-//            throw new DuplicateGroupInBankException(res);
-//        }
-
         List<Integer> existedIds = bankGroupQuestionRepository.findExistingSourceIds(ids);
 
         if (!existedIds.isEmpty()) {
@@ -154,44 +144,68 @@ public class QuestionBankServiceImpl implements QuestionBankService {
     // BANK → EXAM (SỬ DỤNG)
     // ==========================
 
-//    @Transactional
-//    public void useToeicFromBank(Long bankId, Integer examId) {
-//
-//        BankToeicQuestion b = bankToeicRepo.findById(bankId)
-//                .orElseThrow(() -> new RuntimeException("Bank question not found"));
-//
-//        Exam exam = examRepo.findById(examId)
-//                .orElseThrow(() -> new RuntimeException("Exam not found"));
-//
-//        ToeicQuestion q = new ToeicQuestion();
-//        q.setPart(b.getPart());
-//        q.setDetail(b.getDetail());
-//        q.setResult(b.getResult());
-//        q.setClarify(b.getClarify());
-//        q.setAudio(b.getAudio()); // copy key
-//        q.setExam(exam);
-//
-//        // ===== OPTIONS =====
-//        List<ToeicQuestionOption> options = b.getOptions().stream().map(o -> {
-//            ToeicQuestionOption x = new ToeicQuestionOption();
-//            x.setMark(o.getMark());
-//            x.setDetail(o.getDetail());
-//            x.setToeicQuestion(q);
-//            return x;
-//        }).toList();
-//
-//        // ===== IMAGES =====
-//        List<ToeicQuestionImage> images = b.getImages().stream().map(i -> {
-//            ToeicQuestionImage x = new ToeicQuestionImage();
-//            x.setUrl(i.getUrl());
-//            x.setToeicQuestion(q);
-//            return x;
-//        }).toList();
-//
-//        q.setOptions(options);
-//        q.setImages(images);
-//
-//        toeicRepo.save(q);
-//    }
+    // ===== SINGLE =====
+    @Override
+    public List<BankUseSingleQuestionResponse> useSingleQuestions(List<Integer> ids) {
 
+        // 1. load question + images
+        List<BankToeicQuestion> questions =
+                bankToeicRepo.findWithImages(ids);
+
+        if (questions.size() != ids.size()) {
+            throw new RuntimeException("Some bank questions not found");
+        }
+
+        // 2. load options
+        List<BankToeicOption> options =
+                bankToeicOptionRepoitory.findOptionsByQuestionIds(ids);
+
+        // 3. group options by questionId
+        Map<Integer, List<BankToeicOption>> optionMap =
+                options.stream().collect(Collectors.groupingBy(
+                        o -> o.getQuestion().getId()
+                ));
+
+        // 4. gán options vào question
+        for (BankToeicQuestion q : questions) {
+            q.setOptions(optionMap.getOrDefault(q.getId(), List.of()));
+        }
+
+        // 5. map DTO
+        return questions.stream()
+                .map(bankMapper::toSingleResponse)
+                .toList();
+    }
+
+
+    // ===== GROUP =====
+    @Override
+    public List<BankUseGroupQuestionResponse> useGroupQuestions(List<Long> ids) {
+
+        // 1. load group + media
+        List<BankGroupQuestion> groups =
+                bankGroupQuestionRepository.findGroupsWithMedia(ids);
+
+        if (groups.size() != ids.size()) {
+            throw new RuntimeException("Some bank group questions not found");
+        }
+
+        // 2. load child + options
+        List<BankGroupChildQuestion> children =
+                bankGroupQuestionRepository.findChildrenWithOptions(ids);
+
+        // 3. group by groupId
+        Map<Long, List<BankGroupChildQuestion>> childMap =
+                children.stream().collect(Collectors.groupingBy(
+                        c -> c.getGroup().getId()
+                ));
+
+        // 4. map dto
+        return groups.stream()
+                .map(g -> bankMapper.toGroupResponse(
+                        g,
+                        childMap.getOrDefault(g.getId(), List.of())
+                ))
+                .toList();
+    }
 }
