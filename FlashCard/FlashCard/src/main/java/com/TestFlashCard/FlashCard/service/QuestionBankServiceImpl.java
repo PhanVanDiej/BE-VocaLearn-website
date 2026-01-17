@@ -78,11 +78,12 @@ public class QuestionBankServiceImpl implements QuestionBankService {
         return user;
     }
 
-//    @Override
-//    @Transactional
-//    public List<BankGroupQuestionResponse> contributeManyGroupQuestions(List<Integer> ids) {
-//
-//        // ===== check trùng =====
+
+    @Override
+    @Transactional
+    public List<BankGroupQuestionResponse> contributeManyGroupQuestions(List<Integer> ids) {
+
+        // ===== check trùng trong bank =====
 //        List<Integer> existedIds = bankGroupQuestionRepository.findExistingSourceIds(ids);
 //
 //        if (!existedIds.isEmpty()) {
@@ -96,33 +97,7 @@ public class QuestionBankServiceImpl implements QuestionBankService {
 //
 //            throw new DuplicateGroupInBankException(res);
 //        }
-//
-//        // ===== load full group =====
-//        List<GroupQuestion> groups = groupQuestionRepository.findFullByIds(ids);
-//
-//        if (groups.size() != ids.size()) {
-//            throw new RuntimeException("Some group questions not found");
-//        }
-//
-//        User contributor = getCurrentUser();
-//
-//        // ===== map to bank =====
-//        List<BankGroupQuestion> banks = groups.stream()
-//                .map(g -> bankMapper.mapGroupToBank(g, contributor))
-//                .toList();
-//
-//        List<BankGroupQuestion> saved = bankGroupQuestionRepository.saveAll(banks);
-//
-//        return saved.stream()
-//                .map(bankMapper::mapGroupToResponse)
-//                .toList();
-//    }
 
-    @Override
-    @Transactional
-    public List<BankGroupQuestionResponse> contributeManyGroupQuestions(List<Integer> ids) {
-
-        // ===== check trùng trong bank =====
         List<Integer> existedIds = bankGroupQuestionRepository.findExistingSourceIds(ids);
 
         if (!existedIds.isEmpty()) {

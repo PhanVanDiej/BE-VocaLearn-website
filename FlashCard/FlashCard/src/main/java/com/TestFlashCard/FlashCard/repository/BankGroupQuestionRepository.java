@@ -15,14 +15,22 @@ public interface BankGroupQuestionRepository
     """)
     List<Integer> findExistingSourceIds( List<Integer> ids);
 
-    @Query("""
-    SELECT DISTINCT b FROM BankGroupQuestion b
-    LEFT JOIN FETCH b.questions q
-    LEFT JOIN FETCH q.options
-    LEFT JOIN FETCH b.images
-    LEFT JOIN FETCH b.audios
-    WHERE b.sourceGroupId IN :ids
+//    @Query("""
+//    SELECT DISTINCT b FROM BankGroupQuestion b
+//    LEFT JOIN FETCH b.questions q
+//    LEFT JOIN FETCH q.options
+//    LEFT JOIN FETCH b.images
+//    LEFT JOIN FETCH b.audios
+//    WHERE b.sourceGroupId IN :ids
+//    """)
+//    List<BankGroupQuestion> findBySourceGroupIds( List<Integer> ids);
+// load group + media để trả về khi bị trùng
+@Query("""
+        select distinct b from BankGroupQuestion b
+        left join fetch b.images
+        left join fetch b.audios
+        where b.sourceGroupId in :ids
     """)
-    List<BankGroupQuestion> findBySourceGroupIds( List<Integer> ids);
+List<BankGroupQuestion> findBySourceGroupIds(List<Integer> ids);
 
 }
