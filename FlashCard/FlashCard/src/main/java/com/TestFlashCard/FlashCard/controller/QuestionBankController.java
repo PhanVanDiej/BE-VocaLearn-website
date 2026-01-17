@@ -87,5 +87,19 @@ public class QuestionBankController {
                 questionBankService.useGroupQuestions(req.getIds())
         );
     }
+//    Get Detail
+    @GetMapping("/single/{id}")
+    public ApiResponse<BankToeicQuestionResponse> singleDetail(@PathVariable Integer id) {
+        return ApiResponse.success(
+                questionBankService.getSingleDetail(id)
+        );
+    }
+
+    @GetMapping("/group/{id}")
+    public ApiResponse<BankGroupQuestionResponse> groupDetail(@PathVariable Long id) {
+        return ApiResponse.success(
+                questionBankService.getGroupDetail(id)
+        );
+    }
 }
 

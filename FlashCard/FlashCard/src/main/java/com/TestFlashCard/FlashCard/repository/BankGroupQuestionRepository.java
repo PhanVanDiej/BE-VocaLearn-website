@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface BankGroupQuestionRepository
@@ -50,4 +51,13 @@ public interface BankGroupQuestionRepository
 """)
     List<BankGroupChildQuestion> findChildrenWithOptions(List<Long> ids);
 
+
+
+        @Query("""
+    select g from BankGroupQuestion g
+    left join fetch g.images
+    left join fetch g.audios
+    where g.id = :id
+    """)
+    Optional<BankGroupQuestion> findGroupWithMedia(Long id);
 }

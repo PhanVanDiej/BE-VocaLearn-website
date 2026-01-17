@@ -34,6 +34,8 @@ public class QuestionBankServiceImpl implements QuestionBankService {
     private final GroupQuestionRepository groupQuestionRepository;
     private final ToeicQuestionRepository toeicQuestionRepository;
     private final BankToeicOptionRepoitory bankToeicOptionRepoitory;
+    private final BankGroupChildQuestionRepository bankGroupChildQuestionRepository;
+
 
 
     @Override
@@ -207,5 +209,31 @@ public class QuestionBankServiceImpl implements QuestionBankService {
                         childMap.getOrDefault(g.getId(), List.of())
                 ))
                 .toList();
+    }
+    @Override
+    public BankToeicQuestionResponse getSingleDetail(Integer id) {
+
+        BankToeicQuestion q =
+                bankToeicRepo.findWithImagesById(id)
+                        .orElseThrow(() -> new RuntimeException("Question not found"));
+
+        List<BankToeicOption> options =
+                bankToeicOptionRepoitory.findByQuestionId(id);
+
+        q.setOptions(options);
+
+        return bankMapper.mapSingleToResponse(q);
+    }
+    @Override
+    public BankGroupQuestionResponse getGroupDetail(Long id) {
+
+        BankGroupQuestion g =
+                bankGroupQuestionRepository.findGroupWithMedia(id)
+                        .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        List<BankGroupChildQuestion> children =
+                bankGroupChildQuestionRepository.findChildrenWithOptionsByGroupId(id);
+
+        return bankMapper.mapGroupToResponse(g, children);
     }
 }

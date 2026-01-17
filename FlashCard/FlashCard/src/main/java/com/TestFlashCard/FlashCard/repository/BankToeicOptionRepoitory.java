@@ -18,4 +18,16 @@ public interface BankToeicOptionRepoitory
     """)
         List<BankToeicOption> findOptionsByQuestionIds(List<Integer> ids);
 
+        @Query("""
+select o from BankToeicOption o
+where o.question.id in :ids
+""")
+        List<BankToeicOption> findByQuestionIds(List<Integer> ids);
+
+
+        @Query("""
+select o from BankToeicOption o
+where o.question.id = :id
+""")
+        List<BankToeicOption> findByQuestionId(Integer id);
 }

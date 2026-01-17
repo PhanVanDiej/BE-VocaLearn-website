@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface BankToeicQuestionRepoitory
@@ -31,5 +32,20 @@ left join fetch q.images
 where q.id in :ids
 """)
     List<BankToeicQuestion> findWithImages(List<Integer> ids);
+
+    @Query("""
+select distinct q from BankToeicQuestion q
+left join fetch q.images
+where q.id in :ids
+""")
+    List<BankToeicQuestion> findWithImagesByIds(List<Integer> ids);
+
+
+    @Query("""
+select q from BankToeicQuestion q
+left join fetch q.images
+where q.id = :id
+""")
+    Optional<BankToeicQuestion> findWithImagesById(Integer id);
 
 }

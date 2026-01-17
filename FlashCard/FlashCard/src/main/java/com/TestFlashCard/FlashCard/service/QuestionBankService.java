@@ -13,4 +13,8 @@ public interface QuestionBankService {
 //    List<Integer> contributeManyGroupQuestions(List<Integer> ids);
     List<BankUseSingleQuestionResponse> useSingleQuestions(List<Integer> ids);
     List<BankUseGroupQuestionResponse> useGroupQuestions(List<Long> ids);
+
+    BankToeicQuestionResponse getSingleDetail(Integer id);
+
+    BankGroupQuestionResponse getGroupDetail(Long id);
 }
