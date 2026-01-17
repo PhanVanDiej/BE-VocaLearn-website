@@ -48,7 +48,7 @@ public class PaymentService {
     }
 
     public PaymentTransaction createTempTransaction(Long amount, String description,
-                                                    String startDate, String endDate) {
+                                                    String startDate, String endDate) throws Exception {
         // Chuyển startDate và endDate từ String sang LocalDateTime
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
         LocalDateTime start = LocalDate.parse(startDate, formatter).atStartOfDay();

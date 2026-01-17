@@ -82,7 +82,6 @@ public class PaymentController {
             List<PaymentTransaction> payments = paymentService.findAllByUserIdAndTransactionStatus(userId);
             boolean hasValidPayment = payments.stream()
                     .anyMatch(tx -> tx.getEndDate() != null && tx.getEndDate().isAfter(LocalDateTime.now()));
-
             return new ApiResponse<>(HttpStatus.OK.value(), "Thành công",
                     Map.of("hasValidPayment", hasValidPayment));
 

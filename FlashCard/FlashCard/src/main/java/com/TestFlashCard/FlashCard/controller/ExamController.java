@@ -80,10 +80,10 @@ public class ExamController {
             @RequestParam(required = false) String collection,
             @RequestParam(required = false) String title) {
 
-        try{
+        try {
             List<ExamInformationResponse> exams = examService.getByFilter(year, type, collection, title);
             return new ApiResponse<>(HttpStatus.OK.value(), HttpStatus.OK.getReasonPhrase(), exams);
-        }catch(Exception e){
+        } catch (Exception e) {
             return new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "Fail because:" + e.getMessage());
         }
     }
@@ -281,31 +281,45 @@ public class ExamController {
     }
 
     // @PostMapping("/{examId}/part/{part}")
-    // public ApiResponse<?> uploadToeicPart(@PathVariable Integer examId, @PathVariable Integer part,
-    //         @RequestParam("dataJson") String dataJson, @RequestParam("files") List<MultipartFile> files) {
+    // public ApiResponse<?> uploadToeicPart(@PathVariable Integer examId,
+    // @PathVariable Integer part,
+    // @RequestParam("dataJson") String dataJson, @RequestParam("files")
+    // List<MultipartFile> files) {
 
-    //     return entity;
+    // return entity;
     // }
-    
-    @PostMapping("/create/draft")
-    public ResponseEntity<?> createDraftExam() throws IOException {
 
+    @PostMapping("/create/draft")
+    public ResponseEntity<?> createDraftExam() throws Exception {
+        User user = userService.getCurrentUser();
         ExamCreateRequestVer2 exam = new ExamCreateRequestVer2();
         exam.setTitle("New Toeic Exam - " + random6DigitNumber.randomDigit());
         exam.setDuration(120);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(examService.create(exam)));
+
+        return ResponseEntity.ok(
+                ApiResponse.success(examService.createCustomDraft(exam, user)));
     }
 
     @DeleteMapping("/custom/{examId}")
-    public ApiResponse<?> deleteCustomToeicExam (@PathVariable Integer examId){
+    public ApiResponse<?> deleteCustomToeicExam(@PathVariable Integer examId) {
         examService.deleteById(examId);
         return new ApiResponse<>(HttpStatus.OK.value(), "Xoa bai thi thanh cong");
     }
+
     @PutMapping("/custom/{examId}")
-    public ApiResponse<?> updateCustomExam(@PathVariable Integer examId, @RequestBody ToeicCustomExamUpdateRequest request) {
-        
+    public ApiResponse<?> updateCustomExam(@PathVariable Integer examId,
+            @RequestBody ToeicCustomExamUpdateRequest request) {
+
         ToeicCustomUpdateResponse response = examService.updateToeicCustomExam(request, examId);
-        
+
         return new ApiResponse<>(HttpStatus.OK.value(), "Cap nhat thong tin thanh cong.", response);
+    }
+
+    @GetMapping("/get-custom")
+    public ApiResponse<?> getCustomExam() throws Exception {
+        User user = userService.getCurrentUser();
+        List<ExamInformationResponse> responses = examService.getAllCustomExam(user.getId());
+        return new ApiResponse<List<ExamInformationResponse>>(HttpStatus.OK.value(),
+                "Lay danh sach de thi toeic thanh cong", responses);
     }
 }

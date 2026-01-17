@@ -18,6 +18,7 @@ import org.zeroturnaround.zip.ZipUtil;
 
 import com.TestFlashCard.FlashCard.JpaSpec.ExamSpecification;
 import com.TestFlashCard.FlashCard.exception.ResourceNotFoundException;
+import com.TestFlashCard.FlashCard.repository.CustomExamRepository;
 import com.TestFlashCard.FlashCard.repository.ICommentReply_Repository;
 import com.TestFlashCard.FlashCard.repository.IComment_Repository;
 import com.TestFlashCard.FlashCard.repository.IExam_Repository;
@@ -50,6 +51,8 @@ public class ExamService {
     private final ExamTypeService examTypeService;
     @Autowired
     private final ExamCollectionService examCollectionService;
+    @Autowired
+    private CustomExamRepository customExamRepository;
 
     public List<ExamInformationResponse> getByFilter(Integer year, String type, String collection, String title) {
         Specification<Exam> spec = Specification.where(ExamSpecification.hasYear(year))
@@ -91,74 +94,73 @@ public class ExamService {
                 .map(this::convertGroupToResponse)
                 .toList();
 
-//        return new ExamInformationResponse(
-//                exam.getId(),
-//                exam.getDuration(),
-//                getNumOfPart(exam.getId()),
-//                getNumOfQuestion(exam.getId()),
-//                exam.getTitle(),
-//                exam.getYear(),
-//                exam.getType().getType(),
-//                exam.getCollection().getCollection(),
-//                exam.getAttemps(),
-//                countAllCommentsAndReplies(exam.getId()),
-//                exam.getFileImportName(),
-//                singleQuestions,
-//                groupQuestions
-//        );
+        // return new ExamInformationResponse(
+        // exam.getId(),
+        // exam.getDuration(),
+        // getNumOfPart(exam.getId()),
+        // getNumOfQuestion(exam.getId()),
+        // exam.getTitle(),
+        // exam.getYear(),
+        // exam.getType().getType(),
+        // exam.getCollection().getCollection(),
+        // exam.getAttemps(),
+        // countAllCommentsAndReplies(exam.getId()),
+        // exam.getFileImportName(),
+        // singleQuestions,
+        // groupQuestions
+        // );
         return new ExamInformationResponse(
                 exam.getId(),
-                exam.getDuration() !=null ? exam.getDuration(): null,                    // giữ null nếu không có giá trị
+                exam.getDuration() != null ? exam.getDuration() : null, // giữ null nếu không có giá trị
                 getNumOfPart(exam.getId()),
                 getNumOfQuestion(exam.getId()),
                 exam.getTitle(),
-                exam.getYear() !=null ? exam.getYear() : null,
-                exam.getType() !=null ? exam.getType().getType() : null,
-                exam.getCollection() != null ?exam.getCollection().getCollection() : null,
+                exam.getYear() != null ? exam.getYear() : null,
+                exam.getType() != null ? exam.getType().getType() : null,
+                exam.getCollection() != null ? exam.getCollection().getCollection() : null,
+                exam.isRandom(),
                 exam.getAttemps(),
                 countAllCommentsAndReplies(exam.getId()),
                 exam.getFileImportName(),
                 singleQuestions,
-                groupQuestions
-        );
+                groupQuestions);
     }
-//    public GroupQuestionResponseDTO convertGroupToResponse(GroupQuestion group) {
-//        // Images
-//        List<String> images = group.getImages() != null
-//                ? group.getImages().stream()
-//                .map(i -> minIO_MediaService.getPresignedURL(i.getUrl(), Duration.ofDays(1)))
-//                .toList()
-//                : List.of();
-//
-//        // Audios
-//        List<String> audios = group.getAudios() != null
-//                ? group.getAudios().stream()
-//                .map(a -> minIO_MediaService.getPresignedURL(a.getUrl(), Duration.ofDays(1)))
-//                .toList()
-//                : List.of();
-//
-//        // Child questions
-//        List<ToeicQuestionResponse> childQuestions = group.getQuestions() != null
-//                ? group.getQuestions().stream()
-//                .map(this::convertQuestionToResponse)
-//                .toList()
-//                : List.of();
-//
-//        return new GroupQuestionResponseDTO(
-//                group.getId(),
-//                group.getPart(),
-//                group.getTitle(),
-//                group.getContent(),
-//                group.getQuestionRange(),
-//                group.getExam().getId(),
-//                group.getImages().stream().map(img -> img.getUrl()).toList(),
-//                images,
-//                audios,
-//                group.getAudios().stream().map(audio -> audio.getUrl()).toList(),
-//                childQuestions
-//        );
-//    }
-
+    // public GroupQuestionResponseDTO convertGroupToResponse(GroupQuestion group) {
+    // // Images
+    // List<String> images = group.getImages() != null
+    // ? group.getImages().stream()
+    // .map(i -> minIO_MediaService.getPresignedURL(i.getUrl(), Duration.ofDays(1)))
+    // .toList()
+    // : List.of();
+    //
+    // // Audios
+    // List<String> audios = group.getAudios() != null
+    // ? group.getAudios().stream()
+    // .map(a -> minIO_MediaService.getPresignedURL(a.getUrl(), Duration.ofDays(1)))
+    // .toList()
+    // : List.of();
+    //
+    // // Child questions
+    // List<ToeicQuestionResponse> childQuestions = group.getQuestions() != null
+    // ? group.getQuestions().stream()
+    // .map(this::convertQuestionToResponse)
+    // .toList()
+    // : List.of();
+    //
+    // return new GroupQuestionResponseDTO(
+    // group.getId(),
+    // group.getPart(),
+    // group.getTitle(),
+    // group.getContent(),
+    // group.getQuestionRange(),
+    // group.getExam().getId(),
+    // group.getImages().stream().map(img -> img.getUrl()).toList(),
+    // images,
+    // audios,
+    // group.getAudios().stream().map(audio -> audio.getUrl()).toList(),
+    // childQuestions
+    // );
+    // }
 
     public GroupQuestionResponseDTO convertGroupToResponse(GroupQuestion group) {
         List<String> imageKeys = group.getImages().stream()
@@ -178,8 +180,8 @@ public class ExamService {
                 .toList();
         List<ToeicQuestionResponse> childQuestions = group.getQuestions() != null
                 ? group.getQuestions().stream()
-                .map(this::convertQuestionToResponse)
-                .toList()
+                        .map(this::convertQuestionToResponse)
+                        .toList()
                 : List.of();
 
         return new GroupQuestionResponseDTO(
@@ -190,30 +192,28 @@ public class ExamService {
                 group.getQuestionRange(),
                 group.getExam().getId(),
 
-                imageUrls,   // ✅ URLs
-                imageKeys,   // ✅ KEYS
+                imageUrls, // ✅ URLs
+                imageKeys, // ✅ KEYS
 
-                audioUrls,   // ✅ URLs
-                audioKeys,   // ✅ KEYS
+                audioUrls, // ✅ URLs
+                audioKeys, // ✅ KEYS
 
-                childQuestions
-        );
+                childQuestions);
 
     }
 
     public ToeicQuestionResponse convertQuestionToResponse(ToeicQuestion question) {
 
         // Options
-        List<ToeicQuestionResponse.OptionResponse> options =
-                question.getOptions().stream()
-                        .map(opt -> new ToeicQuestionResponse.OptionResponse(opt.getMark(), opt.getDetail()))
-                        .collect(Collectors.toList());
+        List<ToeicQuestionResponse.OptionResponse> options = question.getOptions().stream()
+                .map(opt -> new ToeicQuestionResponse.OptionResponse(opt.getMark(), opt.getDetail()))
+                .collect(Collectors.toList());
 
         // Images (new)
         List<String> imageUrls = question.getImages() != null
                 ? question.getImages().stream()
-                .map(i -> minIO_MediaService.getPresignedURL(i.getUrl(), Duration.ofMinutes(1)))
-                .collect(Collectors.toList())
+                        .map(i -> minIO_MediaService.getPresignedURL(i.getUrl(), Duration.ofMinutes(1)))
+                        .collect(Collectors.toList())
                 : List.of();
 
         // Audio (unchanged)
@@ -228,14 +228,13 @@ public class ExamService {
                 question.getPart(),
                 question.getDetail(),
                 question.getResult(),
-                imageUrls,          // <-- LIST mớ
-                question.getImages().stream().map(img->img.getUrl()).toList(),
+                imageUrls, // <-- LIST mớ
+                question.getImages().stream().map(img -> img.getUrl()).toList(),
                 audio,
                 question.getAudio(),
                 question.getConversation(),
                 question.getClarify(),
-                options
-        );
+                options);
     }
 
     @Transactional
@@ -305,8 +304,8 @@ public class ExamService {
     public void deleteById(int examID) {
         Exam exam = exam_Repository.findById(examID)
                 .orElseThrow(() -> new ResourceNotFoundException("Cannot find Exam with id: " + examID));
-        
-        //Xóa media các ToeicQuestion trực tiếp
+
+        // Xóa media các ToeicQuestion trực tiếp
         for (ToeicQuestion question : exam.getQuestions()) {
             minIO_MediaService.deleteQuestionMedia(question);
         }
@@ -335,7 +334,7 @@ public class ExamService {
             }
         }
 
-        //Xóa Exam → cascade sẽ xóa tất cả entity
+        // Xóa Exam → cascade sẽ xóa tất cả entity
         exam_Repository.delete(exam);
     }
 
@@ -390,16 +389,15 @@ public class ExamService {
     }
 
     @Transactional
-    public ToeicCustomUpdateResponse updateToeicCustomExam (ToeicCustomExamUpdateRequest request, int examId){
-        Exam exam = exam_Repository.findById(examId).orElseThrow(()->
-            new ResourceNotFoundException("Cannot find the Toeic Custom Exam with id : " + examId)
-        );
+    public ToeicCustomUpdateResponse updateToeicCustomExam(ToeicCustomExamUpdateRequest request, int examId) {
+        Exam exam = exam_Repository.findById(examId).orElseThrow(
+                () -> new ResourceNotFoundException("Cannot find the Toeic Custom Exam with id : " + examId));
 
-        if(request.getTitle()!=null)
+        if (request.getTitle() != null)
             exam.setTitle(request.getTitle());
-        if(request.getDuration()!=null)
+        if (request.getDuration() != null)
             exam.setDuration(request.getDuration());
-        if(request.getAttemps()!= null)
+        if (request.getAttemps() != null)
             exam.setAttemps(request.getAttemps());
         exam_Repository.save(exam);
         ToeicCustomUpdateResponse response = new ToeicCustomUpdateResponse();
@@ -409,7 +407,64 @@ public class ExamService {
 
         return response;
     }
-    
+
+    public List<ExamInformationResponse> getAllCustomExam(int userId) {
+        return customExamRepository.findByUserId(userId)
+                .stream()
+                .map(CustomExam::getCustomExam)
+                .map(this::convertToExamDetailResponse)
+                .toList();
+    }
+
+    @Transactional
+    public ExamFilterdResponse createCustomDraft(ExamCreateRequestVer2 request, User user) throws IOException {
+
+        // 1. Tạo exam như bình thường
+        Exam exam = new Exam();
+        exam.setTitle(request.getTitle());
+        exam.setDuration(request.getDuration());
+        exam.setAttemps(0);
+        exam.setRandom(false);
+        exam_Repository.save(exam);
+
+        // 2. Gắn exam với user qua bảng custom_exam
+        CustomExam customExam = new CustomExam();
+        customExam.setUser(user);
+        customExam.setCustomExam(exam); // giữ đúng field hiện tại của bạn
+        customExamRepository.save(customExam);
+
+        return convertToResponse(exam);
+    }
+
+    @Transactional
+    public void deleteCustomExam(int examId, User user) {
+
+        CustomExam customExam = customExamRepository
+                .findByUserIdAndCustomExamId(user.getId(), examId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Custom exam not found or not belong to user"));
+
+        // Xóa liên kết custom
+        customExamRepository.delete(customExam);
+
+        // Xóa exam (nếu custom exam là exam riêng)
+        exam_Repository.delete(customExam.getCustomExam());
+    }
+
+    @Transactional
+    public ToeicCustomUpdateResponse updateCustomExam(
+            ToeicCustomExamUpdateRequest request,
+            int examId,
+            User user) {
+
+        // Check quyền sở hữu
+        CustomExam customExam = customExamRepository
+                .findByUserIdAndCustomExamId(user.getId(), examId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Custom exam not found or not belong to user"));
+
+        // Dùng lại logic cũ
+        return updateToeicCustomExam(request, examId);
+    }
+
 }
-
-

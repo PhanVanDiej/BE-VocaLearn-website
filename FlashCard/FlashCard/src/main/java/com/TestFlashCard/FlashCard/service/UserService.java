@@ -20,6 +20,7 @@ import com.TestFlashCard.FlashCard.exception.ResourceNotFoundException;
 import com.TestFlashCard.FlashCard.repository.IUser_Repository;
 import com.TestFlashCard.FlashCard.response.UserResponse;
 
+import jakarta.security.auth.message.AuthException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -107,7 +108,7 @@ public class UserService {
         response.setRole(user.getRole());
         return response;
     }
-    public User getCurrentUser() {
+    public User getCurrentUser() throws Exception {
         try {
             Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
@@ -120,8 +121,7 @@ public class UserService {
 
             return userRepository.findByAccountName(username);
         } catch (Exception e) {
-            log.error("Lỗi khi lấy user hiện tại từ SecurityContextHolder", e);
-            return null;
+            throw new Exception("Lỗi khi lấy user hiện tại từ SecurityContextHolder: " + e);
         }
     }
 }

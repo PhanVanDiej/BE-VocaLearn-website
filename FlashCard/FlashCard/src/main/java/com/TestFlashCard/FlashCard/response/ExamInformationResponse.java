@@ -11,6 +11,7 @@ public record ExamInformationResponse(
     Integer year,
     String type,
     String collection,
+    boolean isRandom,
     Integer attemps,
     Integer numberOfComment,
     String fileImportName,
