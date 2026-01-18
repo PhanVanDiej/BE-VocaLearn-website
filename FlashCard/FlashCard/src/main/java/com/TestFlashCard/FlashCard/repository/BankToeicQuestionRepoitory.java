@@ -27,10 +27,10 @@ public interface BankToeicQuestionRepoitory
     """)
     List<BankToeicQuestion> findFullByIds(List<Integer> ids);
     @Query("""
-select distinct q from BankToeicQuestion q
-left join fetch q.images
-where q.id in :ids
-""")
+    select distinct q from BankToeicQuestion q
+    left join fetch q.images
+    where q.id in :ids
+    """)
     List<BankToeicQuestion> findWithImages(List<Integer> ids);
 
     @Query("""

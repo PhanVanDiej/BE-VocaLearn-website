@@ -7,8 +7,8 @@ import java.util.List;
 public interface QuestionBankService {
     List<BankToeicQuestionResponse> contributeManyToeicQuestions(List<Integer> ids);
     List<BankGroupQuestionResponse> contributeManyGroupQuestions(List<Integer> ids);
-    List<BankUseSingleQuestionResponse> useSingleQuestions(List<Integer> ids);
-    List<BankUseGroupQuestionResponse> useGroupQuestions(List<Long> ids);
+    List<BankUseSingleQuestionResponse> useSingleQuestions(List<Integer> ids, int examId);
+    List<BankUseGroupQuestionResponse> useGroupQuestions(List<Long> ids,int examId);
 
     BankToeicQuestionResponse getSingleDetail(Integer id);
 

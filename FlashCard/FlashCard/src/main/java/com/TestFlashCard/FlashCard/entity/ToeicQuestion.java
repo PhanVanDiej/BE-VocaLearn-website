@@ -44,6 +44,9 @@ public class ToeicQuestion {
     @Column
     private String conversation;
 
+    @Column(name = "bank_question_id")
+    private Integer bankQuestionId;
+
     @CreationTimestamp
     @Column(name = "createAt", updatable = false)
     private LocalDateTime createAt;

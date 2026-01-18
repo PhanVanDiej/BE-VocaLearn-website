@@ -73,7 +73,7 @@ public class QuestionBankController {
     ) {
         return ApiResponse.success(
                 questionBankService.useSingleQuestions(
-                        req.getIds().stream().map(Long::intValue).toList()
+                        req.getIds().stream().map(Long::intValue).toList(), req.getExamId()
                 )
         );
     }
@@ -85,7 +85,7 @@ public class QuestionBankController {
             @RequestBody UseFromBankRequest req
     ) {
         return ApiResponse.success(
-                questionBankService.useGroupQuestions(req.getIds())
+                questionBankService.useGroupQuestions(req.getIds(), req.getExamId())
         );
     }
 //    Get Detail

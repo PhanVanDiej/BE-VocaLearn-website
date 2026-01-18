@@ -18,8 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,6 +37,9 @@ public class QuestionBankServiceImpl implements QuestionBankService {
     private final BankToeicOptionRepoitory bankToeicOptionRepoitory;
     private final BankGroupChildQuestionRepository bankGroupChildQuestionRepository;
     private final GenericSearchRepository genericSearchRepository;
+    private final ExamRepository examRepository;
+    private final ToeicQuestionOptionRepository toeicQuestionOptionRepository;
+    private final ToeicQuestionImageRepository toeicQuestionImageRepository;
 
 
     @Override
@@ -150,33 +152,110 @@ public class QuestionBankServiceImpl implements QuestionBankService {
 
     // ===== SINGLE =====
     @Override
-    public List<BankUseSingleQuestionResponse> useSingleQuestions(List<Integer> ids) {
+    @Transactional
+    public List<BankUseSingleQuestionResponse> useSingleQuestions(List<Integer> ids, int examId) {
 
-        // 1. load question + images
-        List<BankToeicQuestion> questions =
+        // 0. check exam tồn tại
+        Exam exam = examRepository.findById(examId)
+                .orElseThrow(() -> new ResourceNotFoundException("Exam not found"));
+
+        // 1. load bank questions
+        List<BankToeicQuestion> bankQuestions =
                 bankToeicRepo.findWithImages(ids);
 
-        if (questions.size() != ids.size()) {
-            throw new RuntimeException("Some bank questions not found");
+        // 2. check câu nào đã được dùng trong exam
+        List<Integer> bankIds = bankQuestions.stream()
+                .map(BankToeicQuestion::getId)
+                .toList();
+
+        List<Integer> usedIds =
+                toeicQuestionRepository.findUsedBankQuestionIds(examId, bankIds);
+
+        Set<Integer> usedSet = new HashSet<>(usedIds);
+
+        // 3. filter chỉ giữ câu CHƯA dùng
+        List<BankToeicQuestion> newQuestions = bankQuestions.stream()
+                .filter(bq -> !usedSet.contains(bq.getId()))
+                .toList();
+
+        if (newQuestions.isEmpty()) {
+            throw new RuntimeException("All selected questions already exist in this exam");
         }
 
-        // 2. load options
-        List<BankToeicOption> options =
-                bankToeicOptionRepoitory.findOptionsByQuestionIds(ids);
+        // 4. load options CHỈ cho câu mới
+        List<Integer> newIds = newQuestions.stream()
+                .map(BankToeicQuestion::getId)
+                .toList();
 
-        // 3. group options by questionId
+        List<BankToeicOption> bankOptions =
+                bankToeicOptionRepoitory.findOptionsByQuestionIds(newIds);
+
         Map<Integer, List<BankToeicOption>> optionMap =
-                options.stream().collect(Collectors.groupingBy(
+                bankOptions.stream().collect(Collectors.groupingBy(
                         o -> o.getQuestion().getId()
                 ));
 
-        // 4. gán options vào question
-        for (BankToeicQuestion q : questions) {
-            q.setOptions(optionMap.getOrDefault(q.getId(), List.of()));
+        boolean isRandom = exam.isRandom();
+
+        // ===== 5. chuẩn bị count để tính indexNumber =====
+
+        int totalCount = 0;
+        Map<String, Integer> partCountMap = new HashMap<>();
+
+        if (isRandom) {
+            // random: index tăng liên tục toàn đề
+            totalCount = toeicQuestionRepository.countByExam_Id(examId);
+        } else {
+            // custom: mỗi part có index riêng
+            for (BankToeicQuestion bq : newQuestions) {
+                partCountMap.putIfAbsent(
+                        bq.getPart(),
+                        toeicQuestionRepository.countByExam_IdAndPart(examId, bq.getPart())
+                );
+            }
         }
 
-        // 5. map DTO
-        return questions.stream()
+        // ===== 6. add câu hỏi vào exam =====
+        for (BankToeicQuestion bq : newQuestions) {
+
+            int indexNumber;
+
+            if (isRandom) {
+                indexNumber = ++totalCount;
+            } else {
+                int current = partCountMap.get(bq.getPart());
+                current++;
+                partCountMap.put(bq.getPart(), current);
+                indexNumber = current;
+            }
+
+            // map question
+            ToeicQuestion q = bankMapper.mapToeicQuestionFromBank(bq, exam, indexNumber);
+            toeicQuestionRepository.save(q);
+
+            // map options
+            List<BankToeicOption> ops =
+                    optionMap.getOrDefault(bq.getId(), List.of());
+
+            Set<ToeicQuestionOption> examOps = ops.stream()
+                    .map(o -> bankMapper.mapOptionFromBank(o, q))
+                    .collect(Collectors.toSet());
+
+            toeicQuestionOptionRepository.saveAll(examOps);
+            q.setOptions(examOps);
+
+            // map images
+            if (bq.getImages() != null && !bq.getImages().isEmpty()) {
+                List<ToeicQuestionImage> imgs = bq.getImages().stream()
+                        .map(i -> bankMapper.mapImageFromBank(i, q))
+                        .toList();
+                toeicQuestionImageRepository.saveAll(imgs);
+                q.setImages(imgs);
+            }
+        }
+
+        // 7. trả response (chỉ các câu mới được add)
+        return newQuestions.stream()
                 .map(bankMapper::toSingleResponse)
                 .toList();
     }
@@ -184,7 +263,7 @@ public class QuestionBankServiceImpl implements QuestionBankService {
 
     // ===== GROUP =====
     @Override
-    public List<BankUseGroupQuestionResponse> useGroupQuestions(List<Long> ids) {
+    public List<BankUseGroupQuestionResponse> useGroupQuestions(List<Long> ids, int examId) {
 
         // 1. load group + media
         List<BankGroupQuestion> groups =

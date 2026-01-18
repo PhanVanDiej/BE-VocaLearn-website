@@ -9,4 +9,5 @@ import java.util.List;
 @Setter
 public class UseFromBankRequest {
     private List<Long> ids;
+    private int examId;
 }

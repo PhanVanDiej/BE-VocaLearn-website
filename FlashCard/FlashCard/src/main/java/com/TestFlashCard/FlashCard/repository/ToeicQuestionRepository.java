@@ -23,4 +23,18 @@ left join fetch q.options
 where q.group.id in :ids
 """)
     List<ToeicQuestion> findQuestionsWithOptionsByGroupIds(List<Integer> ids);
+
+    int countByExam_Id(Integer examId);
+
+    int countByExam_IdAndPart(Integer examId, String part);
+
+    @Query("""
+    select q.bankQuestionId from ToeicQuestion q
+    where q.exam.id = :examId and q.bankQuestionId in :bankIds
+    """)
+    List<Integer> findUsedBankQuestionIds(
+            Integer examId,
+            List<Integer> bankIds
+    );
+
 }

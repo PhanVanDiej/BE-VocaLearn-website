@@ -95,65 +95,6 @@ public class BankMapper {
                 options
         );
     }
-
-
-//    public BankGroupQuestion mapGroupToBank(GroupQuestion g, User contributor) {
-//
-//        BankGroupQuestion bg = new BankGroupQuestion();
-//        bg.setPart(g.getPart());
-//        bg.setContent(g.getContent());
-//        bg.setContributor(contributor);
-//        bg.setSourceGroupId(g.getId());
-//
-//        // ===== images =====
-//        Set<BankGroupImage> imgs = g.getImages().stream()
-//                .map(i -> {
-//                    BankGroupImage x = new BankGroupImage();
-//                    x.setImageKey(i.getUrl()); // nhớ dùng KEY, không phải URL
-//                    x.setGroup(bg);
-//                    return x;
-//                })
-//                .collect(Collectors.toSet());
-//        bg.setImages(imgs);
-//
-//        // ===== audios =====
-//        Set<BankGroupAudio> auds = g.getAudios().stream()
-//                .map(a -> {
-//                    BankGroupAudio x = new BankGroupAudio();
-//                    x.setAudioKey(a.getUrl()); // KEY
-//                    x.setGroup(bg);
-//                    return x;
-//                })
-//                .collect(Collectors.toSet());
-//        bg.setAudios(auds);
-//
-//        // ===== child questions =====
-//        List<BankGroupChildQuestion> children = g.getQuestions().stream().map(q -> {
-//
-//            BankGroupChildQuestion c = new BankGroupChildQuestion();
-//            c.setIndexNumber(q.getIndexNumber());
-//            c.setDetail(q.getDetail());
-//            c.setResult(q.getResult());
-//            c.setClarify(q.getClarify());
-//            c.setGroup(bg);
-//
-//            List<BankToeicOption> ops = q.getOptions().stream().map(o -> {
-//                BankToeicOption bo = new BankToeicOption();
-//                bo.setMark(o.getMark());
-//                bo.setDetail(o.getDetail());
-//                bo.setChildQuestion(c);
-//                return bo;
-//            }).toList();
-//
-//            c.setOptions(ops);
-//            return c;
-//
-//        }).toList();
-//
-//        bg.setQuestions(children);
-//
-//        return bg;
-//    }
 public BankGroupQuestion mapGroupToBank(
         GroupQuestion g,
         User contributor,
@@ -421,4 +362,42 @@ public BankGroupQuestion mapGroupToBank(
                 .map(this::mapGroupToResponse)
                 .collect(Collectors.toList());
     }
+
+
+    public ToeicQuestion mapToeicQuestionFromBank(
+            BankToeicQuestion bq, Exam exam, int indexNumber
+    ) {
+
+        ToeicQuestion q = new ToeicQuestion();
+
+        q.setExam(exam);
+        q.setGroup(null);
+
+        q.setPart(bq.getPart());
+        q.setDetail(bq.getDetail());
+        q.setResult(bq.getResult());
+        q.setClarify(bq.getClarify());
+        q.setAudio(bq.getAudio());
+        q.setBankQuestionId(bq.getId());
+        q.setIndexNumber(indexNumber);
+
+        return q;
+    }
+    public ToeicQuestionOption mapOptionFromBank(BankToeicOption bo, ToeicQuestion q) {
+
+        ToeicQuestionOption o = new ToeicQuestionOption();
+
+        o.setToeicQuestion(q);
+        o.setDetail(bo.getDetail());
+        o.setMark(bo.getMark()); // A/B/C/D
+
+        return o;
+    }
+    public ToeicQuestionImage mapImageFromBank(BankImage bi, ToeicQuestion q) {
+        ToeicQuestionImage img = new ToeicQuestionImage();
+        img.setToeicQuestion(q);
+        img.setUrl(bi.getUrl());
+        return img;
+    }
+
 }
