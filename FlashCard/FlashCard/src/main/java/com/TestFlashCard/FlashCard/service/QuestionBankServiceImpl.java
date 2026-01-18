@@ -1,14 +1,16 @@
 package com.TestFlashCard.FlashCard.service;
 
+import com.TestFlashCard.FlashCard.Utils.SearchCriteriaUtils;
 import com.TestFlashCard.FlashCard.entity.*;
 import com.TestFlashCard.FlashCard.exception.DuplicateGroupInBankException;
 import com.TestFlashCard.FlashCard.exception.DuplicateQuestionInBankException;
+import com.TestFlashCard.FlashCard.exception.ResourceNotFoundException;
 import com.TestFlashCard.FlashCard.mapper.BankMapper;
 import com.TestFlashCard.FlashCard.repository.*;
-import com.TestFlashCard.FlashCard.response.BankGroupQuestionResponse;
-import com.TestFlashCard.FlashCard.response.BankToeicQuestionResponse;
-import com.TestFlashCard.FlashCard.response.BankUseGroupQuestionResponse;
-import com.TestFlashCard.FlashCard.response.BankUseSingleQuestionResponse;
+import com.TestFlashCard.FlashCard.repository.critetia.GenericSearchQueryCriteriaConsumer;
+import com.TestFlashCard.FlashCard.repository.critetia.SearchCriteria;
+import com.TestFlashCard.FlashCard.repository.critetia.SearchQueryCriteriaConsumer;
+import com.TestFlashCard.FlashCard.response.*;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -35,7 +37,7 @@ public class QuestionBankServiceImpl implements QuestionBankService {
     private final ToeicQuestionRepository toeicQuestionRepository;
     private final BankToeicOptionRepoitory bankToeicOptionRepoitory;
     private final BankGroupChildQuestionRepository bankGroupChildQuestionRepository;
-
+    private final GenericSearchRepository genericSearchRepository;
 
 
     @Override
@@ -235,5 +237,71 @@ public class QuestionBankServiceImpl implements QuestionBankService {
                 bankGroupChildQuestionRepository.findChildrenWithOptionsByGroupId(id);
 
         return bankMapper.mapGroupToResponse(g, children);
+    }
+
+    @Override
+    public PageResponse<?> getAllQuestionFromBank(int pageNo, int pageSize, String sortBy, boolean isGroup,String[] search) {
+        if(!isGroup) {
+          return getAllSingleQuestion(pageNo,pageSize,sortBy,search);
+
+        }else{
+            return getAllGroupQuestion(pageNo,pageSize,sortBy,search);
+        }
+    }
+    public PageResponse<?> getAllSingleQuestion(int pageNo, int pageSize, String sortBy,String[] search) {
+
+        // convert search -> criteria
+        List<SearchCriteria> criteriaList = SearchCriteriaUtils.convert(search);
+        SearchQueryCriteriaConsumer<BankToeicQuestion> consumer =
+                new GenericSearchQueryCriteriaConsumer<>(null, null, null);
+
+        // dùng generic search repo
+        PageResponse<?> rawPage = genericSearchRepository.searchByCriteria(
+                BankToeicQuestion.class,
+                pageNo,
+                pageSize,
+                criteriaList,
+                sortBy,
+                consumer
+        );
+
+        List<BankToeicQuestion> questions = (List<BankToeicQuestion>) rawPage.getItems();
+
+        List<BankToeicQuestionResponse> dtoList = bankMapper.toSingleQuestionDTOList(questions);
+
+        return PageResponse.<List<BankToeicQuestionResponse>>builder()
+                .pageNo(rawPage.getPageNo())
+                .pageSize(rawPage.getPageSize())
+                .totalPage(rawPage.getTotalPage())
+                .items(dtoList)
+                .build();
+    }
+    public PageResponse<?> getAllGroupQuestion(int pageNo, int pageSize, String sortBy,String[] search) {
+
+        // convert search -> criteria
+        List<SearchCriteria> criteriaList = SearchCriteriaUtils.convert(search);
+        SearchQueryCriteriaConsumer<BankGroupQuestion> consumer =
+                new GenericSearchQueryCriteriaConsumer<>(null, null, null);
+
+        // dùng generic search repo
+        PageResponse<?> rawPage = genericSearchRepository.searchByCriteria(
+                BankGroupQuestion.class,
+                pageNo,
+                pageSize,
+                criteriaList,
+                sortBy,
+                consumer
+        );
+
+        List<BankGroupQuestion> questions = (List<BankGroupQuestion>) rawPage.getItems();
+
+        List<BankGroupQuestionResponse> dtoList = bankMapper.toGroupQuestionDTOList(questions);
+
+        return PageResponse.<List<BankGroupQuestionResponse>>builder()
+                .pageNo(rawPage.getPageNo())
+                .pageSize(rawPage.getPageSize())
+                .totalPage(rawPage.getTotalPage())
+                .items(dtoList)
+                .build();
     }
 }

@@ -366,6 +366,12 @@ public BankGroupQuestion mapGroupToBank(
         );
     }
 
+    public List<BankToeicQuestionResponse> toSingleQuestionDTOList(List<BankToeicQuestion> entities) {
+        return entities.stream()
+                .map(this::mapSingleToResponse)
+                .collect(Collectors.toList());
+    }
+
     public BankGroupQuestionResponse mapGroupToResponse(
             BankGroupQuestion g,
             List<BankGroupChildQuestion> children
@@ -408,5 +414,11 @@ public BankGroupQuestion mapGroupToBank(
         );
 
         return dto;
+    }
+
+    public List<BankGroupQuestionResponse> toGroupQuestionDTOList(List<BankGroupQuestion> entities) {
+        return entities.stream()
+                .map(this::mapGroupToResponse)
+                .collect(Collectors.toList());
     }
 }

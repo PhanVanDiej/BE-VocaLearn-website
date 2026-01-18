@@ -9,6 +9,7 @@ import com.TestFlashCard.FlashCard.response.*;
 import com.TestFlashCard.FlashCard.service.QuestionBankService;
 import com.TestFlashCard.FlashCard.service.QuestionBankServiceImpl;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -100,6 +101,20 @@ public class QuestionBankController {
         return ApiResponse.success(
                 questionBankService.getGroupDetail(id)
         );
+    }
+    @GetMapping
+    public ApiResponse<?> getAllQuestionFromBank(
+            @RequestParam(defaultValue = "0") int pageNo,
+            @RequestParam(defaultValue = "20") int pageSize,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam (required = true, defaultValue = "false") boolean isGroup,
+            @RequestParam(defaultValue = "") String[] search) {
+        try {
+            return new ApiResponse<>( HttpStatus.CREATED.value(),"Lấy danh sách danh câu hỏi từ ngân hàng thành công",questionBankService.getAllQuestionFromBank(pageNo,pageSize,sortBy,isGroup,search)); // Mã 201
+        } catch (Exception e) {
+            // Xử lý lỗi nếu có (ví dụ: tên danh mục bị trùng unique constraint)
+            return new ApiResponse<>( HttpStatus.INTERNAL_SERVER_ERROR.value(),"Lấy danh sách câu hỏi từ ngân hàng thất bại vì: " +e.getMessage());
+        }
     }
 }
 
