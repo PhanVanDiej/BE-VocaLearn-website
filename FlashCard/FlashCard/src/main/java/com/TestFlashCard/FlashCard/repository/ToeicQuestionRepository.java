@@ -18,10 +18,10 @@ public interface ToeicQuestionRepository extends JpaRepository<ToeicQuestion, In
     Integer findMaxIndexByExamAndPart(Integer examId, String part);
 
     @Query("""
-select distinct q from ToeicQuestion q
-left join fetch q.options
-where q.group.id in :ids
-""")
+            select distinct q from ToeicQuestion q
+            left join fetch q.options
+            where q.group.id in :ids
+            """)
     List<ToeicQuestion> findQuestionsWithOptionsByGroupIds(List<Integer> ids);
 
     int countByExam_Id(Integer examId);
@@ -29,12 +29,11 @@ where q.group.id in :ids
     int countByExam_IdAndPart(Integer examId, String part);
 
     @Query("""
-    select q.bankQuestionId from ToeicQuestion q
-    where q.exam.id = :examId and q.bankQuestionId in :bankIds
-    """)
+            select q.bankQuestionId from ToeicQuestion q
+            where q.exam.id = :examId and q.bankQuestionId in :bankIds
+            """)
     List<Integer> findUsedBankQuestionIds(
             Integer examId,
-            List<Integer> bankIds
-    );
+            List<Integer> bankIds);
 
 }

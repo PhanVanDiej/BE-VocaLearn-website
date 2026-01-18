@@ -12,7 +12,7 @@ public class GroupQuestionImage {
     private Integer id;
 
     @Column(nullable = false)
-    private String url;
+    private String url;// Quan trọng: Trường này lưu key, không phải url
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_id", nullable = false)

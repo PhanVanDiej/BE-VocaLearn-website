@@ -30,7 +30,6 @@ import com.TestFlashCard.FlashCard.request.ExamTypeCreateRequest;
 import com.TestFlashCard.FlashCard.request.ExamTypeUpdateRequest;
 import com.TestFlashCard.FlashCard.request.ExamUpdateRequest;
 import com.TestFlashCard.FlashCard.request.ToeicCustomExamUpdateRequest;
-import com.TestFlashCard.FlashCard.request.ToeicQuestionReorderRequest;
 import com.TestFlashCard.FlashCard.response.ApiResponse;
 import com.TestFlashCard.FlashCard.response.CommentResponse;
 import com.TestFlashCard.FlashCard.response.ExamInformationResponse;

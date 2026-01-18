@@ -86,7 +86,7 @@ public class ExamService {
 
     public ExamInformationResponse convertToExamDetailResponse(Exam exam) {
         List<ToeicQuestionResponse> singleQuestions = exam.getQuestions().stream()
-                .filter(q -> !List.of("3", "4", "7").contains(q.getPart()))
+                .filter(q -> !List.of("3", "4", "6", "7").contains(q.getPart())) // Thêm "6"
                 .map(this::convertQuestionToResponse)
                 .toList();
 
@@ -125,42 +125,6 @@ public class ExamService {
                 singleQuestions,
                 groupQuestions);
     }
-    // public GroupQuestionResponseDTO convertGroupToResponse(GroupQuestion group) {
-    // // Images
-    // List<String> images = group.getImages() != null
-    // ? group.getImages().stream()
-    // .map(i -> minIO_MediaService.getPresignedURL(i.getUrl(), Duration.ofDays(1)))
-    // .toList()
-    // : List.of();
-    //
-    // // Audios
-    // List<String> audios = group.getAudios() != null
-    // ? group.getAudios().stream()
-    // .map(a -> minIO_MediaService.getPresignedURL(a.getUrl(), Duration.ofDays(1)))
-    // .toList()
-    // : List.of();
-    //
-    // // Child questions
-    // List<ToeicQuestionResponse> childQuestions = group.getQuestions() != null
-    // ? group.getQuestions().stream()
-    // .map(this::convertQuestionToResponse)
-    // .toList()
-    // : List.of();
-    //
-    // return new GroupQuestionResponseDTO(
-    // group.getId(),
-    // group.getPart(),
-    // group.getTitle(),
-    // group.getContent(),
-    // group.getQuestionRange(),
-    // group.getExam().getId(),
-    // group.getImages().stream().map(img -> img.getUrl()).toList(),
-    // images,
-    // audios,
-    // group.getAudios().stream().map(audio -> audio.getUrl()).toList(),
-    // childQuestions
-    // );
-    // }
 
     public GroupQuestionResponseDTO convertGroupToResponse(GroupQuestion group) {
         List<String> imageKeys = group.getImages().stream()
@@ -345,13 +309,41 @@ public class ExamService {
                 .orElseThrow(() -> new ResourceNotFoundException("Exam not found with id: " + examId));
 
         exam.setFileImportName(zipFile.getOriginalFilename());
-        // Xóa danh sách câu hỏi hiện tại
-        // Xóa file media
-        List<ToeicQuestion> currenQuestions = exam.getQuestions();
-        for (ToeicQuestion question : currenQuestions) {
-            minIO_MediaService.deleteQuestionMedia(question);
+
+        // Xóa dữ liệu cũ
+        // 1. Xóa media của single questions
+        if (exam.getQuestions() != null) {
+            for (ToeicQuestion question : exam.getQuestions()) {
+                minIO_MediaService.deleteQuestionMedia(question);
+            }
+            exam.getQuestions().clear();
         }
-        exam.getQuestions().clear();
+
+        // 2. Xóa media của group questions
+        if (exam.getGroupQuestions() != null) {
+            for (GroupQuestion group : exam.getGroupQuestions()) {
+                // Xóa ảnh của group
+                if (group.getImages() != null) {
+                    for (GroupQuestionImage img : group.getImages()) {
+                        minIO_MediaService.deleteFile(img.getUrl());
+                    }
+                }
+                // Xóa audio của group
+                if (group.getAudios() != null) {
+                    for (GroupQuestionAudio audio : group.getAudios()) {
+                        minIO_MediaService.deleteFile(audio.getUrl());
+                    }
+                }
+                // Xóa media của các câu hỏi con trong group
+                if (group.getQuestions() != null) {
+                    for (ToeicQuestion question : group.getQuestions()) {
+                        minIO_MediaService.deleteQuestionMedia(question);
+                    }
+                }
+            }
+            exam.getGroupQuestions().clear();
+        }
+
         // Extract file zip
         Path tempDir = Files.createTempDirectory("uploadExam");
         File file = new File(tempDir.toFile(), zipFile.getOriginalFilename());
@@ -361,12 +353,27 @@ public class ExamService {
         File excelFile = new File(tempDir.toFile(), "questions.xlsx");
         File mediaDir = new File(tempDir.toFile(), "media");
 
-        // Parse và liên kết với Exam
-        List<ToeicQuestion> questions = excelParser.parseQuestions(excelFile, mediaDir);
-        for (ToeicQuestion q : questions) {
+        // Parse với method mới - trả về cả single và group questions
+        ExcelParser.ParseResult parseResult = excelParser.parseQuestionsWithGroups(excelFile, mediaDir, exam);
+
+        // Thêm single questions (Part 1, 2, 5)
+        for (ToeicQuestion q : parseResult.getSingleQuestions()) {
             q.setExam(exam);
+            exam.getQuestions().add(q);
         }
-        exam.getQuestions().addAll(questions);
+
+        // Thêm group questions (Part 3, 4, 6, 7)
+        for (GroupQuestion group : parseResult.getGroupQuestions()) {
+            group.setExam(exam);
+            // Đảm bảo các câu hỏi con cũng được liên kết đúng
+            if (group.getQuestions() != null) {
+                for (ToeicQuestion q : group.getQuestions()) {
+                    q.setExam(exam);
+                    q.setGroup(group);
+                }
+            }
+            exam.getGroupQuestions().add(group);
+        }
 
         exam_Repository.save(exam);
         FileSystemUtils.deleteRecursively(tempDir);

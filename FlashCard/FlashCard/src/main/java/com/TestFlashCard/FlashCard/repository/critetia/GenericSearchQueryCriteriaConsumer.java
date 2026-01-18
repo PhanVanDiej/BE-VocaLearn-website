@@ -17,40 +17,6 @@ public class GenericSearchQueryCriteriaConsumer<T> implements SearchQueryCriteri
         this.builder = builder;
         this.root = root;
     }
-//    @Override
-//    public void apply(SearchCriteria param) {
-//        String op = param.getOperation();
-//
-//
-//        if (op.equals(">")) {
-//            predicate = builder.and(predicate,
-//                    builder.greaterThan(root.get(param.getKey()), param.getValue().toString()));
-//        }
-//        else if (op.equals(">=")) {
-//            predicate = builder.and(predicate,
-//                    builder.greaterThanOrEqualTo(root.get(param.getKey()), param.getValue().toString()));
-//        }
-//        else if (op.equals("<")) {
-//            predicate = builder.and(predicate,
-//                    builder.lessThan(root.get(param.getKey()), param.getValue().toString()));
-//        }
-//        else if (op.equals("<=")) {
-//            predicate = builder.and(predicate,
-//                    builder.lessThanOrEqualTo(root.get(param.getKey()), param.getValue().toString()));
-//        }
-//        else if (op.equals(":")) {
-//            if (root.get(param.getKey()).getJavaType() == String.class) {
-//                Expression<String> dbField = builder.lower(
-//                        builder.function("unaccent", String.class, root.get(param.getKey()))
-//                );
-//                String value = param.getValue().toString().toLowerCase();
-//                predicate = builder.and(predicate, builder.like(dbField, "%" + value + "%"));
-//            } else {
-//                predicate = builder.and(predicate,
-//                        builder.equal(root.get(param.getKey()), param.getValue()));
-//            }
-//        }
-//    }
     @Override
     public void apply(SearchCriteria param) {
         Path<?> path = getPath(root, param.getKey());

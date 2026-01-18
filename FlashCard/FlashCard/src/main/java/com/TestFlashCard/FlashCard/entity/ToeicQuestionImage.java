@@ -16,7 +16,7 @@ public class ToeicQuestionImage {
     private Integer id;
 
     @Column(length = 255, nullable = false)
-    private String url;
+    private String url; // Quan trọng: Trường này lưu key, không phải url
 
     @CreationTimestamp
     private LocalDateTime createdAt;

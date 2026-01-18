@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.TestFlashCard.FlashCard.entity.Exam;
 import com.TestFlashCard.FlashCard.entity.ExamReview;
+import com.TestFlashCard.FlashCard.entity.GroupQuestion;
 import com.TestFlashCard.FlashCard.entity.QuestionReview;
 import com.TestFlashCard.FlashCard.entity.ToeicQuestion;
 import com.TestFlashCard.FlashCard.entity.User;
@@ -73,6 +74,9 @@ public class ExamReviewService {
                 .map(String::trim).filter(s -> !s.isEmpty())
                 .collect(Collectors.toSet());
 
+        // Query lấy tất cả câu hỏi theo Part đã chọn
+        // Bao gồm cả câu trong exam.questions và GroupQuestion.questions
+        // vì tất cả đều có exam_id được set
         List<ToeicQuestion> allQuestions = toeicQuestion_Repository.findAllByExamAndPartIn(exam, selected);
 
         Map<Integer, Character> answerMap = new java.util.HashMap<>();
@@ -120,7 +124,14 @@ public class ExamReviewService {
         response.setExamID(exam.getId());
         response.setUserID(user.getId());
         response.setExamTitle(exam.getTitle());
-        response.setExamCollection(exam.getCollection().getCollection());
+        
+        // FIX: Null safety cho collection
+        response.setExamCollection(
+            exam.getCollection() != null 
+                ? exam.getCollection().getCollection() 
+                : null
+        );
+        
         response.setUserName(user.getFullName());
         response.setDuration(examReview.getDuration());
         response.setCorrectAnswers(examReview.getResult());
@@ -129,6 +140,7 @@ public class ExamReviewService {
         response.setTotalQuestions(questionReviews.size());
         response.setCreatedAt(examReview.getCreateAt());
         response.setSection(getPartSummaryFromReview(questionReviews));
+        
         // Map từng câu hỏi thành response
         List<QuestionReviewResponse> questionReviewResponses = questionReviews.stream().map(qr -> {
             QuestionReviewResponse qrr = new QuestionReviewResponse();
@@ -147,22 +159,33 @@ public class ExamReviewService {
     @Transactional
     public List<ExamReviewResponse> getAllExamResultByUser(User user, Exam exam) {
         List<ExamReview> resultList = examReview_Repository.findByUserAndExam(user, exam);
-        return resultList.stream().map(review -> convertToRespone(review, review.getExam(), review.getUser()))
+        return resultList.stream().map(review -> convertToResponse(review, review.getExam(), review.getUser()))
                 .collect(Collectors.toList());
     }
 
     public ExamReviewResponse getById(int id) {
         ExamReview review = examReview_Repository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Cannot find the Exam review with id: " + id));
-        return convertToRespone(review, review.getExam(), review.getUser());
+        return convertToResponse(review, review.getExam(), review.getUser());
     }
 
-    public ExamReviewResponse convertToRespone(ExamReview review, Exam exam, User user) {
+    /**
+     * Convert ExamReview entity to response DTO
+     * FIX: Added null safety for collection and improved response
+     */
+    public ExamReviewResponse convertToResponse(ExamReview review, Exam exam, User user) {
         ExamReviewResponse response = new ExamReviewResponse();
         response.setReviewId(review.getId());
         response.setExamID(review.getExam().getId());
         response.setUserID(review.getUser().getId());
-        response.setExamCollection(review.getExam().getCollection().getCollection());
+        
+        // FIX: Null safety cho collection
+        response.setExamCollection(
+            review.getExam().getCollection() != null 
+                ? review.getExam().getCollection().getCollection() 
+                : null
+        );
+        
         response.setExamTitle(review.getExam().getTitle());
         response.setUserName(review.getUser().getFullName());
         response.setDuration(review.getDuration());
@@ -175,9 +198,12 @@ public class ExamReviewService {
         response.setSection(getPartSummaryFromReview(review.getQuestionReviews()));
         response.setQuestionReviews(convertToQuestionsResponse(review.getQuestionReviews()));
         return response;
-
     }
 
+    /**
+     * Convert list of QuestionReview to response DTOs
+     * Includes group information for questions that belong to a group
+     */
     public List<QuestionReviewResponse> convertToQuestionsResponse(List<QuestionReview> questionReviews) {
         return questionReviews.stream().map(qr -> {
 
@@ -187,12 +213,10 @@ public class ExamReviewService {
             // --- IMAGE (nhiều ảnh) ---
             List<String> imageUrls = null;
             if (question.getImages() != null && !question.getImages().isEmpty()) {
-
                 imageUrls = question.getImages().stream()
                         .map(img -> minIO_MediaService.getPresignedURL(
                                 img.getUrl(),
-                                Duration.ofMinutes(1))
-                        )
+                                Duration.ofDays(1)))
                         .collect(Collectors.toList());
             }
 
@@ -201,23 +225,48 @@ public class ExamReviewService {
             if (question.getAudio() != null && !question.getAudio().isEmpty()) {
                 audio = minIO_MediaService.getPresignedURL(
                         question.getAudio(),
-                        Duration.ofMinutes(1)
-                );
+                        Duration.ofDays(1));
             }
 
-            // --- SET FIELD ---
+            // --- SET BASIC FIELDS ---
             qrr.setQuestionId(question.getId());
             qrr.setIndexNumber(question.getIndexNumber());
+            qrr.setPart(question.getPart());
             qrr.setDetail(question.getDetail());
             qrr.setImages(imageUrls);
             qrr.setAudio(audio);
             qrr.setConversation(question.getConversation());
+            qrr.setClarify(question.getClarify());
             qrr.setUserAnswer(qr.getUserAnswer());
             qrr.setCorrectAnswer(question.getResult());
             qrr.setCorrect(
                     qr.getUserAnswer() != null &&
-                            qr.getUserAnswer().equalsIgnoreCase(question.getResult())
-            );
+                            qr.getUserAnswer().equalsIgnoreCase(question.getResult()));
+
+            // --- GROUP INFORMATION (NEW) ---
+            // Nếu câu hỏi thuộc một group, thêm thông tin group
+            if (question.getGroup() != null) {
+                GroupQuestion group = question.getGroup();
+                qrr.setGroupId(group.getId());
+                qrr.setGroupContent(group.getContent());
+                qrr.setGroupQuestionRange(group.getQuestionRange());
+                
+                // Group images
+                if (group.getImages() != null && !group.getImages().isEmpty()) {
+                    List<String> groupImageUrls = group.getImages().stream()
+                            .map(img -> minIO_MediaService.getPresignedURL(img.getUrl(), Duration.ofDays(1)))
+                            .collect(Collectors.toList());
+                    qrr.setGroupImages(groupImageUrls);
+                }
+                
+                // Group audios
+                if (group.getAudios() != null && !group.getAudios().isEmpty()) {
+                    List<String> groupAudioUrls = group.getAudios().stream()
+                            .map(a -> minIO_MediaService.getPresignedURL(a.getUrl(), Duration.ofDays(1)))
+                            .collect(Collectors.toList());
+                    qrr.setGroupAudios(groupAudioUrls);
+                }
+            }
 
             // --- OPTIONS ---
             List<QuestionReviewResponse.OptionResponse> optionResponses =
@@ -236,6 +285,10 @@ public class ExamReviewService {
         }).collect(Collectors.toList());
     }
 
+    /**
+     * Get part summary string from review questions
+     * FIX: Handle both numeric ("1") and string ("Part 1") formats
+     */
     public String getPartSummaryFromReview(List<QuestionReview> reviewQuestions) {
         // Lấy các part duy nhất, convert về số nguyên, loại null/rỗng
         Set<Integer> partSet = reviewQuestions.stream()
@@ -243,7 +296,8 @@ public class ExamReviewService {
                 .filter(Objects::nonNull)
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
-                .map(Integer::parseInt)
+                .map(this::parsePartNumber)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(TreeSet::new));
 
         // Kiểm tra đủ 1-7
@@ -257,5 +311,34 @@ public class ExamReviewService {
                 .map(i -> "Part " + i)
                 .collect(Collectors.joining(", "));
     }
-
+    
+    /**
+     * Parse part string to integer
+     * Handles both "1" and "Part 1" formats
+     */
+    private Integer parsePartNumber(String partStr) {
+        if (partStr == null || partStr.isBlank()) return null;
+        
+        try {
+            // Try direct parse first (format: "1", "2", ...)
+            return Integer.parseInt(partStr.trim());
+        } catch (NumberFormatException e) {
+            // Try extracting number from "Part X" format
+            try {
+                String numStr = partStr.replaceAll("[^0-9]", "");
+                if (!numStr.isEmpty()) {
+                    return Integer.parseInt(numStr);
+                }
+            } catch (NumberFormatException e2) {
+                // Ignore
+            }
+        }
+        return null;
+    }
+    
+    // Giữ method cũ để backward compatible
+    @Deprecated
+    public ExamReviewResponse convertToRespone(ExamReview review, Exam exam, User user) {
+        return convertToResponse(review, exam, user);
+    }
 }

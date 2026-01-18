@@ -76,7 +76,9 @@ public class ToeicQuestionService {
                         .collect(Collectors.toList())
                 : List.of();
 
-        String audioUrlString = question.getAudio()!= null ?  minIO_MediaService.getPresignedURL(question.getAudio(), Duration.ofMinutes(1)) : null;
+        String audioUrlString = question.getAudio() != null
+                ? minIO_MediaService.getPresignedURL(question.getAudio(), Duration.ofMinutes(1))
+                : null;
         return new ToeicQuestionResponse(
                 question.getId(),
                 question.getIndexNumber(),
@@ -84,7 +86,7 @@ public class ToeicQuestionService {
                 question.getDetail(),
                 question.getResult(),
                 imageUrls, // NEW FIELD
-                question.getImages().stream().map(img->img.getUrl()).toList(),
+                question.getImages().stream().map(img -> img.getUrl()).toList(),
                 audioUrlString,
                 question.getAudio(),
                 question.getConversation(),
@@ -229,13 +231,13 @@ public class ToeicQuestionService {
 
     private int getStartIndexByPart(String part) {
         return switch (part) {
-            case "Part 1" -> 1;
-            case "Part 2" -> 7;
-            case "Part 3" -> 32;
-            case "Part 4" -> 71;
-            case "Part 5" -> 101;
-            case "Part 6" -> 131;
-            case "Part 7" -> 147;
+            case "1" -> 1;
+            case "2" -> 7;
+            case "3" -> 32;
+            case "4" -> 71;
+            case "5" -> 101;
+            case "6" -> 131;
+            case "7" -> 147;
             default -> 1;
         };
     }
