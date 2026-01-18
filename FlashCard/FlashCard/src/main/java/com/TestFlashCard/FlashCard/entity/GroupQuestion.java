@@ -28,6 +28,9 @@ public class GroupQuestion {
     @Column(columnDefinition = "TEXT")
     private String content; // hội thoại/bài nói/bài đọc
 
+    @Column(name = "bank_group_id", unique = true)
+    private Long bankGroupId;
+
     @Column(length = 50)
     private String questionRange; // "32-35"
 

@@ -38,6 +38,15 @@ where g.id in :ids
 """)
     List<GroupQuestion> findGroupsWithMedia(List<Integer> ids);
 
+    @Query("""
+    select g.bankGroupId
+    from GroupQuestion g
+    where g.exam.id = :examId
+    and g.bankGroupId in :bankGroupIds
+    """)
+    List<Long> findUsedBankGroupIds(
+           int examId,
+           List<Long> bankGroupIds);
 
 
 }

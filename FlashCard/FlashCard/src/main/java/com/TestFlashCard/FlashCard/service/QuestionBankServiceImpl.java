@@ -40,6 +40,8 @@ public class QuestionBankServiceImpl implements QuestionBankService {
     private final ExamRepository examRepository;
     private final ToeicQuestionOptionRepository toeicQuestionOptionRepository;
     private final ToeicQuestionImageRepository toeicQuestionImageRepository;
+    private final GroupQuestionImageRepository groupQuestionImageRepository;
+    private final GroupQuestionAudioRepository groupQuestionAudioRepository;
 
 
     @Override
@@ -259,36 +261,131 @@ public class QuestionBankServiceImpl implements QuestionBankService {
                 .map(bankMapper::toSingleResponse)
                 .toList();
     }
-
-
-    // ===== GROUP =====
     @Override
-    public List<BankUseGroupQuestionResponse> useGroupQuestions(List<Long> ids, int examId) {
+    @Transactional
+    public List<BankUseGroupQuestionResponse> useGroupQuestions(List<Long> groupIds, int examId) {
 
-        // 1. load group + media
-        List<BankGroupQuestion> groups =
-                bankGroupQuestionRepository.findGroupsWithMedia(ids);
+        // ===== 1. check exam =====
+        Exam exam = examRepository.findById(examId)
+                .orElseThrow(() -> new ResourceNotFoundException("Exam not found"));
 
-        if (groups.size() != ids.size()) {
-            throw new RuntimeException("Some bank group questions not found");
+        // ===== 2. load bank groups (children + images + audios) =====
+        List<BankGroupQuestion> bankGroups =
+                bankGroupQuestionRepository.findGroupsWithMedia(groupIds);
+
+        // ===== 3. chống trùng group =====
+        List<Long> bankGroupIds = bankGroups.stream()
+                .map(BankGroupQuestion::getId)
+                .toList();
+
+        List<Long> usedIds =
+                groupQuestionRepository.findUsedBankGroupIds(examId, bankGroupIds);
+
+        Set<Long> usedSet = new HashSet<>(usedIds);
+
+        List<BankGroupQuestion> newGroups = bankGroups.stream()
+                .filter(g -> !usedSet.contains(g.getId()))
+                .toList();
+
+        if (newGroups.isEmpty()) {
+            throw new RuntimeException("All selected groups already exist in this exam");
         }
 
-        // 2. load child + options
-        List<BankGroupChildQuestion> children =
-                bankGroupQuestionRepository.findChildrenWithOptions(ids);
+        boolean isRandom = exam.isRandom();
 
-        // 3. group by groupId
-        Map<Long, List<BankGroupChildQuestion>> childMap =
-                children.stream().collect(Collectors.groupingBy(
-                        c -> c.getGroup().getId()
-                ));
+        // ===== 4. chuẩn bị index =====
+        int totalCount = 0;
+        Map<String, Integer> partCountMap = new HashMap<>();
 
-        // 4. map dto
-        return groups.stream()
-                .map(g -> bankMapper.toGroupResponse(
-                        g,
-                        childMap.getOrDefault(g.getId(), List.of())
-                ))
+        if (isRandom) {
+            totalCount = toeicQuestionRepository.countByExam_Id(examId);
+        } else {
+            for (BankGroupQuestion bg : newGroups) {
+                partCountMap.putIfAbsent(
+                        bg.getPart(),
+                        toeicQuestionRepository.countByExam_IdAndPart(examId, bg.getPart())
+                );
+            }
+        }
+
+        // ===== 5. add groups =====
+        for (BankGroupQuestion bg : newGroups) {
+
+            // --- save group ---
+            GroupQuestion examGroup =
+                    bankMapper.mapGroupFromBank(bg, exam);
+
+            groupQuestionRepository.save(examGroup);
+
+            // --- images ---
+            if (bg.getImages() != null && !bg.getImages().isEmpty()) {
+                Set<GroupQuestionImage> imgs = bg.getImages().stream()
+                        .map(i -> bankMapper.mapGroupImageFromBank(i, examGroup))
+                        .collect(Collectors.toSet());
+                groupQuestionImageRepository.saveAll(imgs);
+                examGroup.setImages(imgs);
+            }
+
+            // --- audios ---
+            if (bg.getAudios() != null && !bg.getAudios().isEmpty()) {
+                Set<GroupQuestionAudio> audios = bg.getAudios().stream()
+                        .map(a -> bankMapper.mapGroupAudioFromBank(a, examGroup))
+                        .collect(Collectors.toSet());
+                groupQuestionAudioRepository.saveAll(audios);
+                examGroup.setAudios(audios);
+            }
+
+            // ===== add child questions =====
+            for (BankGroupChildQuestion bq : bg.getQuestions()) {
+
+                int indexNumber;
+
+                if (isRandom) {
+                    indexNumber = ++totalCount;
+                } else {
+                    int current = partCountMap.get(bg.getPart());
+                    current++;
+                    partCountMap.put(bg.getPart(), current);
+                    indexNumber = current;
+                }
+
+                ToeicQuestion q =
+                        bankMapper.mapToeicQuestionFromBank(bq, examGroup, exam, indexNumber);
+
+                toeicQuestionRepository.save(q);
+
+                // gắn vào group list (để tính range)
+                examGroup.getQuestions().add(q);
+
+                // options
+                if (bq.getOptions() != null && !bq.getOptions().isEmpty()) {
+                    Set<ToeicQuestionOption> ops = bq.getOptions().stream()
+                            .map(o -> bankMapper.mapOptionFromBank(o, q))
+                            .collect(Collectors.toSet());
+                    toeicQuestionOptionRepository.saveAll(ops);
+                    q.setOptions(ops);
+                }
+            }
+
+            // ===== 6. set title + questionRange =====
+            List<ToeicQuestion> qs = examGroup.getQuestions();
+
+            int min = qs.stream().mapToInt(ToeicQuestion::getIndexNumber).min().orElse(0);
+            int max = qs.stream().mapToInt(ToeicQuestion::getIndexNumber).max().orElse(0);
+
+            examGroup.setQuestionRange(min + "-" + max);
+
+            examGroup.setTitle(
+                    "Use the given conversation to answer the questions "
+                            + min + " to " + max
+            );
+
+            groupQuestionRepository.save(examGroup);
+        }
+
+        // ===== 7. response từ BANK =====
+        return newGroups.stream()
+                .map(bg -> bankMapper.toGroupResponse(bg, bg.getQuestions()))
                 .toList();
     }
     @Override

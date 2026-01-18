@@ -43,6 +43,7 @@ public class BankGroupQuestion {
     @Column(name = "source_group_id", unique = true, nullable = false)
     private Integer sourceGroupId;
 
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 

@@ -31,8 +31,6 @@ public class BankGroupChildQuestion {
     @OneToMany(mappedBy = "childQuestion", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<BankToeicOption> options = new ArrayList<>();
 
-
-
     private String clarify;
 }
 

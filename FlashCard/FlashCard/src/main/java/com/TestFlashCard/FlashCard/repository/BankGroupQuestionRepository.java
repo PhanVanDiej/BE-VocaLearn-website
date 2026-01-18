@@ -60,4 +60,6 @@ public interface BankGroupQuestionRepository
     where g.id = :id
     """)
     Optional<BankGroupQuestion> findGroupWithMedia(Long id);
+
+
 }

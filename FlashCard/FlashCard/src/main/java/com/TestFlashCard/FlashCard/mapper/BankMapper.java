@@ -383,6 +383,26 @@ public BankGroupQuestion mapGroupToBank(
 
         return q;
     }
+    public ToeicQuestion mapToeicQuestionFromBank(
+            BankGroupChildQuestion bq,
+            GroupQuestion examGroup,
+            Exam exam,
+            int indexNumber
+    ) {
+
+        ToeicQuestion q = new ToeicQuestion();
+
+        q.setExam(exam);
+        q.setGroup(examGroup);
+
+        q.setPart(examGroup.getPart());   // part của group
+        q.setDetail(bq.getDetail());
+        q.setResult(bq.getResult());
+        q.setClarify(bq.getClarify());
+        q.setIndexNumber(indexNumber);
+
+        return q;
+    }
     public ToeicQuestionOption mapOptionFromBank(BankToeicOption bo, ToeicQuestion q) {
 
         ToeicQuestionOption o = new ToeicQuestionOption();
@@ -398,6 +418,46 @@ public BankGroupQuestion mapGroupToBank(
         img.setToeicQuestion(q);
         img.setUrl(bi.getUrl());
         return img;
+    }
+
+    public GroupQuestion mapGroupFromBank(BankGroupQuestion bg, Exam exam) {
+
+        GroupQuestion g = new GroupQuestion();
+
+        g.setExam(exam);
+        g.setBankGroupId(bg.getId());
+
+        g.setPart(bg.getPart());
+        g.setContent(bg.getContent());
+
+
+//        g.setTitle(null);
+//        g.setQuestionRange(null);
+
+        return g;
+    }
+    public GroupQuestionImage mapGroupImageFromBank(
+            BankGroupImage bi,
+            GroupQuestion group
+    ) {
+        GroupQuestionImage img = new GroupQuestionImage();
+        img.setGroup(group);
+
+        // nếu bạn lưu bằng key → đổi thành url theo rule project
+        img.setUrl(bi.getImageKey());
+
+        return img;
+    }
+    public GroupQuestionAudio mapGroupAudioFromBank(
+            BankGroupAudio ba,
+            GroupQuestion group
+    ) {
+        GroupQuestionAudio audio = new GroupQuestionAudio();
+        audio.setGroup(group);
+
+        audio.setUrl(ba.getAudioKey());
+
+        return audio;
     }
 
 }
