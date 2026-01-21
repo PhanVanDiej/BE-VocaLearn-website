@@ -8,7 +8,12 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 
 public interface GroupQuestionRepository extends JpaRepository<GroupQuestion, Integer> {
-
+    @Query("""
+    select g.id
+    from GroupQuestion g
+    where g.exam.id = :examId
+    """)
+    List<Integer> findGroupIdsByExamId(int examId);
     @Query("""
             select distinct g from GroupQuestion g
             left join fetch g.questions q

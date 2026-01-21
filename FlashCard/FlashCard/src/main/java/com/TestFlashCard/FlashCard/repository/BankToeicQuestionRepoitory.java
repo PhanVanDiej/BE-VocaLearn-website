@@ -12,6 +12,14 @@ import java.util.Optional;
 @Repository
 public interface BankToeicQuestionRepoitory
         extends JpaRepository<BankToeicQuestion, Long> {
+
+    @Query("""
+        select b.sourceToeicId
+        from BankToeicQuestion b
+        where b.sourceToeicId in :ids
+    """)
+    List<Integer> findContributedToeicIds(@Param("ids") List<Integer> ids);
+
     @Query("""
    select b from BankToeicQuestion b
    where b.sourceToeicId in :ids

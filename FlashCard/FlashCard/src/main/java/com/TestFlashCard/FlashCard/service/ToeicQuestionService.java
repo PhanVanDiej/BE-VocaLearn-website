@@ -91,6 +91,8 @@ public class ToeicQuestionService {
                 question.getAudio(),
                 question.getConversation(),
                 question.getClarify(),
+                question.getIsContribute(),
+                question.getBankQuestionId(),
                 options);
     }
 

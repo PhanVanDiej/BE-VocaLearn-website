@@ -44,6 +44,9 @@ public class ToeicQuestion {
     @Column
     private String conversation;
 
+    @Column(name = "is_contribute")
+    private Boolean isContribute = false;
+
     @Column(name = "bank_question_id")
     private Integer bankQuestionId;
 

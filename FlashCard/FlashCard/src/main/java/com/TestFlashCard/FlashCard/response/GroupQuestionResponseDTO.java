@@ -16,6 +16,8 @@ public class GroupQuestionResponseDTO {
     private String content;
     private String questionRange;
     private Integer examId;
+    private Boolean isContribute;
+    private Long bankGroupId;
     private List<String> images;
     private List<String> imageKeys;
     private List<String> audios;

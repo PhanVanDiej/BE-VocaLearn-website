@@ -283,6 +283,8 @@ public class GroupQuestionService {
         dto.setContent(group.getContent());
         dto.setQuestionRange(group.getQuestionRange());
         dto.setExamId(group.getExam().getId());
+        dto.setBankGroupId(group.getBankGroupId());
+        dto.setIsContribute(group.getIsContribute());
 
         // ✅ Images - Presigned URLs để hiển thị
         dto.setImages(
@@ -334,6 +336,8 @@ public class GroupQuestionService {
                                 q.getAudio(),
                                 q.getConversation(),
                                 q.getClarify(),
+                                q.getIsContribute(),
+                                q.getBankQuestionId(),
                                 q.getOptions().stream()
                                         .map(o -> new ToeicQuestionResponse.OptionResponse(
                                                 o.getMark(),
@@ -383,6 +387,8 @@ public class GroupQuestionService {
                 question.getAudio(), // audioKey
                 question.getConversation(),
                 question.getClarify(),
+                question.getIsContribute(),
+                question.getBankQuestionId(),
                 options);
     }
 

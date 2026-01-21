@@ -22,7 +22,8 @@ public class ToeicQuestionResponse {
     private String audioKey;
     private String conversation;
     private String clarify;
-
+    private Boolean isContribute;
+    private Integer bankQuestionId;
     private List<OptionResponse> options;
 
     @Data

@@ -155,13 +155,12 @@ public class ExamService {
                 group.getContent(),
                 group.getQuestionRange(),
                 group.getExam().getId(),
-
-                imageUrls, // ✅ URLs
-                imageKeys, // ✅ KEYS
-
-                audioUrls, // ✅ URLs
-                audioKeys, // ✅ KEYS
-
+                group.getIsContribute(),
+                group.getBankGroupId(),
+                imageUrls, //  URLs
+                imageKeys, //  KEYS
+                audioUrls, //  URLs
+                audioKeys, //  KEYS
                 childQuestions);
 
     }
@@ -198,6 +197,8 @@ public class ExamService {
                 question.getAudio(),
                 question.getConversation(),
                 question.getClarify(),
+                question.getIsContribute(),
+                question.getBankQuestionId(),
                 options);
     }
 

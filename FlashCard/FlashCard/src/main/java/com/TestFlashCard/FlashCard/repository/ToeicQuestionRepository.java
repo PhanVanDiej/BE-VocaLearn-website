@@ -35,5 +35,9 @@ public interface ToeicQuestionRepository extends JpaRepository<ToeicQuestion, In
     List<Integer> findUsedBankQuestionIds(
             Integer examId,
             List<Integer> bankIds);
-
+    @Query("""
+        select q.id from ToeicQuestion q
+        where q.exam.id = :examId
+    """)
+    List<Integer> findQuestionIdsByExamId(int examId);
 }

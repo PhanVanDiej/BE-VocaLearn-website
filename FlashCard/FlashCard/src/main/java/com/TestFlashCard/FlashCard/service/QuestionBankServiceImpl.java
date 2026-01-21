@@ -113,11 +113,18 @@ public class QuestionBankServiceImpl implements QuestionBankService {
                                 .map(q -> {
                                         BankToeicQuestion b = mapToeicToBankWithMediaCopy(q);
                                         b.setContributor(contributor);
+                                        q.setIsContribute(true);
                                         return b;
                                 })
                                 .toList();
 
-                return bankToeicRepo.saveAll(banks).stream().map(bankMapper::mapToResponse).toList();
+                bankToeicRepo.saveAll(banks);
+                toeicRepo.saveAll(questions); // lưu isContribute
+
+
+                return banks.stream()
+                        .map(bankMapper::mapToResponse)
+                        .toList();
         }
 
         /**
@@ -217,9 +224,26 @@ public class QuestionBankServiceImpl implements QuestionBankService {
 
                 bankGroupQuestionRepository.saveAll(banks);
 
+                // ================== FIX: SET isContribute + bankGroupId ==================
+
+                Map<Integer, BankGroupQuestion> bankMap = banks.stream()
+                        .collect(Collectors.toMap(
+                                b -> b.getSourceGroupId(),
+                                b -> b));
+
+                for (GroupQuestion g : groups) {
+                        BankGroupQuestion bank = bankMap.get(g.getId());
+                        g.setIsContribute(true);              //  group đã được contribute
+                      //  g.setBankGroupId(bank.getId());       //  để FE biết bank id
+                }
+
+                groupQuestionRepository.saveAll(groups);
+
+                // ========================================================================
+
                 return banks.stream()
-                                .map(bankMapper::mapGroupToResponse)
-                                .toList();
+                        .map(bankMapper::mapGroupToResponse)
+                        .toList();
         }
 
         /**
@@ -289,84 +313,196 @@ public class QuestionBankServiceImpl implements QuestionBankService {
         // BANK → EXAM (SỬ DỤNG)
         // ==========================
 
+//        @Override
+//        @Transactional
+//        public List<BankUseSingleQuestionResponse> useSingleQuestions(List<Integer> ids, int examId) {
+//
+//                // 0. Check exam tồn tại
+//                Exam exam = examRepository.findById(examId)
+//                                .orElseThrow(() -> new ResourceNotFoundException("Exam not found"));
+//
+//                // 1. Load bank questions
+//                List<BankToeicQuestion> bankQuestions = bankToeicRepo.findWithImages(ids);
+//
+//                // 2. Check câu nào đã được dùng trong exam
+//                List<Integer> bankIds = bankQuestions.stream()
+//                                .map(BankToeicQuestion::getId)
+//                                .toList();
+//
+//                List<Integer> usedIds = toeicQuestionRepository.findUsedBankQuestionIds(examId, bankIds);
+//
+//                Set<Integer> usedSet = new HashSet<>(usedIds);
+//
+//                // 3. Filter chỉ giữ câu CHƯA dùng
+//                List<BankToeicQuestion> newQuestions = bankQuestions.stream()
+//                                .filter(bq -> !usedSet.contains(bq.getId()))
+//                                .toList();
+//
+//                if (newQuestions.isEmpty()) {
+//                        throw new RuntimeException("All selected questions already exist in this exam");
+//                }
+//
+//                // 4. Load options CHỈ cho câu mới
+//                List<Integer> newIds = newQuestions.stream()
+//                                .map(BankToeicQuestion::getId)
+//                                .toList();
+//
+//                List<BankToeicOption> bankOptions = bankToeicOptionRepoitory.findOptionsByQuestionIds(newIds);
+//
+//                Map<Integer, List<BankToeicOption>> optionMap = bankOptions.stream().collect(Collectors.groupingBy(
+//                                o -> o.getQuestion().getId()));
+//
+//                // FIX: Chuẩn bị map để track max index theo part
+//                Map<String, Integer> partMaxIndexMap = new HashMap<>();
+//
+//                // 5. Add câu hỏi vào exam
+//                for (BankToeicQuestion bq : newQuestions) {
+//
+//                        // FIX: Calculate index đúng theo TOEIC standard
+//                        int indexNumber = calculateNextIndex(exam, bq.getPart(), partMaxIndexMap);
+//
+//                        // Map question với MEDIA COPY
+//                        ToeicQuestion q = mapToeicQuestionFromBankWithMediaCopy(bq, exam, indexNumber);
+//                        toeicQuestionRepository.save(q);
+//
+//                        // Map options
+//                        List<BankToeicOption> ops = optionMap.getOrDefault(bq.getId(), List.of());
+//
+//                        Set<ToeicQuestionOption> examOps = ops.stream()
+//                                        .map(o -> bankMapper.mapOptionFromBank(o, q))
+//                                        .collect(Collectors.toSet());
+//
+//                        toeicQuestionOptionRepository.saveAll(examOps);
+//                        q.setOptions(examOps);
+//
+//                        // FIX: Map images với COPY
+//                        if (bq.getImages() != null && !bq.getImages().isEmpty()) {
+//                                List<ToeicQuestionImage> imgs = bq.getImages().stream()
+//                                                .map(i -> mapImageFromBankWithCopy(i, q))
+//                                                .toList();
+//                                toeicQuestionImageRepository.saveAll(imgs);
+//                                q.setImages(imgs);
+//                        }
+//                }
+//
+//                // 6. Trả response
+//                return newQuestions.stream()
+//                                .map(bankMapper::toSingleResponse)
+//                                .toList();
+//        }
         @Override
         @Transactional
         public List<BankUseSingleQuestionResponse> useSingleQuestions(List<Integer> ids, int examId) {
 
                 // 0. Check exam tồn tại
                 Exam exam = examRepository.findById(examId)
-                                .orElseThrow(() -> new ResourceNotFoundException("Exam not found"));
+                        .orElseThrow(() -> new ResourceNotFoundException("Exam not found"));
 
                 // 1. Load bank questions
                 List<BankToeicQuestion> bankQuestions = bankToeicRepo.findWithImages(ids);
 
-                // 2. Check câu nào đã được dùng trong exam
-                List<Integer> bankIds = bankQuestions.stream()
-                                .map(BankToeicQuestion::getId)
-                                .toList();
+                if (bankQuestions.isEmpty()) {
+                        throw new RuntimeException("No bank questions found");
+                }
 
-                List<Integer> usedIds = toeicQuestionRepository.findUsedBankQuestionIds(examId, bankIds);
+                List<Integer> bankIds = bankQuestions.stream()
+                        .map(BankToeicQuestion::getId)
+                        .toList();
+
+                // 2. Câu đã được dùng trong exam
+                List<Integer> usedIds =
+                        toeicQuestionRepository.findUsedBankQuestionIds(examId, bankIds);
 
                 Set<Integer> usedSet = new HashSet<>(usedIds);
 
-                // 3. Filter chỉ giữ câu CHƯA dùng
-                List<BankToeicQuestion> newQuestions = bankQuestions.stream()
-                                .filter(bq -> !usedSet.contains(bq.getId()))
-                                .toList();
+                // 3. Lấy toàn bộ questionId của exam hiện tại
+                List<Integer> examQuestionIds =
+                        toeicQuestionRepository.findQuestionIdsByExamId(examId);
 
-                if (newQuestions.isEmpty()) {
-                        throw new RuntimeException("All selected questions already exist in this exam");
+                Set<Integer> examQuestionIdSet = new HashSet<>(examQuestionIds);
+
+                // 4. Filter câu hợp lệ
+                List<BankToeicQuestion> validQuestions = bankQuestions.stream()
+                        // chưa dùng trong exam
+                        .filter(bq -> !usedSet.contains(bq.getId()))
+                        // không phải contribute từ chính exam này
+                        .filter(bq -> bq.getSourceToeicId() == null
+                                || !examQuestionIdSet.contains(bq.getSourceToeicId()))
+                        .toList();
+
+                // ===== PHÂN BIỆT LỖI =====
+
+                if (validQuestions.isEmpty()) {
+
+                        boolean allAlreadyUsed =
+                                bankQuestions.stream()
+                                        .allMatch(bq -> usedSet.contains(bq.getId()));
+
+                        boolean allFromThisExam =
+                                bankQuestions.stream()
+                                        .allMatch(bq -> bq.getSourceToeicId() != null
+                                                && examQuestionIdSet.contains(bq.getSourceToeicId()));
+
+                        if (allAlreadyUsed) {
+                                throw new RuntimeException("All selected questions already exist in this exam");
+                        }
+
+                        if (allFromThisExam) {
+                                throw new RuntimeException(
+                                        "Các câu hỏi được đóng góp từ đề thi này không thể được sử dụng lại trong cùng một đề thi.");
+                        }
+
+                        throw new RuntimeException("No valid questions to add to exam");
                 }
 
-                // 4. Load options CHỈ cho câu mới
-                List<Integer> newIds = newQuestions.stream()
-                                .map(BankToeicQuestion::getId)
-                                .toList();
+                // 5. Load options cho câu hợp lệ
+                List<Integer> newIds = validQuestions.stream()
+                        .map(BankToeicQuestion::getId)
+                        .toList();
 
-                List<BankToeicOption> bankOptions = bankToeicOptionRepoitory.findOptionsByQuestionIds(newIds);
+                List<BankToeicOption> bankOptions =
+                        bankToeicOptionRepoitory.findOptionsByQuestionIds(newIds);
 
-                Map<Integer, List<BankToeicOption>> optionMap = bankOptions.stream().collect(Collectors.groupingBy(
+                Map<Integer, List<BankToeicOption>> optionMap =
+                        bankOptions.stream().collect(Collectors.groupingBy(
                                 o -> o.getQuestion().getId()));
 
-                // FIX: Chuẩn bị map để track max index theo part
+                // track max index theo part
                 Map<String, Integer> partMaxIndexMap = new HashMap<>();
 
-                // 5. Add câu hỏi vào exam
-                for (BankToeicQuestion bq : newQuestions) {
+                // 6. Add câu hỏi vào exam
+                for (BankToeicQuestion bq : validQuestions) {
 
-                        // FIX: Calculate index đúng theo TOEIC standard
                         int indexNumber = calculateNextIndex(exam, bq.getPart(), partMaxIndexMap);
 
-                        // Map question với MEDIA COPY
-                        ToeicQuestion q = mapToeicQuestionFromBankWithMediaCopy(bq, exam, indexNumber);
+                        ToeicQuestion q =
+                                mapToeicQuestionFromBankWithMediaCopy(bq, exam, indexNumber);
+
                         toeicQuestionRepository.save(q);
 
-                        // Map options
                         List<BankToeicOption> ops = optionMap.getOrDefault(bq.getId(), List.of());
 
                         Set<ToeicQuestionOption> examOps = ops.stream()
-                                        .map(o -> bankMapper.mapOptionFromBank(o, q))
-                                        .collect(Collectors.toSet());
+                                .map(o -> bankMapper.mapOptionFromBank(o, q))
+                                .collect(Collectors.toSet());
 
                         toeicQuestionOptionRepository.saveAll(examOps);
                         q.setOptions(examOps);
 
-                        // FIX: Map images với COPY
                         if (bq.getImages() != null && !bq.getImages().isEmpty()) {
                                 List<ToeicQuestionImage> imgs = bq.getImages().stream()
-                                                .map(i -> mapImageFromBankWithCopy(i, q))
-                                                .toList();
+                                        .map(i -> mapImageFromBankWithCopy(i, q))
+                                        .toList();
                                 toeicQuestionImageRepository.saveAll(imgs);
                                 q.setImages(imgs);
                         }
                 }
 
-                // 6. Trả response
-                return newQuestions.stream()
-                                .map(bankMapper::toSingleResponse)
-                                .toList();
+                // 7. Response
+                return validQuestions.stream()
+                        .map(bankMapper::toSingleResponse)
+                        .toList();
         }
-
         /**
          * Map BankToeicQuestion to ToeicQuestion with MEDIA COPY
          */
@@ -404,85 +540,219 @@ public class QuestionBankServiceImpl implements QuestionBankService {
                 return img;
         }
 
+//        @Override
+//        @Transactional
+//        public List<BankUseGroupQuestionResponse> useGroupQuestions(List<Long> groupIds, int examId) {
+//
+//                // 1. Check exam
+//                Exam exam = examRepository.findById(examId)
+//                                .orElseThrow(() -> new ResourceNotFoundException("Exam not found"));
+//
+//                // 2. Load bank groups (children + images + audios)
+//                List<BankGroupQuestion> bankGroups = bankGroupQuestionRepository.findGroupsWithMedia(groupIds);
+//
+//                // 3. Chống trùng group
+//                List<Long> bankGroupIds = bankGroups.stream()
+//                                .map(BankGroupQuestion::getId)
+//                                .toList();
+//
+//                List<Long> usedIds = groupQuestionRepository.findUsedBankGroupIds(examId, bankGroupIds);
+//
+//                Set<Long> usedSet = new HashSet<>(usedIds);
+//
+//                List<BankGroupQuestion> newGroups = bankGroups.stream()
+//                                .filter(g -> !usedSet.contains(g.getId()))
+//                                .toList();
+//
+//                if (newGroups.isEmpty()) {
+//                        throw new RuntimeException("All selected groups already exist in this exam");
+//                }
+//
+//                // FIX: Chuẩn bị map để track max index theo part
+//                Map<String, Integer> partMaxIndexMap = new HashMap<>();
+//
+//                // 4. Add groups
+//                for (BankGroupQuestion bg : newGroups) {
+//
+//                        // Save group với MEDIA COPY
+//                        GroupQuestion examGroup = mapGroupFromBankWithMediaCopy(bg, exam);
+//                        groupQuestionRepository.save(examGroup);
+//
+//                        // FIX: Images với COPY
+//                        if (bg.getImages() != null && !bg.getImages().isEmpty()) {
+//                                Set<GroupQuestionImage> imgs = bg.getImages().stream()
+//                                                .map(i -> mapGroupImageFromBankWithCopy(i, examGroup))
+//                                                .collect(Collectors.toSet());
+//                                groupQuestionImageRepository.saveAll(imgs);
+//                                examGroup.setImages(imgs);
+//                        }
+//
+//                        // FIX: Audios với COPY
+//                        if (bg.getAudios() != null && !bg.getAudios().isEmpty()) {
+//                                Set<GroupQuestionAudio> audios = bg.getAudios().stream()
+//                                                .map(a -> mapGroupAudioFromBankWithCopy(a, examGroup))
+//                                                .collect(Collectors.toSet());
+//                                groupQuestionAudioRepository.saveAll(audios);
+//                                examGroup.setAudios(audios);
+//                        }
+//
+//                        // Add child questions
+//                        for (BankGroupChildQuestion bq : bg.getQuestions()) {
+//
+//                                // FIX: Calculate index đúng theo TOEIC standard
+//                                int indexNumber = calculateNextIndex(exam, bg.getPart(), partMaxIndexMap);
+//
+//                                ToeicQuestion q = bankMapper.mapToeicQuestionFromBank(bq, examGroup, exam, indexNumber);
+//                                toeicQuestionRepository.save(q);
+//
+//                                // Gắn vào group list (để tính range)
+//                                examGroup.getQuestions().add(q);
+//
+//                                // Options
+//                                if (bq.getOptions() != null && !bq.getOptions().isEmpty()) {
+//                                        Set<ToeicQuestionOption> ops = bq.getOptions().stream()
+//                                                        .map(o -> bankMapper.mapOptionFromBank(o, q))
+//                                                        .collect(Collectors.toSet());
+//                                        toeicQuestionOptionRepository.saveAll(ops);
+//                                        q.setOptions(ops);
+//                                }
+//                        }
+//
+//                        // Set title + questionRange
+//                        List<ToeicQuestion> qs = examGroup.getQuestions();
+//
+//                        int min = qs.stream().mapToInt(ToeicQuestion::getIndexNumber).min().orElse(0);
+//                        int max = qs.stream().mapToInt(ToeicQuestion::getIndexNumber).max().orElse(0);
+//
+//                        examGroup.setQuestionRange(min + "-" + max);
+//                        examGroup.setTitle("Questions " + min + " - " + max);
+//
+//                        groupQuestionRepository.save(examGroup);
+//                }
+//
+//                // 5. Response từ BANK
+//                return newGroups.stream()
+//                                .map(bg -> bankMapper.toGroupResponse(bg, bg.getQuestions()))
+//                                .toList();
+//        }
+
         @Override
         @Transactional
         public List<BankUseGroupQuestionResponse> useGroupQuestions(List<Long> groupIds, int examId) {
 
                 // 1. Check exam
                 Exam exam = examRepository.findById(examId)
-                                .orElseThrow(() -> new ResourceNotFoundException("Exam not found"));
+                        .orElseThrow(() -> new ResourceNotFoundException("Exam not found"));
 
                 // 2. Load bank groups (children + images + audios)
-                List<BankGroupQuestion> bankGroups = bankGroupQuestionRepository.findGroupsWithMedia(groupIds);
+                List<BankGroupQuestion> bankGroups =
+                        bankGroupQuestionRepository.findGroupsWithMedia(groupIds);
 
-                // 3. Chống trùng group
+                if (bankGroups.isEmpty()) {
+                        throw new RuntimeException("No bank groups found");
+                }
+
                 List<Long> bankGroupIds = bankGroups.stream()
-                                .map(BankGroupQuestion::getId)
-                                .toList();
+                        .map(BankGroupQuestion::getId)
+                        .toList();
 
-                List<Long> usedIds = groupQuestionRepository.findUsedBankGroupIds(examId, bankGroupIds);
+                // 3. Group đã được dùng trong exam
+                List<Long> usedIds =
+                        groupQuestionRepository.findUsedBankGroupIds(examId, bankGroupIds);
 
                 Set<Long> usedSet = new HashSet<>(usedIds);
 
-                List<BankGroupQuestion> newGroups = bankGroups.stream()
-                                .filter(g -> !usedSet.contains(g.getId()))
-                                .toList();
+                // 4. Lấy toàn bộ groupId của exam hiện tại
+                List<Integer> examGroupIds =
+                        groupQuestionRepository.findGroupIdsByExamId(examId);
 
-                if (newGroups.isEmpty()) {
-                        throw new RuntimeException("All selected groups already exist in this exam");
+                Set<Integer> examGroupIdSet = new HashSet<>(examGroupIds);
+
+                // 5. Filter group hợp lệ
+                List<BankGroupQuestion> validGroups = bankGroups.stream()
+                        // chưa dùng trong exam
+                        .filter(bg -> !usedSet.contains(bg.getId()))
+                        // không phải contribute từ chính exam này
+                        .filter(bg -> bg.getSourceGroupId() == null
+                                || !examGroupIdSet.contains(bg.getSourceGroupId()))
+                        .toList();
+
+                // ===== PHÂN BIỆT LỖI =====
+
+                if (validGroups.isEmpty()) {
+
+                        boolean allAlreadyUsed =
+                                bankGroups.stream()
+                                        .allMatch(bg -> usedSet.contains(bg.getId()));
+
+                        boolean allFromThisExam =
+                                bankGroups.stream()
+                                        .allMatch(bg -> bg.getSourceGroupId() != null
+                                                && examGroupIdSet.contains(bg.getSourceGroupId()));
+
+                        if (allAlreadyUsed) {
+                                throw new RuntimeException("All selected groups already exist in this exam");
+                        }
+
+                        if (allFromThisExam) {
+                                throw new RuntimeException(
+                                        "Các nhóm câu hỏi được đóng góp từ bài đề thi này không thể được sử dụng lại trong cùng một bài đề thi.");
+                        }
+
+                        throw new RuntimeException("No valid groups to add to exam");
                 }
 
-                // FIX: Chuẩn bị map để track max index theo part
+                // FIX: track max index theo part
                 Map<String, Integer> partMaxIndexMap = new HashMap<>();
 
-                // 4. Add groups
-                for (BankGroupQuestion bg : newGroups) {
+                // 6. Add groups
+                for (BankGroupQuestion bg : validGroups) {
 
-                        // Save group với MEDIA COPY
+                        // Save group + MEDIA COPY
                         GroupQuestion examGroup = mapGroupFromBankWithMediaCopy(bg, exam);
                         groupQuestionRepository.save(examGroup);
 
-                        // FIX: Images với COPY
+                        // Images COPY
                         if (bg.getImages() != null && !bg.getImages().isEmpty()) {
                                 Set<GroupQuestionImage> imgs = bg.getImages().stream()
-                                                .map(i -> mapGroupImageFromBankWithCopy(i, examGroup))
-                                                .collect(Collectors.toSet());
+                                        .map(i -> mapGroupImageFromBankWithCopy(i, examGroup))
+                                        .collect(Collectors.toSet());
                                 groupQuestionImageRepository.saveAll(imgs);
                                 examGroup.setImages(imgs);
                         }
 
-                        // FIX: Audios với COPY
+                        // Audios COPY
                         if (bg.getAudios() != null && !bg.getAudios().isEmpty()) {
                                 Set<GroupQuestionAudio> audios = bg.getAudios().stream()
-                                                .map(a -> mapGroupAudioFromBankWithCopy(a, examGroup))
-                                                .collect(Collectors.toSet());
+                                        .map(a -> mapGroupAudioFromBankWithCopy(a, examGroup))
+                                        .collect(Collectors.toSet());
                                 groupQuestionAudioRepository.saveAll(audios);
                                 examGroup.setAudios(audios);
                         }
 
-                        // Add child questions
+                        // Child questions
                         for (BankGroupChildQuestion bq : bg.getQuestions()) {
 
-                                // FIX: Calculate index đúng theo TOEIC standard
-                                int indexNumber = calculateNextIndex(exam, bg.getPart(), partMaxIndexMap);
+                                int indexNumber =
+                                        calculateNextIndex(exam, bg.getPart(), partMaxIndexMap);
 
-                                ToeicQuestion q = bankMapper.mapToeicQuestionFromBank(bq, examGroup, exam, indexNumber);
+                                ToeicQuestion q =
+                                        bankMapper.mapToeicQuestionFromBank(bq, examGroup, exam, indexNumber);
+
                                 toeicQuestionRepository.save(q);
 
-                                // Gắn vào group list (để tính range)
                                 examGroup.getQuestions().add(q);
 
-                                // Options
                                 if (bq.getOptions() != null && !bq.getOptions().isEmpty()) {
                                         Set<ToeicQuestionOption> ops = bq.getOptions().stream()
-                                                        .map(o -> bankMapper.mapOptionFromBank(o, q))
-                                                        .collect(Collectors.toSet());
+                                                .map(o -> bankMapper.mapOptionFromBank(o, q))
+                                                .collect(Collectors.toSet());
                                         toeicQuestionOptionRepository.saveAll(ops);
                                         q.setOptions(ops);
                                 }
                         }
 
-                        // Set title + questionRange
+                        // Set title + range
                         List<ToeicQuestion> qs = examGroup.getQuestions();
 
                         int min = qs.stream().mapToInt(ToeicQuestion::getIndexNumber).min().orElse(0);
@@ -494,12 +764,11 @@ public class QuestionBankServiceImpl implements QuestionBankService {
                         groupQuestionRepository.save(examGroup);
                 }
 
-                // 5. Response từ BANK
-                return newGroups.stream()
-                                .map(bg -> bankMapper.toGroupResponse(bg, bg.getQuestions()))
-                                .toList();
+                // 7. Response từ BANK
+                return validGroups.stream()
+                        .map(bg -> bankMapper.toGroupResponse(bg, bg.getQuestions()))
+                        .toList();
         }
-
         /**
          * Map BankGroupQuestion to GroupQuestion (NO media - handled separately)
          */
