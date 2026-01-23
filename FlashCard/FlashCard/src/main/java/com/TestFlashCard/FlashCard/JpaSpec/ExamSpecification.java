@@ -24,4 +24,13 @@ public class ExamSpecification {
                 ? null
                 : cb.like(cb.lower(root.get("title")), "%" + title.toLowerCase() + "%");
     }
+    //  đề SYSTEM: fileImportName IS NOT NULL
+    public static Specification<Exam> isSystemExam() {
+        return (root, query, cb) -> cb.isNotNull(root.get("fileImportName"));
+    }
+
+    //  đề USER: fileImportName IS NULL
+    public static Specification<Exam> isUserExam() {
+        return (root, query, cb) -> cb.isNull(root.get("fileImportName"));
+    }
 }

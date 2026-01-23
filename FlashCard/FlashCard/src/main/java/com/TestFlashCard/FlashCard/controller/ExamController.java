@@ -73,17 +73,49 @@ public class ExamController {
     @Autowired
     private final IExam_Repository exam_Repository;
 
-    @GetMapping("/filter")
-    public ApiResponse<?> getExamsByFilter(@RequestParam(required = false) Integer year,
+//    @GetMapping("/filter")
+//    public ApiResponse<?> getExamsByFilter(@RequestParam(required = false) Integer year,
+//            @RequestParam(required = false) String type,
+//            @RequestParam(required = false) String collection,
+//            @RequestParam(required = false) String title) {
+//
+//        try {
+//            List<ExamInformationResponse> exams = examService.getByFilter(year, type, collection, title);
+//            return new ApiResponse<>(HttpStatus.OK.value(), HttpStatus.OK.getReasonPhrase(), exams);
+//        } catch (Exception e) {
+//            return new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "Fail because:" + e.getMessage());
+//        }
+//    }
+    @GetMapping("/system/filter")
+    public ApiResponse<?> getSystemExamsByFilter(
+            @RequestParam(required = false) Integer year,
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String collection,
             @RequestParam(required = false) String title) {
 
         try {
-            List<ExamInformationResponse> exams = examService.getByFilter(year, type, collection, title);
-            return new ApiResponse<>(HttpStatus.OK.value(), HttpStatus.OK.getReasonPhrase(), exams);
+            List<ExamInformationResponse> exams =
+                    examService.getSystemExamsByFilter(year, type, collection, title);
+
+            return new ApiResponse<>(HttpStatus.OK.value(), "Success", exams);
         } catch (Exception e) {
-            return new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "Fail because:" + e.getMessage());
+            return new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "Fail because: " + e.getMessage());
+        }
+    }
+    @GetMapping("/user/filter")
+    public ApiResponse<?> getUserExamsByFilter(
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String collection,
+            @RequestParam(required = false) String title) {
+
+        try {
+            List<ExamInformationResponse> exams =
+                    examService.getUserExamsByFilter(year, type, collection, title);
+
+            return new ApiResponse<>(HttpStatus.OK.value(), "Success", exams);
+        } catch (Exception e) {
+            return new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "Fail because: " + e.getMessage());
         }
     }
 

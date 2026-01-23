@@ -60,7 +60,36 @@ public class ExamService {
                 .and(ExamSpecification.containsTitle(title));
         return exam_Repository.findAll(spec).stream().map(this::convertToExamDetailResponse).toList();
     }
+    public List<ExamInformationResponse> getSystemExamsByFilter(
+            Integer year, String type, String collection, String title) {
 
+        Specification<Exam> spec = Specification
+                .where(ExamSpecification.isSystemExam())
+                .and(ExamSpecification.hasYear(year))
+                .and(ExamSpecification.hasType(type))
+                .and(ExamSpecification.hasCollection(collection))
+                .and(ExamSpecification.containsTitle(title));
+
+        return exam_Repository.findAll(spec)
+                .stream()
+                .map(this::convertToExamDetailResponse)
+                .toList();
+    }
+    public List<ExamInformationResponse> getUserExamsByFilter(
+            Integer year, String type, String collection, String title) {
+
+        Specification<Exam> spec = Specification
+                .where(ExamSpecification.isUserExam())
+                .and(ExamSpecification.hasYear(year))
+                .and(ExamSpecification.hasType(type))
+                .and(ExamSpecification.hasCollection(collection))
+                .and(ExamSpecification.containsTitle(title));
+
+        return exam_Repository.findAll(spec)
+                .stream()
+                .map(this::convertToExamDetailResponse)
+                .toList();
+    }
     public ExamFilterdResponse convertToResponse(Exam exam) {
         return new ExamFilterdResponse(
                 exam.getId(),
