@@ -7,7 +7,6 @@ import com.TestFlashCard.FlashCard.request.ListIdContributeRequest;
 import com.TestFlashCard.FlashCard.request.UseFromBankRequest;
 import com.TestFlashCard.FlashCard.response.*;
 import com.TestFlashCard.FlashCard.service.QuestionBankService;
-import com.TestFlashCard.FlashCard.service.QuestionBankServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;

@@ -32,6 +32,7 @@ import com.TestFlashCard.FlashCard.request.ExamUpdateRequest;
 import com.TestFlashCard.FlashCard.request.ToeicCustomExamUpdateRequest;
 import com.TestFlashCard.FlashCard.response.ApiResponse;
 import com.TestFlashCard.FlashCard.response.CommentResponse;
+import com.TestFlashCard.FlashCard.response.CustomExamResponse;
 import com.TestFlashCard.FlashCard.response.ExamInformationResponse;
 import com.TestFlashCard.FlashCard.response.ExamReviewResponse;
 import com.TestFlashCard.FlashCard.response.ToeicCustomUpdateResponse;
@@ -73,49 +74,17 @@ public class ExamController {
     @Autowired
     private final IExam_Repository exam_Repository;
 
-//    @GetMapping("/filter")
-//    public ApiResponse<?> getExamsByFilter(@RequestParam(required = false) Integer year,
-//            @RequestParam(required = false) String type,
-//            @RequestParam(required = false) String collection,
-//            @RequestParam(required = false) String title) {
-//
-//        try {
-//            List<ExamInformationResponse> exams = examService.getByFilter(year, type, collection, title);
-//            return new ApiResponse<>(HttpStatus.OK.value(), HttpStatus.OK.getReasonPhrase(), exams);
-//        } catch (Exception e) {
-//            return new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "Fail because:" + e.getMessage());
-//        }
-//    }
-    @GetMapping("/system/filter")
+    @GetMapping("/filter")
     public ApiResponse<?> getSystemExamsByFilter(
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String collection,
             @RequestParam(required = false) String title) {
-
         try {
-            List<ExamInformationResponse> exams =
-                    examService.getSystemExamsByFilter(year, type, collection, title);
-
-            return new ApiResponse<>(HttpStatus.OK.value(), "Success", exams);
+            List<ExamInformationResponse> exams = examService.getSystemExamsByFilter(year, type, collection, title);
+            return new ApiResponse<>(HttpStatus.OK.value(), HttpStatus.OK.getReasonPhrase(), exams);
         } catch (Exception e) {
-            return new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "Fail because: " + e.getMessage());
-        }
-    }
-    @GetMapping("/user/filter")
-    public ApiResponse<?> getUserExamsByFilter(
-            @RequestParam(required = false) Integer year,
-            @RequestParam(required = false) String type,
-            @RequestParam(required = false) String collection,
-            @RequestParam(required = false) String title) {
-
-        try {
-            List<ExamInformationResponse> exams =
-                    examService.getUserExamsByFilter(year, type, collection, title);
-
-            return new ApiResponse<>(HttpStatus.OK.value(), "Success", exams);
-        } catch (Exception e) {
-            return new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "Fail because: " + e.getMessage());
+            return new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "Fail: " + e.getMessage());
         }
     }
 
@@ -346,11 +315,14 @@ public class ExamController {
         return new ApiResponse<>(HttpStatus.OK.value(), "Cap nhat thong tin thanh cong.", response);
     }
 
-    @GetMapping("/get-custom")
-    public ApiResponse<?> getCustomExam() throws Exception {
-        User user = userService.getCurrentUser();
-        List<ExamInformationResponse> responses = examService.getAllCustomExam(user.getId());
-        return new ApiResponse<List<ExamInformationResponse>>(HttpStatus.OK.value(),
-                "Lay danh sach de thi toeic thanh cong", responses);
+    @GetMapping("/custom-exams")
+    public ApiResponse<?> getCustomExams(Principal principal) {
+        try {
+            User user = userService.getUserByAccountName(principal.getName());
+            List<CustomExamResponse> exams = examService.getCustomExams(user);
+            return new ApiResponse<>(HttpStatus.OK.value(), HttpStatus.OK.getReasonPhrase(), exams);
+        } catch (Exception e) {
+            return new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "Fail: " + e.getMessage());
+        }
     }
 }

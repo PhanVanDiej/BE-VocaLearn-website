@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.TestFlashCard.FlashCard.entity.*;
@@ -60,21 +61,7 @@ public class ExamService {
                 .and(ExamSpecification.containsTitle(title));
         return exam_Repository.findAll(spec).stream().map(this::convertToExamDetailResponse).toList();
     }
-    public List<ExamInformationResponse> getSystemExamsByFilter(
-            Integer year, String type, String collection, String title) {
 
-        Specification<Exam> spec = Specification
-                .where(ExamSpecification.isSystemExam())
-                .and(ExamSpecification.hasYear(year))
-                .and(ExamSpecification.hasType(type))
-                .and(ExamSpecification.hasCollection(collection))
-                .and(ExamSpecification.containsTitle(title));
-
-        return exam_Repository.findAll(spec)
-                .stream()
-                .map(this::convertToExamDetailResponse)
-                .toList();
-    }
     public List<ExamInformationResponse> getUserExamsByFilter(
             Integer year, String type, String collection, String title) {
 
@@ -90,6 +77,7 @@ public class ExamService {
                 .map(this::convertToExamDetailResponse)
                 .toList();
     }
+
     public ExamFilterdResponse convertToResponse(Exam exam) {
         return new ExamFilterdResponse(
                 exam.getId(),
@@ -110,7 +98,17 @@ public class ExamService {
 
     public List<ExamInformationResponse> getByCreatAt() {
         List<Exam> exams = exam_Repository.findAllByOrderByCreatedAtDesc();
-        return exams.stream().map(this::convertToExamDetailResponse).toList();
+        List<CustomExam> customExams = customExamRepository.findAll();
+
+        // Lấy danh sách examId đã có trong custom_exam
+        Set<Integer> customExamIds = customExams.stream()
+                .map(customExam -> customExam.getCustomExam().getId())
+                .collect(Collectors.toSet());
+
+        return exams.stream()
+                .filter(exam -> !customExamIds.contains(exam.getId()))
+                .map(this::convertToExamDetailResponse)
+                .toList();
     }
 
     public ExamInformationResponse convertToExamDetailResponse(Exam exam) {
@@ -122,22 +120,6 @@ public class ExamService {
         List<GroupQuestionResponseDTO> groupQuestions = exam.getGroupQuestions().stream()
                 .map(this::convertGroupToResponse)
                 .toList();
-
-        // return new ExamInformationResponse(
-        // exam.getId(),
-        // exam.getDuration(),
-        // getNumOfPart(exam.getId()),
-        // getNumOfQuestion(exam.getId()),
-        // exam.getTitle(),
-        // exam.getYear(),
-        // exam.getType().getType(),
-        // exam.getCollection().getCollection(),
-        // exam.getAttemps(),
-        // countAllCommentsAndReplies(exam.getId()),
-        // exam.getFileImportName(),
-        // singleQuestions,
-        // groupQuestions
-        // );
         return new ExamInformationResponse(
                 exam.getId(),
                 exam.getDuration() != null ? exam.getDuration() : null, // giữ null nếu không có giá trị
@@ -186,10 +168,10 @@ public class ExamService {
                 group.getExam().getId(),
                 group.getIsContribute(),
                 group.getBankGroupId(),
-                imageUrls, //  URLs
-                imageKeys, //  KEYS
-                audioUrls, //  URLs
-                audioKeys, //  KEYS
+                imageUrls, // URLs
+                imageKeys, // KEYS
+                audioUrls, // URLs
+                audioKeys, // KEYS
                 childQuestions);
 
     }
@@ -455,12 +437,35 @@ public class ExamService {
                 .toList();
     }
 
+    public List<CustomExamResponse> getCustomExams(User user) {
+        List<CustomExam> customExams = customExamRepository.findByUserId(user.getId());
+
+        return customExams.stream()
+                .map(ce -> {
+                    Exam exam = ce.getCustomExam();
+
+                    // Đếm số câu hỏi (optional)
+                    int totalQuestions = toeicQuestion_repository.countByExam_Id(exam.getId());
+
+                    return new CustomExamResponse(
+                            exam.getId(),
+                            exam.getTitle(),
+                            exam.getDuration(),
+                            exam.isRandom(), // <-- Trả về isRandom
+                            exam.getYear(),
+                            exam.getCreatedAt(),
+                            totalQuestions);
+                })
+                .toList();
+    }
+
     @Transactional
     public ExamFilterdResponse createCustomDraft(ExamCreateRequestVer2 request, User user) throws IOException {
-
+        ExamType type = examTypeService.getDetailByType("CUSTOM");
         // 1. Tạo exam như bình thường
         Exam exam = new Exam();
         exam.setTitle(request.getTitle());
+        exam.setType(type);
         exam.setDuration(request.getDuration());
         exam.setAttemps(0);
         exam.setRandom(false);
@@ -505,5 +510,40 @@ public class ExamService {
         // Dùng lại logic cũ
         return updateToeicCustomExam(request, examId);
     }
+    // ExamService.java
 
+    // Lấy đề hệ thống (có filter)
+
+    public List<ExamInformationResponse> getSystemExamsByFilter(
+            Integer year, String type, String collection, String title) {
+
+        Specification<Exam> spec = Specification
+                .where(ExamSpecification.isSystemExam())
+                .and(ExamSpecification.isNotRandom()) // ✅ THÊM: Chỉ lấy format TOEIC
+                .and(ExamSpecification.isNotDeleted()) // ✅ THÊM: Không lấy đề đã xóa
+                .and(ExamSpecification.hasYear(year))
+                .and(ExamSpecification.hasType(type))
+                .and(ExamSpecification.hasCollection(collection))
+                .and(ExamSpecification.containsTitle(title));
+
+        return exam_Repository.findAll(spec)
+                .stream()
+                .map(this::convertToExamDetailResponse)
+                .toList();
+    }
+
+    // Lấy đề hệ thống (không filter) - sắp xếp theo createdAt
+
+    public List<ExamInformationResponse> getSystemExamsByCreatedAt() {
+        List<Integer> customExamIds = customExamRepository.findAll().stream()
+                .map(ce -> ce.getCustomExam().getId())
+                .toList();
+
+        return exam_Repository.findAllByOrderByCreatedAtDesc().stream()
+                .filter(exam -> !exam.isRandom()) // ✅ CHỈ LẤY FORMAT TOEIC
+                .filter(exam -> !exam.isDeleted()) // ✅ KHÔNG LẤY ĐỀ ĐÃ XÓA
+                .filter(exam -> !customExamIds.contains(exam.getId()))
+                .map(this::convertToExamDetailResponse)
+                .toList();
+    }
 }

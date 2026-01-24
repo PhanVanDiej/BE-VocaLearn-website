@@ -16,4 +16,5 @@ public interface IToeicQuestion_Repository extends JpaRepository<ToeicQuestion,I
     List<ToeicQuestion> findAllByExam(Exam exam);
     List<ToeicQuestion> findAllByExamAndPartIn(Exam exam, Collection<String> parts);
     List<ToeicQuestion> findByExamIdAndPart(Integer examId, String part);
+    int countByExam_Id(Integer id);
 }
