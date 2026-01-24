@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface CustomExamRepository extends JpaRepository<CustomExam, Integer>{
     List<CustomExam> findByUserId(int userId);
     Optional<CustomExam> findByUserIdAndCustomExamId(int userId, int examId);
+    void deleteByCustomExam_Id(Integer examId);
 }

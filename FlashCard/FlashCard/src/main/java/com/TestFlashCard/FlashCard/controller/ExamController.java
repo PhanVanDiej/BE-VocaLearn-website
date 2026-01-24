@@ -331,11 +331,11 @@ public class ExamController {
                 ApiResponse.success(examService.createCustomDraft(exam, user)));
     }
 
-    @DeleteMapping("/custom/{examId}")
-    public ApiResponse<?> deleteCustomToeicExam(@PathVariable Integer examId) {
-        examService.deleteById(examId);
-        return new ApiResponse<>(HttpStatus.OK.value(), "Xoa bai thi thanh cong");
-    }
+        @DeleteMapping("/custom/{examId}")
+        public ApiResponse<?> deleteCustomToeicExam(@PathVariable Integer examId) {
+            examService.deleteById(examId);
+            return new ApiResponse<>(HttpStatus.OK.value(), "Xoa bai thi thanh cong");
+        }
 
     @PutMapping("/custom/{examId}")
     public ApiResponse<?> updateCustomExam(@PathVariable Integer examId,

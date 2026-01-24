@@ -296,6 +296,8 @@ public class ExamService {
 
     @Transactional
     public void deleteById(int examID) {
+
+        customExamRepository.deleteByCustomExam_Id(examID);
         Exam exam = exam_Repository.findById(examID)
                 .orElseThrow(() -> new ResourceNotFoundException("Cannot find Exam with id: " + examID));
 

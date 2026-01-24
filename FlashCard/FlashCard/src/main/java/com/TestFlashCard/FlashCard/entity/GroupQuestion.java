@@ -31,7 +31,7 @@ public class GroupQuestion {
     @Column(name = "is_contribute")
     private Boolean isContribute = false;
 
-    @Column(name = "bank_group_id", unique = true)
+    @Column(name = "bank_group_id")
     private Long bankGroupId;
 
     @Column(length = 50)
