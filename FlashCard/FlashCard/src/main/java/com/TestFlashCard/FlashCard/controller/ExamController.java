@@ -87,6 +87,23 @@ public class ExamController {
             return new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "Fail: " + e.getMessage());
         }
     }
+    @GetMapping("/user/filter")
+    public ApiResponse<?> getUserExamsByFilter(
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String collection,
+            @RequestParam(required = false) String title) {
+
+        try {
+            List<ExamInformationResponse> exams =
+                    examService.getUserExamsByFilter(year, type, collection, title);
+
+            return new ApiResponse<>(HttpStatus.OK.value(), "Success", exams);
+        } catch (Exception e) {
+            return new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "Fail because: " + e.getMessage());
+        }
+    }
+
 
     @GetMapping("/getByCreateAt")
     public ResponseEntity<?> getByCreateAt() {

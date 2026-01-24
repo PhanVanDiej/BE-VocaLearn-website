@@ -71,7 +71,6 @@ public class ExamService {
                 .and(ExamSpecification.hasType(type))
                 .and(ExamSpecification.hasCollection(collection))
                 .and(ExamSpecification.containsTitle(title));
-
         return exam_Repository.findAll(spec)
                 .stream()
                 .map(this::convertToExamDetailResponse)

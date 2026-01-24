@@ -2,13 +2,16 @@ package com.TestFlashCard.FlashCard.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 import org.hibernate.annotations.CreationTimestamp;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "exam")
 public class Exam {
